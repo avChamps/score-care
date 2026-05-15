@@ -30,12 +30,12 @@ export function PortalShell({ active, children }: PortalShellProps) {
   return (
     <section className="min-h-screen bg-slate-50 text-slate-950">
       <div className="mx-auto grid min-h-screen max-w-7xl lg:grid-cols-[260px_1fr]">
-        <aside className="hidden border-r border-slate-200 bg-white/80 px-4 py-6 lg:block">
-          <Link href="/" className="mb-8 flex items-center gap-3 px-3">
-            <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-400 text-xs font-black text-white">
+        <aside className="hidden border-r border-slate-200 bg-white/80 px-4 py-5 lg:block">
+          <Link href="/" className="mb-7 flex items-center gap-3 px-3">
+            <span className="grid size-8 place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-400 text-[0.7rem] font-black text-white">
               SC
             </span>
-            <span className="font-black tracking-tight">SCORECARE</span>
+            <span className="text-sm font-black tracking-tight">SCORECARE</span>
           </Link>
           <NavItems active={active} direction="side" />
         </aside>
@@ -50,27 +50,27 @@ export function PortalShell({ active, children }: PortalShellProps) {
 
 export function PortalTopBar({ title, backHref }: { title?: string; backHref?: string }) {
   return (
-    <div className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/85 px-4 py-3 backdrop-blur-xl sm:px-6 lg:px-8">
+    <div className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/85 px-4 py-2.5 backdrop-blur-xl sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           {backHref ? (
-            <Link href={backHref} aria-label="Back" className="grid size-10 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-slate-700">
+            <Link href={backHref} aria-label="Back" className="grid size-9 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-slate-700">
               <span className="text-2xl leading-none">&lsaquo;</span>
             </Link>
           ) : (
-            <div className="grid size-12 shrink-0 place-items-center rounded-full bg-cyan-500/10 text-cyan-600">
-              <User className="size-6" />
+            <div className="grid size-10 shrink-0 place-items-center rounded-full bg-cyan-500/10 text-cyan-600">
+              <User className="size-5" />
             </div>
           )}
           {title ? (
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-600">Dashboard</p>
-              <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
+              <p className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-cyan-600">Dashboard</p>
+              <h1 className="truncate text-base font-bold tracking-tight sm:text-lg">{title}</h1>
             </div>
           ) : (
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-500">Welcome back</p>
-              <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">Hi Gosu Disendra</h1>
+              <p className="text-xs font-semibold text-slate-500">Welcome back</p>
+              <h1 className="truncate text-base font-bold tracking-tight sm:text-lg">Hi Gosu Disendra</h1>
             </div>
           )}
         </div>
@@ -106,7 +106,7 @@ type PrimaryPortalButtonProps = ComponentPropsWithoutRef<"button"> & {
 
 export function PrimaryPortalButton({ children, href, className, ...props }: PrimaryPortalButtonProps) {
   const classes = cn(
-    "inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 px-5 text-sm font-bold text-white shadow-[0_12px_30px_rgba(37,99,235,0.24)] sm:h-12",
+    "inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 px-5 text-xs font-bold text-white shadow-[0_12px_30px_rgba(37,99,235,0.24)] sm:h-11 sm:text-sm",
     className,
   );
 
@@ -145,11 +145,11 @@ export function CreditReportBanner() {
     <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_42px_rgba(15,23,42,0.07)]">
       <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-cyan-500 to-emerald-400" />
       <div className="relative z-10 pr-24">
-        <p className="text-base font-bold uppercase tracking-tight text-slate-950">Credit Report</p>
-        <p className="mt-2 text-sm leading-6 text-slate-500">Track score health, report status, and improvement opportunities.</p>
+        <p className="text-sm font-bold uppercase tracking-tight text-slate-950">Credit Report</p>
+        <p className="mt-2 text-xs leading-5 text-slate-500">Track score health, report status, and improvement opportunities.</p>
       </div>
-      <div className="absolute right-5 top-1/2 grid size-16 -translate-y-1/2 place-items-center rounded-2xl bg-cyan-50 text-cyan-600">
-        <Gauge className="size-8" />
+      <div className="absolute right-5 top-1/2 grid size-14 -translate-y-1/2 place-items-center rounded-2xl bg-cyan-50 text-cyan-600">
+        <Gauge className="size-7" />
       </div>
     </div>
   );
@@ -255,12 +255,12 @@ function BottomNav({ active }: { active: PortalShellProps["active"] }) {
 
 function NavItems({ active, direction }: { active: PortalShellProps["active"]; direction: "side" }) {
   return (
-    <div className={cn("grid gap-2", direction === "side" && "text-sm")}>
+    <div className={cn("grid gap-1.5", direction === "side" && "text-xs")}>
       {navItems.map(({ id, label, href, Icon }) => {
         const selected = id === active;
         return (
           <Link key={id} href={href} className={cn("flex items-center gap-3 rounded-xl px-4 py-2.5 font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-950", selected && "bg-cyan-50 text-cyan-700")}>
-            <Icon className="size-5" />
+            <Icon className="size-4" />
             {label}
           </Link>
         );
@@ -271,7 +271,7 @@ function NavItems({ active, direction }: { active: PortalShellProps["active"]; d
 
 function IconCircle({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <button aria-label={label} className="grid size-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm sm:size-11">
+    <button aria-label={label} className="grid size-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm sm:size-10">
       {children}
     </button>
   );

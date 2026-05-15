@@ -25,13 +25,13 @@ export default function DashboardPage() {
         <div className="grid gap-4">
           <CreditReportBanner />
           <VisualBanner
-            icon={<Landmark className="size-8" />}
+            icon={<Landmark className="size-7" />}
             title="Loan Eligibility"
             body="Check your eligibility instantly and continue to EMI tools."
             accent="from-blue-600 to-cyan-500"
           />
           <VisualBanner
-            icon={<ShieldCheck className="size-8" />}
+            icon={<ShieldCheck className="size-7" />}
             title="Score Fix"
             body="Raise disputes, upload reports, and track repair requests."
             accent="from-indigo-600 to-emerald-500"
@@ -85,10 +85,10 @@ function VisualBanner({
     <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_42px_rgba(15,23,42,0.07)]">
       <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${accent}`} />
       <div className="relative z-10 pr-24">
-        <p className="text-base font-bold uppercase tracking-tight text-slate-950">{title}</p>
-        <p className="mt-2 text-sm leading-6 text-slate-500">{body}</p>
+        <p className="text-sm font-bold uppercase tracking-tight text-slate-950">{title}</p>
+        <p className="mt-2 text-xs leading-5 text-slate-500">{body}</p>
       </div>
-      <div className={`absolute right-5 top-1/2 grid size-16 -translate-y-1/2 place-items-center rounded-2xl bg-gradient-to-br ${accent} text-white shadow-lg shadow-slate-200`}>
+      <div className={`absolute right-5 top-1/2 grid size-14 -translate-y-1/2 place-items-center rounded-2xl bg-gradient-to-br ${accent} text-white shadow-lg shadow-slate-200`}>
         <span className="text-white">{icon}</span>
       </div>
     </div>
