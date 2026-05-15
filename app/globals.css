@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
 @theme inline {
@@ -12,15 +14,41 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  text-size-adjust: 100%;
+}
+
+::selection {
+  background: #22d3ee;
+  color: #020617;
+}
+
+.glass-grid {
+  background-image:
+    linear-gradient(rgba(14, 165, 233, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 165, 233, 0.08) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.score-arc {
+  background:
+    conic-gradient(from 220deg, #ef4444 0deg, #f59e0b 50deg, #22c55e 105deg, #06b6d4 155deg, transparent 156deg),
+    radial-gradient(circle at center, var(--background) 56%, transparent 57%);
+}
+
+.responsive-table {
+  scrollbar-width: thin;
+  scrollbar-color: #06b6d4 transparent;
 }
