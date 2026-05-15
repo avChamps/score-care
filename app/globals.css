@@ -52,3 +52,23 @@ html {
   scrollbar-width: thin;
   scrollbar-color: #06b6d4 transparent;
 }
+
+@keyframes scoreNeedle {
+  from {
+    transform: rotate(-42deg);
+  }
+  to {
+    transform: rotate(18deg);
+  }
+}
+
+@keyframes meterFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

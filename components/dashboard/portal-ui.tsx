@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { type ComponentPropsWithoutRef } from "react";
 import {
   BadgeIndianRupee,
   Bell,
@@ -98,7 +99,12 @@ export function AppCard({ className, children }: { className?: string; children:
   );
 }
 
-export function PrimaryPortalButton({ children, href, className }: { children: React.ReactNode; href?: string; className?: string }) {
+type PrimaryPortalButtonProps = ComponentPropsWithoutRef<"button"> & {
+  href?: string;
+  children: React.ReactNode;
+};
+
+export function PrimaryPortalButton({ children, href, className, ...props }: PrimaryPortalButtonProps) {
   const classes = cn(
     "inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 px-5 text-sm font-bold text-white shadow-[0_12px_30px_rgba(37,99,235,0.24)] sm:h-12",
     className,
@@ -112,7 +118,11 @@ export function PrimaryPortalButton({ children, href, className }: { children: R
     );
   }
 
-  return <button className={classes}>{children}</button>;
+  return (
+    <button className={classes} {...props}>
+      {children}
+    </button>
+  );
 }
 
 export function ScoreGauge({ compact = false }: { compact?: boolean }) {
@@ -132,13 +142,15 @@ export function ScoreGauge({ compact = false }: { compact?: boolean }) {
 
 export function CreditReportBanner() {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-cyan-200 bg-gradient-to-r from-cyan-600 to-emerald-500 p-5 text-white shadow-[0_14px_42px_rgba(6,182,212,0.15)]">
-      <div className="relative z-10">
-        <p className="text-xl font-bold uppercase tracking-tight">Credit Report</p>
-        <p className="mt-2 max-w-sm text-sm leading-6 text-cyan-50">Track score health, report status, and improvement opportunities.</p>
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_42px_rgba(15,23,42,0.07)]">
+      <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-cyan-500 to-emerald-400" />
+      <div className="relative z-10 pr-24">
+        <p className="text-base font-bold uppercase tracking-tight text-slate-950">Credit Report</p>
+        <p className="mt-2 text-sm leading-6 text-slate-500">Track score health, report status, and improvement opportunities.</p>
       </div>
-      <div className="absolute -bottom-9 right-8 size-36 rounded-t-full bg-[conic-gradient(from_250deg,#ef4444,#facc15,#22c55e,#06b6d4,#ef4444)] opacity-90" />
-      <Gauge className="absolute bottom-8 right-16 size-24 text-white/80" />
+      <div className="absolute right-5 top-1/2 grid size-16 -translate-y-1/2 place-items-center rounded-2xl bg-cyan-50 text-cyan-600">
+        <Gauge className="size-8" />
+      </div>
     </div>
   );
 }

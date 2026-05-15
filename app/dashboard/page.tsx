@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
-import { BadgeIndianRupee, Gauge, Headphones, ReceiptText } from "lucide-react";
+import { BadgeIndianRupee, Gauge, Headphones, Landmark, ReceiptText, ShieldCheck } from "lucide-react";
+import { ScoreCheckCard } from "@/components/dashboard/score-check-card";
 import {
-  AppCard,
   CreditReportBanner,
   ListAction,
   PageContent,
   PortalShell,
   PortalTopBar,
-  PrimaryPortalButton,
-  ScoreGauge,
 } from "@/components/dashboard/portal-ui";
 
 export const metadata: Metadata = {
@@ -22,22 +20,22 @@ export default function DashboardPage() {
       <PortalTopBar />
       <PageContent>
         <div className="grid gap-6 xl:grid-cols-[1fr_0.85fr]">
-        <AppCard className="xl:row-span-2">
-          <p className="text-base font-bold">Your CIBIL Score</p>
-          <p className="text-sm text-slate-500">Last checked: 10/02/2026, 10:30PM</p>
-          <ScoreGauge />
-          <ScoreLegend />
-          <PrimaryPortalButton href="/dashboard/credit-score" className="mt-7 w-full">
-            Check Your Credit Score
-          </PrimaryPortalButton>
-        </AppCard>
+        <ScoreCheckCard />
 
-        <CreditReportBanner />
-
-        <div className="mt-5 flex items-center justify-center gap-2">
-          <span className="size-2 rounded-full bg-slate-300" />
-          <span className="h-2 w-8 rounded-full bg-cyan-500" />
-          <span className="size-2 rounded-full bg-slate-300" />
+        <div className="grid gap-4">
+          <CreditReportBanner />
+          <VisualBanner
+            icon={<Landmark className="size-8" />}
+            title="Loan Eligibility"
+            body="Check your eligibility instantly and continue to EMI tools."
+            accent="from-blue-600 to-cyan-500"
+          />
+          <VisualBanner
+            icon={<ShieldCheck className="size-8" />}
+            title="Score Fix"
+            body="Raise disputes, upload reports, and track repair requests."
+            accent="from-indigo-600 to-emerald-500"
+          />
         </div>
 
         <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:col-span-2">
@@ -72,22 +70,27 @@ export default function DashboardPage() {
   );
 }
 
-function ScoreLegend() {
-  const items = [
-    ["bg-red-500", "Poor - (300-549)"],
-    ["bg-lime-300", "Fair - (550-649)"],
-    ["bg-emerald-400", "Good - (650-749)"],
-    ["bg-green-500", "Excellent - (750-900)"],
-  ];
-
+function VisualBanner({
+  icon,
+  title,
+  body,
+  accent,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+  accent: string;
+}) {
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm text-slate-600">
-      {items.map(([color, label]) => (
-        <div key={label} className="flex items-center gap-2">
-          <span className={`size-3 rounded-full ${color}`} />
-          <span>{label}</span>
-        </div>
-      ))}
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_42px_rgba(15,23,42,0.07)]">
+      <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${accent}`} />
+      <div className="relative z-10 pr-24">
+        <p className="text-base font-bold uppercase tracking-tight text-slate-950">{title}</p>
+        <p className="mt-2 text-sm leading-6 text-slate-500">{body}</p>
+      </div>
+      <div className={`absolute right-5 top-1/2 grid size-16 -translate-y-1/2 place-items-center rounded-2xl bg-gradient-to-br ${accent} text-white shadow-lg shadow-slate-200`}>
+        <span className="text-white">{icon}</span>
+      </div>
     </div>
   );
 }
