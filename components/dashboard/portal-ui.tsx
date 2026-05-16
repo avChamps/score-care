@@ -28,9 +28,9 @@ const navItems = [
 
 export function PortalShell({ active, children }: PortalShellProps) {
   return (
-    <section className="min-h-screen bg-slate-50 text-slate-950">
-      <div className="mx-auto grid min-h-screen max-w-7xl lg:grid-cols-[260px_1fr]">
-        <aside className="hidden border-r border-slate-200 bg-white/80 px-4 py-5 lg:block">
+    <section className="min-h-screen bg-slate-50 text-slate-950 lg:h-screen lg:overflow-hidden">
+      <div className="mx-auto grid min-h-screen max-w-7xl lg:h-screen lg:grid-cols-[260px_1fr]">
+        <aside className="hidden border-r border-slate-200 bg-white/80 px-4 py-5 lg:block lg:h-screen lg:overflow-hidden">
           <Link href="/" className="mb-7 flex items-center gap-3 px-3">
             <span className="grid size-8 place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-400 text-[0.7rem] font-black text-white">
               SC
@@ -39,7 +39,7 @@ export function PortalShell({ active, children }: PortalShellProps) {
           </Link>
           <NavItems active={active} direction="side" />
         </aside>
-        <div className="min-w-0 pb-24 lg:pb-0">
+        <div className="min-w-0 pb-24 lg:h-screen lg:overflow-y-auto lg:pb-0">
           {children}
         </div>
       </div>

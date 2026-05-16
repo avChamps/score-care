@@ -28,11 +28,36 @@ body {
 html {
   scroll-behavior: smooth;
   text-size-adjust: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
 }
 
 ::selection {
   background: #22d3ee;
   color: #020617;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.55);
 }
 
 .glass-grid {
@@ -55,7 +80,7 @@ html {
 
 .drawer-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(14, 165, 233, 0.35) transparent;
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
 }
 
 .drawer-scroll::-webkit-scrollbar {
@@ -67,12 +92,12 @@ html {
 }
 
 .drawer-scroll::-webkit-scrollbar-thumb {
-  background: rgba(14, 165, 233, 0.35);
+  background: rgba(148, 163, 184, 0.45);
   border-radius: 999px;
 }
 
 .drawer-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(14, 165, 233, 0.5);
+  background: rgba(100, 116, 139, 0.55);
 }
 
 @keyframes scoreNeedle {
