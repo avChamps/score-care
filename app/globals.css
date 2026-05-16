@@ -72,3 +72,24 @@ html {
     transform: translateY(0) scale(1);
   }
 }
+
+@keyframes creditPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes scoreGlow {
+  0%,
+  100% {
+    box-shadow: 0 8px 24px rgba(6, 182, 212, 0.22);
+  }
+  50% {
+    box-shadow: 0 10px 34px rgba(6, 182, 212, 0.38);
+  }
+}

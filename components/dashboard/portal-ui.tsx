@@ -91,9 +91,13 @@ export function PageContent({ children, className }: { children: React.ReactNode
   return <div className={cn("mx-auto max-w-5xl px-4 py-5 sm:px-6 lg:px-8 lg:py-6", className)}>{children}</div>;
 }
 
-export function AppCard({ className, children }: { className?: string; children: React.ReactNode }) {
+type AppCardProps = ComponentPropsWithoutRef<"div"> & {
+  children: React.ReactNode;
+};
+
+export function AppCard({ className, children, ...props }: AppCardProps) {
   return (
-    <div className={cn("rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_14px_42px_rgba(15,23,42,0.07)] sm:p-5", className)}>
+    <div className={cn("rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_14px_42px_rgba(15,23,42,0.07)] sm:p-5", className)} {...props}>
       {children}
     </div>
   );
