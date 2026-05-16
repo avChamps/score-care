@@ -6,7 +6,10 @@ import { Navbar } from "@/components/layout/navbar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isPortal = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+  const isPortal =
+    pathname === "/dashboard" ||
+    pathname.startsWith("/dashboard/") ||
+    pathname === "/profile";
 
   if (isPortal) {
     return <main className="flex-1">{children}</main>;

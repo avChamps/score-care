@@ -2,7 +2,6 @@ import Link from "next/link";
 import { type ComponentPropsWithoutRef } from "react";
 import {
   BadgeIndianRupee,
-  Bell,
   CreditCard,
   Gauge,
   Headphones,
@@ -11,6 +10,7 @@ import {
   ReceiptText,
   User,
 } from "lucide-react";
+import { TopBarActions } from "@/components/dashboard/topbar-actions";
 import { cn } from "@/lib/utils";
 
 type PortalShellProps = {
@@ -58,9 +58,9 @@ export function PortalTopBar({ title, backHref }: { title?: string; backHref?: s
               <span className="text-2xl leading-none">&lsaquo;</span>
             </Link>
           ) : (
-            <div className="grid size-10 shrink-0 place-items-center rounded-full bg-cyan-500/10 text-cyan-600">
+            <Link href="/profile" aria-label="Open profile" className="grid size-10 shrink-0 place-items-center rounded-full bg-cyan-500/10 text-cyan-600 transition hover:-translate-y-0.5 hover:bg-cyan-50 hover:shadow-md">
               <User className="size-5" />
-            </div>
+            </Link>
           )}
           {title ? (
             <div className="min-w-0">
@@ -74,14 +74,7 @@ export function PortalTopBar({ title, backHref }: { title?: string; backHref?: s
             </div>
           )}
         </div>
-        <div className="flex gap-2">
-          <IconCircle label="Support">
-            <Headphones className="size-5" />
-          </IconCircle>
-          <IconCircle label="Notifications">
-            <Bell className="size-5" />
-          </IconCircle>
-        </div>
+        <TopBarActions />
       </div>
     </div>
   );
@@ -270,14 +263,6 @@ function NavItems({ active, direction }: { active: PortalShellProps["active"]; d
         );
       })}
     </div>
-  );
-}
-
-function IconCircle({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <button aria-label={label} className="grid size-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm sm:size-10">
-      {children}
-    </button>
   );
 }
 
