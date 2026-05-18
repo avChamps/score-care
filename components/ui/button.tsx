@@ -4,16 +4,16 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex min-w-0 items-center justify-center gap-2 rounded-full text-center text-sm font-semibold transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex min-w-0 items-center justify-center gap-2 rounded-full text-center text-sm font-black transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f8a5b] disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         primary:
-          "bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 px-5 py-3 text-white shadow-[0_18px_45px_rgba(37,99,235,0.35)] hover:-translate-y-0.5 hover:shadow-[0_22px_55px_rgba(37,99,235,0.45)]",
+          "border border-[#2d2119] bg-[#2d2119] px-5 py-3 text-[#fff7e8] shadow-[0_16px_0_rgba(111,89,72,0.18)] hover:-translate-y-1 hover:bg-[#1f8a5b] hover:shadow-[0_20px_0_rgba(31,138,91,0.18)]",
         secondary:
-          "border border-slate-200/80 bg-white/75 px-5 py-3 text-slate-900 shadow-sm backdrop-blur hover:-translate-y-0.5 hover:border-cyan-300 dark:border-white/10 dark:bg-white/10 dark:text-white",
+          "border border-[#6f5948]/20 bg-[#fffdf7]/85 px-5 py-3 text-[#2d2119] shadow-[0_10px_30px_rgba(92,62,37,0.08)] backdrop-blur hover:-translate-y-1 hover:border-[#1f8a5b]/40 hover:bg-[#f7e7c6]/80 dark:border-[#6f5948]/20 dark:bg-[#fffdf7]/85 dark:text-[#2d2119]",
         ghost:
-          "px-4 py-2 text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10",
+          "px-4 py-2 text-[#6f5948] hover:bg-[#f7e7c6]/70 dark:text-[#6f5948] dark:hover:bg-[#f7e7c6]/70",
       },
       size: {
         sm: "h-10 px-4",

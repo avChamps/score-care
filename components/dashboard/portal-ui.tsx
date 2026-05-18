@@ -28,11 +28,11 @@ const navItems = [
 
 export function PortalShell({ active, children }: PortalShellProps) {
   return (
-    <section className="min-h-screen bg-slate-50 text-slate-950 lg:h-screen lg:overflow-hidden">
+    <section className="organic-shell min-h-screen text-[#2d2119] lg:h-screen lg:overflow-hidden">
       <div className="mx-auto grid min-h-screen max-w-7xl lg:h-screen lg:grid-cols-[260px_1fr]">
-        <aside className="hidden border-r border-slate-200 bg-white/80 px-4 py-5 lg:block lg:h-screen lg:overflow-hidden">
+        <aside className="m-4 hidden rounded-[2rem] border border-[#6f5948]/12 bg-[#fffdf7]/76 px-4 py-5 shadow-[0_18px_55px_rgba(92,62,37,0.1)] backdrop-blur-xl lg:block lg:h-[calc(100vh-2rem)] lg:overflow-hidden">
           <Link href="/" className="mb-7 flex items-center gap-3 px-3">
-            <span className="grid size-8 place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-400 text-[0.7rem] font-black text-white">
+            <span className="grid size-8 place-items-center rounded-xl bg-gradient-to-br from-[#1f8a5b] to-[#f8d96b] text-[0.7rem] font-black text-[#2d2119]">
               SC
             </span>
             <span className="text-sm font-black tracking-tight">SCORECARE</span>
@@ -50,27 +50,27 @@ export function PortalShell({ active, children }: PortalShellProps) {
 
 export function PortalTopBar({ title, backHref }: { title?: string; backHref?: string }) {
   return (
-    <div className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/85 px-4 py-2.5 backdrop-blur-xl sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
+    <div className="sticky top-0 z-20 px-4 py-3 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 rounded-full border border-[#6f5948]/12 bg-[#fffdf7]/82 px-3 py-2 shadow-[0_12px_38px_rgba(92,62,37,0.08)] backdrop-blur-xl">
         <div className="flex min-w-0 items-center gap-3">
           {backHref ? (
-            <Link href={backHref} aria-label="Back" className="grid size-9 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-slate-700">
+            <Link href={backHref} aria-label="Back" className="grid size-9 shrink-0 place-items-center rounded-full border border-[#6f5948]/15 bg-[#fffdf7] text-[#6f5948]">
               <span className="text-2xl leading-none">&lsaquo;</span>
             </Link>
           ) : (
-            <Link href="/profile" aria-label="Open profile" className="grid size-10 shrink-0 place-items-center rounded-full bg-cyan-500/10 text-cyan-600 transition hover:-translate-y-0.5 hover:bg-cyan-50 hover:shadow-md">
+            <Link href="/profile" aria-label="Open profile" className="grid size-10 shrink-0 place-items-center rounded-full bg-[#8bd8b6]/24 text-[#1f8a5b] transition hover:-translate-y-0.5 hover:bg-[#8bd8b6]/35 hover:shadow-md">
               <User className="size-5" />
             </Link>
           )}
           {title ? (
             <div className="min-w-0">
-              <p className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-cyan-600">Dashboard</p>
-              <h1 className="truncate text-base font-bold tracking-tight sm:text-lg">{title}</h1>
+              <p className="text-[0.65rem] font-black uppercase tracking-[0.16em] text-[#1f8a5b]">Dashboard</p>
+              <h1 className="truncate text-base font-black tracking-tight sm:text-lg">{title}</h1>
             </div>
           ) : (
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-slate-500">Welcome back</p>
-              <h1 className="truncate text-base font-bold tracking-tight sm:text-lg">Hi Gosu Disendra</h1>
+              <p className="text-xs font-bold text-[#6f5948]">Welcome back</p>
+              <h1 className="truncate text-base font-black tracking-tight sm:text-lg">Hi Gosu Disendra</h1>
             </div>
           )}
         </div>
@@ -81,7 +81,7 @@ export function PortalTopBar({ title, backHref }: { title?: string; backHref?: s
 }
 
 export function PageContent({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("mx-auto max-w-5xl px-4 py-5 sm:px-6 lg:px-8 lg:py-6", className)}>{children}</div>;
+  return <div className={cn("mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 lg:py-7", className)}>{children}</div>;
 }
 
 type AppCardProps = ComponentPropsWithoutRef<"div"> & {
@@ -90,7 +90,7 @@ type AppCardProps = ComponentPropsWithoutRef<"div"> & {
 
 export function AppCard({ className, children, ...props }: AppCardProps) {
   return (
-    <div className={cn("rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_14px_42px_rgba(15,23,42,0.07)] sm:p-5", className)} {...props}>
+    <div className={cn("rounded-[2rem] border border-[#6f5948]/12 bg-[#fffdf7]/90 p-4 shadow-[0_18px_55px_rgba(92,62,37,0.11)] transition duration-300 hover:shadow-[0_24px_70px_rgba(92,62,37,0.14)] sm:p-5", className)} {...props}>
       {children}
     </div>
   );
@@ -103,7 +103,7 @@ type PrimaryPortalButtonProps = ComponentPropsWithoutRef<"button"> & {
 
 export function PrimaryPortalButton({ children, href, className, ...props }: PrimaryPortalButtonProps) {
   const classes = cn(
-    "inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 px-5 text-xs font-bold text-white shadow-[0_12px_30px_rgba(37,99,235,0.24)] sm:h-11 sm:text-sm",
+    "inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-full border border-[#2d2119] bg-[#2d2119] px-5 text-xs font-black text-[#fff7e8] shadow-[0_10px_0_rgba(111,89,72,0.18)] transition hover:-translate-y-0.5 hover:bg-[#1f8a5b] sm:h-11 sm:text-sm",
     className,
   );
 
@@ -125,27 +125,27 @@ export function PrimaryPortalButton({ children, href, className, ...props }: Pri
 export function ScoreGauge({ compact = false }: { compact?: boolean }) {
   return (
     <div className={cn("relative mx-auto mt-4 h-52 max-w-sm", compact && "h-40")}>
-      <div className="absolute inset-x-8 top-5 h-32 rounded-t-full border-[1.15rem] border-b-0 border-slate-200" />
-      <div className="absolute left-1/2 top-[7.55rem] size-5 -translate-x-1/2 rounded-full bg-cyan-500" />
-      <div className="absolute left-[34%] top-[7.65rem] h-3 w-24 origin-right -rotate-5 rounded-full bg-cyan-500 [clip-path:polygon(0_50%,100%_0,100%_100%)]" />
-      <div className="absolute inset-x-0 bottom-8 flex justify-between text-base font-semibold text-slate-500">
+      <div className="absolute inset-x-8 top-5 h-32 rounded-t-full border-[1.15rem] border-b-0 border-[#f7e7c6]" />
+      <div className="absolute left-1/2 top-[7.55rem] size-5 -translate-x-1/2 rounded-full bg-[#1f8a5b]" />
+      <div className="absolute left-[34%] top-[7.65rem] h-3 w-24 origin-right -rotate-5 rounded-full bg-[#1f8a5b] [clip-path:polygon(0_50%,100%_0,100%_100%)]" />
+      <div className="absolute inset-x-0 bottom-8 flex justify-between text-base font-semibold text-[#6f5948]">
         <span>300</span>
         <span>900</span>
       </div>
-      <div className="absolute bottom-7 left-1/2 -translate-x-1/2 text-xl text-slate-400">-</div>
+      <div className="absolute bottom-7 left-1/2 -translate-x-1/2 text-xl text-[#6f5948]/60">-</div>
     </div>
   );
 }
 
 export function CreditReportBanner() {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_42px_rgba(15,23,42,0.07)]">
-      <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-cyan-500 to-emerald-400" />
+    <div className="relative overflow-hidden rounded-[1.65rem] border border-[#6f5948]/12 bg-[#fffdf7] p-5 shadow-[0_14px_42px_rgba(92,62,37,0.08)]">
+      <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-[#1f8a5b] to-[#8bd8b6]" />
       <div className="relative z-10 pr-24">
-        <p className="text-sm font-bold uppercase tracking-tight text-slate-950">Credit Report</p>
-        <p className="mt-2 text-xs leading-5 text-slate-500">Track score health, report status, and improvement opportunities.</p>
+        <p className="text-sm font-black uppercase tracking-tight text-[#2d2119]">Credit Report</p>
+        <p className="mt-2 text-xs leading-5 text-[#6f5948]">Track score health, report status, and improvement opportunities.</p>
       </div>
-      <div className="absolute right-5 top-1/2 grid size-14 -translate-y-1/2 place-items-center rounded-2xl bg-cyan-50 text-cyan-600">
+      <div className="absolute right-5 top-1/2 grid size-14 -translate-y-1/2 place-items-center rounded-2xl bg-[#8bd8b6]/22 text-[#1f8a5b]">
         <Gauge className="size-7" />
       </div>
     </div>
@@ -154,19 +154,19 @@ export function CreditReportBanner() {
 
 export function ListAction({ icon, title, subtitle, href }: { icon: React.ReactNode; title: string; subtitle: string; href: string }) {
   return (
-    <Link href={href} className="group flex items-center gap-4 rounded-[1.2rem] border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-lg">
-      <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-slate-50 text-cyan-600">{icon}</span>
+    <Link href={href} className="group flex items-center gap-4 rounded-[1.45rem] border border-[#6f5948]/12 bg-[#fffdf7] p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#1f8a5b]/35 hover:shadow-lg">
+      <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#fff7e8] text-[#1f8a5b]">{icon}</span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-bold text-slate-950">{title}</span>
-        <span className="block text-sm text-slate-500">{subtitle}</span>
+        <span className="block text-sm font-black text-[#2d2119]">{title}</span>
+        <span className="block text-sm text-[#6f5948]">{subtitle}</span>
       </span>
-      <span className="text-2xl leading-none text-slate-300 transition group-hover:text-cyan-500">&rsaquo;</span>
+      <span className="text-2xl leading-none text-[#6f5948]/35 transition group-hover:text-[#1f8a5b]">&rsaquo;</span>
     </Link>
   );
 }
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="mt-7 text-xl font-bold tracking-tight text-slate-950">{children}</h2>;
+  return <h2 className="mt-7 text-xl font-black tracking-tight text-[#2d2119]">{children}</h2>;
 }
 
 export function LoanSummaryCard({ tone, title, value, caption }: { tone: "green" | "red"; title: string; value: string; caption: string }) {
@@ -234,12 +234,12 @@ export function PlusApplyButton() {
 
 function BottomNav({ active }: { active: PortalShellProps["active"] }) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/95 px-2 py-2 backdrop-blur-xl lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-[#6f5948]/12 bg-[#fffdf7]/95 px-2 py-2 backdrop-blur-xl lg:hidden">
       <div className="mx-auto grid max-w-md grid-cols-5">
         {navItems.map(({ id, label, href, Icon }) => {
           const selected = id === active;
           return (
-            <Link key={id} href={href} className={cn("flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[0.68rem] font-bold text-slate-400", selected && "bg-cyan-50 text-cyan-700")}>
+            <Link key={id} href={href} className={cn("flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[0.68rem] font-black text-[#6f5948]/55", selected && "bg-[#8bd8b6]/22 text-[#1f8a5b]")}>
               <Icon className="size-5" strokeWidth={selected ? 2.5 : 1.8} />
               <span className="text-center leading-tight">{label}</span>
             </Link>
@@ -256,7 +256,7 @@ function NavItems({ active, direction }: { active: PortalShellProps["active"]; d
       {navItems.map(({ id, label, href, Icon }) => {
         const selected = id === active;
         return (
-          <Link key={id} href={href} className={cn("flex items-center gap-3 rounded-xl px-4 py-2.5 font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-950", selected && "bg-cyan-50 text-cyan-700")}>
+          <Link key={id} href={href} className={cn("flex items-center gap-3 rounded-xl px-4 py-2.5 font-black text-[#6f5948] transition hover:bg-[#fff7e8] hover:text-[#2d2119]", selected && "bg-[#8bd8b6]/22 text-[#1f8a5b]")}>
             <Icon className="size-4" />
             {label}
           </Link>
@@ -268,9 +268,9 @@ function NavItems({ active, direction }: { active: PortalShellProps["active"]; d
 
 function MiniMetric({ title, value }: { title: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <p className="text-sm font-bold text-slate-500">{title}</p>
-      <p className="mt-1 text-base font-bold text-slate-950">{value}</p>
+    <div className="rounded-2xl border border-[#6f5948]/12 bg-[#fff7e8] p-4">
+      <p className="text-sm font-bold text-[#6f5948]">{title}</p>
+      <p className="mt-1 text-base font-black text-[#2d2119]">{value}</p>
     </div>
   );
 }

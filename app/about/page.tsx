@@ -28,7 +28,7 @@ export default function AboutPage() {
         eyebrow="Mission and vision"
         title="Make credit access transparent, measurable, and repairable."
         body="Our mission is to help people understand what lenders see and act before opportunity arrives. Our vision is a financial ecosystem where every profile can be improved with clear data and trusted guidance."
-        image="https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&w=1400&q=80"
+        image="mission-credit-visual"
       />
       <Section>
         <SectionHeader eyebrow="Why choose us" title="A premium fintech stack with human judgment where it matters." />

@@ -1,4 +1,4 @@
-import { AiShowcase, FaqSection, FeaturesGrid, PricingCards, Testimonials, TrustBadges } from "@/components/sections/shared";
+import { AiShowcase, CategoryCards, CreditJourneyBand, FaqSection, FeaturesGrid, PricingCards, Testimonials, TrustBadges } from "@/components/sections/shared";
 import { HomeHero } from "@/components/sections/hero";
 
 export default function Home() {
@@ -6,7 +6,9 @@ export default function Home() {
     <>
       <HomeHero />
       <TrustBadges />
+      <CategoryCards />
       <FeaturesGrid />
+      <CreditJourneyBand />
       <AiShowcase />
       <PricingCards />
       <Testimonials />

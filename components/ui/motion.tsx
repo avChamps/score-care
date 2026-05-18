@@ -26,11 +26,11 @@ export function Reveal({
   );
 }
 
-export function Floating({ children, className }: { children: ReactNode; className?: string }) {
+export function Floating({ children, className, delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
   return (
     <motion.div
       animate={{ y: [0, -14, 0], rotate: [0, 1, 0] }}
-      transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+      transition={{ duration: 6, delay, repeat: Infinity, ease: "easeInOut" }}
       className={className}
     >
       {children}

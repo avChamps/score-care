@@ -42,7 +42,7 @@ export default function CibilRepairPage() {
           ))}
         </div>
       </Section>
-      <ImageFeature eyebrow="Success stories" title="Credit recovery that feels organized, not overwhelming." body="Track every dispute, document, and next step through a premium support experience built for clarity." image="https://images.unsplash.com/photo-1551836022-4c4c79ecde51?auto=format&fit=crop&w=1400&q=80" />
+      <ImageFeature eyebrow="Success stories" title="Credit recovery that feels organized, not overwhelming." body="Track every dispute, document, and next step through a premium support experience built for clarity." image="score-repair-visual" />
       <Section>
         <Card className="flex flex-col items-start justify-between gap-6 bg-gradient-to-br from-blue-600 to-cyan-500 text-white md:flex-row md:items-center">
           <div><CalendarCheck className="size-10" /><h2 className="mt-4 text-3xl font-black">Book a premium repair consultation.</h2><p className="mt-2 text-blue-50">Get a guided review with a SCORECARE credit specialist.</p></div>

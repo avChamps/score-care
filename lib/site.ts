@@ -65,7 +65,7 @@ export const footerGroups = [
 
 export const stats = [
   { value: "1.2M+", label: "credit profiles analyzed" },
-  { value: "₹980Cr", label: "estimated approval impact" },
+  { value: "Rs.980Cr", label: "estimated approval impact" },
   { value: "42%", label: "average score improvement path" },
   { value: "99.9%", label: "secure platform uptime" },
 ];
@@ -106,24 +106,24 @@ export const features = [
 export const pricingPlans = [
   {
     name: "Essential",
-    price: "₹499",
-    yearly: "₹4,799",
+    price: "Rs.499",
+    yearly: "Rs.4,799",
     description: "For fast score checks and monthly monitoring.",
     features: ["Credit score snapshot", "Monthly score alerts", "Basic report summary", "Email support"],
     highlight: false,
   },
   {
     name: "Pro",
-    price: "₹999",
-    yearly: "₹9,599",
+    price: "Rs.999",
+    yearly: "Rs.9,599",
     description: "For serious credit builders and loan readiness.",
     features: ["Full report dashboard", "AI factor analysis", "Dispute checklist", "Priority support"],
     highlight: true,
   },
   {
     name: "Elite Repair",
-    price: "₹2,499",
-    yearly: "₹23,999",
+    price: "Rs.2,499",
+    yearly: "Rs.23,999",
     description: "For guided CIBIL repair and premium assistance.",
     features: ["Repair consultation", "Document templates", "Dedicated expert", "Weekly progress reviews"],
     highlight: false,
@@ -197,19 +197,19 @@ export const blogPosts = [
     title: "How credit utilization quietly moves your score",
     category: "Credit Strategy",
     read: "6 min read",
-    image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=80",
+    image: "credit-utilization-visual",
   },
   {
     title: "What lenders look for before approving premium cards",
     category: "Lending",
     read: "8 min read",
-    image: "https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=1200&q=80",
+    image: "premium-card-approval-visual",
   },
   {
     title: "A founder's guide to business credit hygiene",
     category: "Business",
     read: "7 min read",
-    image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1200&q=80",
+    image: "business-credit-visual",
   },
 ];
 

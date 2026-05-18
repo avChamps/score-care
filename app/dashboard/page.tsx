@@ -28,13 +28,13 @@ export default function DashboardPage() {
             icon={<Landmark className="size-7" />}
             title="Loan Eligibility"
             body="Check your eligibility instantly and continue to EMI tools."
-            accent="from-blue-600 to-cyan-500"
+            accent="from-[#1f8a5b] to-[#8bd8b6]"
           />
           <VisualBanner
             icon={<ShieldCheck className="size-7" />}
             title="Score Fix"
             body="Raise disputes, upload reports, and track repair requests."
-            accent="from-indigo-600 to-emerald-500"
+            accent="from-[#ffb38a] to-[#8bd8b6]"
           />
         </div>
 
@@ -82,14 +82,15 @@ function VisualBanner({
   accent: string;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_42px_rgba(15,23,42,0.07)]">
+    <div className="relative overflow-hidden rounded-[2rem] border border-[#6f5948]/12 bg-[#fffdf7] p-5 shadow-[0_14px_42px_rgba(92,62,37,0.08)] transition hover:-translate-y-1">
+      <div className="organic-scoop absolute -right-10 -top-10 size-28 bg-[#f8d96b]/22" />
       <div className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b ${accent}`} />
       <div className="relative z-10 pr-24">
-        <p className="text-sm font-bold uppercase tracking-tight text-slate-950">{title}</p>
-        <p className="mt-2 text-xs leading-5 text-slate-500">{body}</p>
+        <p className="text-sm font-black uppercase tracking-tight text-[#2d2119]">{title}</p>
+        <p className="mt-2 text-xs leading-5 text-[#6f5948]">{body}</p>
       </div>
-      <div className={`absolute right-5 top-1/2 grid size-14 -translate-y-1/2 place-items-center rounded-2xl bg-gradient-to-br ${accent} text-white shadow-lg shadow-slate-200`}>
-        <span className="text-white">{icon}</span>
+      <div className={`absolute right-5 top-1/2 grid size-14 -translate-y-1/2 place-items-center rounded-2xl bg-gradient-to-br ${accent} text-[#2d2119] shadow-lg shadow-[#6f5948]/10`}>
+        <span className="text-[#2d2119]">{icon}</span>
       </div>
     </div>
   );

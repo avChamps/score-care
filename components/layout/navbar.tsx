@@ -12,22 +12,22 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/75 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/70">
-      <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 bg-transparent px-3 py-3 sm:px-5">
+      <nav className="mx-auto flex h-[4.5rem] max-w-7xl items-center justify-between rounded-full border border-[#6f5948]/12 bg-[#fffdf7]/88 px-4 shadow-[0_18px_55px_rgba(92,62,37,0.12)] backdrop-blur-2xl sm:px-6 lg:px-7">
         <Logo />
         <div className="hidden items-center gap-1 lg:flex">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+              className="rounded-full px-4 py-2 text-sm font-bold text-[#6f5948] transition hover:bg-[#f7e7c6] hover:text-[#2d2119] dark:text-[#6f5948] dark:hover:bg-[#f7e7c6] dark:hover:text-[#2d2119]"
             >
               {item.label}
             </Link>
           ))}
         </div>
         <div className="hidden items-center gap-3 lg:flex">
-          <Link href="/login" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+          <Link href="/login" className="text-sm font-black text-[#6f5948]">
             Login
           </Link>
           <Button href="/credit-score" size="sm">
@@ -37,22 +37,22 @@ export function Navbar() {
         <div className="flex items-center gap-2 lg:hidden">
           <button
             aria-label="Open menu"
-            className="grid size-10 place-items-center rounded-full border border-slate-200 bg-white/70 dark:border-white/10 dark:bg-white/10"
+            className="grid size-10 place-items-center rounded-full border border-[#6f5948]/20 bg-[#fffdf7]/80 text-[#2d2119]"
             onClick={() => setOpen(!open)}
           >
             {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
       </nav>
-      <div className={cn("grid transition-all duration-300 lg:hidden", open ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
+      <div className={cn("mx-auto grid max-w-7xl transition-all duration-300 lg:hidden", open ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
         <div className="overflow-hidden">
-          <div className="space-y-2 border-t border-slate-200/70 px-4 py-4 dark:border-white/10">
+          <div className="mt-3 space-y-2 rounded-[2rem] border border-[#6f5948]/12 bg-[#fffdf7]/95 px-4 py-4 shadow-[0_18px_55px_rgba(92,62,37,0.12)]">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="block rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-white/10"
+                className="block rounded-2xl px-4 py-3 text-sm font-bold text-[#6f5948] hover:bg-[#f7e7c6]"
               >
                 {item.label}
               </Link>
