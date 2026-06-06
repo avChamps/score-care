@@ -107,11 +107,11 @@ function OverviewView({
       </div>
 
       <button
-        className="group relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-[0_14px_42px_rgba(15,23,42,0.07)] transition hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-[0_18px_48px_rgba(37,99,235,0.12)]"
+        className="group relative w-full overflow-hidden rounded-[var(--portal-radius)] border border-slate-200 bg-white p-4 text-left shadow-[var(--portal-shadow-soft)] transition hover:border-cyan-200 hover:shadow-[var(--portal-shadow)]"
         type="button"
         onClick={onNew}
       >
-        <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-blue-600 to-cyan-500" />
+        <div className="absolute inset-y-0 left-0 w-1.5 bg-[var(--portal-blue)]" />
         <div className="relative flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-cyan-50 text-cyan-700">
@@ -177,7 +177,7 @@ function RequestTabButton({ active, children, onClick }: { active: boolean; chil
 function RequestCard({ onOpen }: { onOpen: () => void }) {
   return (
     <button
-      className="group w-full rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-[0_14px_42px_rgba(15,23,42,0.07)] transition hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-[0_18px_48px_rgba(37,99,235,0.12)]"
+      className="group w-full rounded-[var(--portal-radius)] border border-slate-200 bg-white p-4 text-left shadow-[var(--portal-shadow-soft)] transition hover:border-cyan-200 hover:shadow-[var(--portal-shadow)]"
       type="button"
       onClick={onOpen}
     >
@@ -210,7 +210,7 @@ function DetailsView({ onBack }: { onBack: () => void }) {
       <BackHeader title="Score Fix Request Details" onBack={onBack} />
 
       <AppCard className="relative overflow-hidden">
-        <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-600 to-cyan-500" />
+        <div className="absolute inset-y-0 left-0 w-1 bg-[var(--portal-blue)]" />
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold text-slate-500">Request ID</p>

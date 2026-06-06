@@ -41,6 +41,21 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          id="native-shell-class"
+          dangerouslySetInnerHTML={{
+            __html: `
+            (function () {
+              var origin = window.location.origin;
+              if (origin === "https://localhost" || origin === "capacitor://localhost") {
+                document.documentElement.classList.add("native-shell");
+              }
+            })();
+          `,
+          }}
+        />
+      </head>
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <AppShell>{children}</AppShell>
       </body>

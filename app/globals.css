@@ -14,6 +14,21 @@
   --peach: #ffb38a;
   --yellow: #f8d96b;
   --paper: #fffdf7;
+  --portal-bg: #f5f5f5;
+  --portal-surface: #ffffff;
+  --portal-surface-soft: #f8fafc;
+  --portal-ink: #172033;
+  --portal-muted: #667085;
+  --portal-blue: #1677ff;
+  --portal-blue-deep: #0958d9;
+  --portal-blue-soft: #eef6ff;
+  --portal-orange: #ff6d00;
+  --portal-orange-deep: #e65a00;
+  --portal-orange-soft: #fff4eb;
+  --portal-border: #e2e5ea;
+  --portal-shadow: 0 2px 10px rgba(16, 24, 40, 0.08);
+  --portal-shadow-soft: 0 1px 4px rgba(16, 24, 40, 0.06);
+  --portal-radius: 1rem;
 }
 
 @theme inline {
@@ -28,6 +43,34 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
+}
+
+.native-shell header,
+.native-shell footer {
+  display: none !important;
+}
+
+.native-shell body {
+  background: var(--portal-bg);
+}
+
+.native-shell .portal-theme {
+  min-height: 100dvh;
+  padding-top: 0;
+}
+
+.native-shell .portal-theme .sticky.top-0 {
+  top: 0;
+  padding-top: calc(env(safe-area-inset-top, 0) + 0.75rem);
+  background: #ffffff;
+}
+
+.native-shell .portal-theme nav.fixed.bottom-0 {
+  padding-bottom: max(0.375rem, env(safe-area-inset-bottom, 0));
+}
+
+.native-shell .portal-theme > div {
+  min-height: 100dvh;
 }
 
 * {
@@ -67,6 +110,21 @@ html {
 
 *::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.55);
+}
+
+html:has(.auth-page),
+body:has(.auth-page),
+html:has(.auth-page) *,
+body:has(.auth-page) * {
+  scrollbar-width: none;
+}
+
+html:has(.auth-page)::-webkit-scrollbar,
+body:has(.auth-page)::-webkit-scrollbar,
+html:has(.auth-page) *::-webkit-scrollbar,
+body:has(.auth-page) *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .glass-grid {
@@ -181,6 +239,162 @@ html {
 
 .organic-scoop {
   border-radius: 58% 42% 48% 52% / 50% 60% 40% 50%;
+}
+
+.portal-theme {
+  color: var(--portal-ink);
+  background: var(--portal-bg);
+  font-family: Inter, var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.portal-theme::before {
+  content: none;
+}
+
+.portal-theme .portal-surface {
+  border-color: var(--portal-border);
+  background: #ffffff;
+  box-shadow: var(--portal-shadow-soft);
+}
+
+.portal-theme .portal-card {
+  border-color: var(--portal-border);
+  background: #ffffff;
+  box-shadow: var(--portal-shadow-soft);
+}
+
+.portal-theme .portal-focus:focus-visible,
+.portal-theme button:focus-visible,
+.portal-theme a:focus-visible,
+.portal-theme input:focus-visible,
+.portal-theme textarea:focus-visible {
+  outline: 2px solid var(--portal-blue);
+  outline-offset: 3px;
+}
+
+.portal-theme .travel-scoop {
+  display: none;
+}
+
+.portal-theme .responsive-table {
+  scrollbar-color: var(--portal-blue) transparent;
+}
+
+.portal-theme .text-slate-950,
+.portal-theme .text-slate-900,
+.portal-theme .text-slate-800 {
+  color: var(--portal-ink) !important;
+}
+
+.portal-theme .text-slate-700,
+.portal-theme .text-slate-600,
+.portal-theme .text-slate-500,
+.portal-theme .text-slate-400 {
+  color: var(--portal-muted) !important;
+}
+
+.portal-theme .text-cyan-700,
+.portal-theme .text-cyan-600,
+.portal-theme .text-cyan-500,
+.portal-theme .text-blue-700,
+.portal-theme .text-blue-600,
+.portal-theme .text-blue-500 {
+  color: var(--portal-blue) !important;
+}
+
+.portal-theme .text-amber-800,
+.portal-theme .text-amber-700,
+.portal-theme .text-amber-600 {
+  color: #c2410c !important;
+}
+
+.portal-theme .bg-white {
+  background-color: var(--portal-surface) !important;
+}
+
+.portal-theme .bg-slate-50,
+.portal-theme .bg-slate-100,
+.portal-theme .bg-blue-50,
+.portal-theme .bg-cyan-50 {
+  background-color: var(--portal-blue-soft) !important;
+}
+
+.portal-theme .bg-amber-50 {
+  background-color: var(--portal-orange-soft) !important;
+}
+
+.portal-theme .bg-emerald-50 {
+  background-color: #ecfdf5 !important;
+}
+
+.portal-theme .bg-rose-50 {
+  background-color: #fff1f2 !important;
+}
+
+.portal-theme .border-slate-200,
+.portal-theme .border-blue-200,
+.portal-theme .border-cyan-200,
+.portal-theme .border-cyan-100,
+.portal-theme .border-emerald-100,
+.portal-theme .border-amber-100,
+.portal-theme .border-rose-100 {
+  border-color: var(--portal-border) !important;
+}
+
+.portal-theme .shadow-blue-200,
+.portal-theme .shadow-cyan-100,
+.portal-theme .shadow-slate-200 {
+  --tw-shadow-color: rgba(23, 32, 51, 0.08) !important;
+}
+
+.portal-theme input:not([type="file"]),
+.portal-theme textarea,
+.portal-theme select {
+  border-color: var(--portal-border);
+  background-color: #ffffff;
+  color: var(--portal-ink);
+  border-radius: 1rem;
+}
+
+.portal-theme input::placeholder,
+.portal-theme textarea::placeholder {
+  color: #98a2b3;
+}
+
+.portal-theme .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--portal-border) !important;
+}
+
+.portal-theme .bg-slate-950\/45 {
+  background-color: rgba(23, 32, 51, 0.42) !important;
+}
+
+.portal-theme .border-dashed {
+  border-color: #cfd6df !important;
+}
+
+.portal-theme .hover\:-translate-y-0\.5:hover,
+.portal-theme .hover\:-translate-y-1:hover,
+.portal-theme .group:hover .group-hover\:-translate-y-0\.5 {
+  transform: none !important;
+}
+
+.portal-theme .hover\:shadow-lg:hover,
+.portal-theme .hover\:shadow-md:hover,
+.portal-theme .hover\:shadow-sm:hover {
+  box-shadow: var(--portal-shadow-soft) !important;
+}
+
+.portal-theme [class*="shadow-[0_18px_45px"],
+.portal-theme [class*="shadow-[0_24px_70px"],
+.portal-theme [class*="shadow-[0_18px_48px"],
+.portal-theme [class*="shadow-[0_14px_42px"] {
+  box-shadow: var(--portal-shadow) !important;
+}
+
+.portal-theme .shadow-lg,
+.portal-theme .shadow-md {
+  box-shadow: var(--portal-shadow) !important;
 }
 
 .text-slate-950,

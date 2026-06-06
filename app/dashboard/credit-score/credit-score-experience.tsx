@@ -401,7 +401,7 @@ function PredictorPanel({
             <button
               key={id}
               className={cn(
-                "min-h-32 rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:border-cyan-300 hover:shadow-lg",
+                "min-h-32 rounded-2xl border border-slate-200 bg-white p-3 text-center shadow-sm transition duration-200 hover:border-cyan-300 hover:shadow-[var(--portal-shadow-soft)]",
                 selected && "border-cyan-300 bg-cyan-50 shadow-lg shadow-cyan-100",
               )}
               style={{ animationDelay: `${index * 45}ms` }}

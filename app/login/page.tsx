@@ -1,14 +1,6 @@
 import type { Metadata } from "next";
-import {
-  ArrowRight,
-  BadgeCheck,
-  Fingerprint,
-  LockKeyhole,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { ArrowRight, LockKeyhole, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Login",
@@ -17,123 +9,82 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <section className="organic-shell relative isolate min-h-[calc(100vh-5rem)] overflow-hidden px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-      <div className="absolute inset-0 -z-10 glass-grid opacity-60" />
-      <div className="organic-blob absolute left-1/2 top-16 -z-10 h-80 w-[42rem] -translate-x-1/2 bg-[#8bd8b6]/14 blur-3xl" />
-
-      <div className="mx-auto grid max-w-7xl items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="order-2 lg:order-1">
-          <div className="mb-6 inline-flex max-w-full items-center gap-2 rounded-full border border-[#1f8a5b]/20 bg-[#fffdf7]/80 px-4 py-2 text-xs font-black text-[#1f8a5b] shadow-sm backdrop-blur sm:mb-8 sm:text-sm">
-            <ShieldCheck className="size-4 shrink-0" />
-            <span className="truncate">Secure credit workspace</span>
-          </div>
-          <h1 className="max-w-3xl text-5xl font-black leading-[0.95] tracking-normal text-[#2d2119] sm:text-7xl">
-            Welcome back to your credit command center.
-          </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-[#6f5948] sm:text-lg sm:leading-8">
-            Continue to your SCORECARE dashboard for score tracking, AI report analysis, repair workflows, and premium financial insights.
-          </p>
-
-          <div className="mt-8 grid gap-4 sm:mt-10 md:grid-cols-2">
-            <Card className="border-blue-200/70 bg-white/70 dark:border-white/10 dark:bg-white/[0.06]">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Credit score</p>
-                <BadgeCheck className="size-5 text-emerald-500" />
-              </div>
-              <p className="mt-4 text-4xl font-black text-slate-950 dark:text-white sm:text-5xl">782</p>
-              <div className="mt-5 h-2 rounded-full bg-slate-100 dark:bg-white/10">
-                <div className="h-2 w-[86%] rounded-full bg-gradient-to-r from-blue-600 to-cyan-400" />
-              </div>
-              <p className="mt-3 text-sm text-emerald-500">+34 points this quarter</p>
-            </Card>
-
-            <Card className="border-[#2d2119] !bg-[#2d2119] text-[#fff7e8]">
-              <Sparkles className="size-7 text-[#8bd8b6]" />
-              <p className="mt-5 text-sm text-[#f7e7c6]">AI recommendation</p>
-              <p className="mt-2 text-base font-bold leading-7 sm:text-lg">
-                Reduce revolving utilization below 25% before your next loan application.
-              </p>
-            </Card>
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-3 sm:gap-4">
-            {["Encrypted login", "OTP recovery", "Consent-first access"].map((item) => (
-              <div
-                key={item}
-                className="rounded-2xl border border-slate-200/80 bg-white/60 px-4 py-3 text-sm font-semibold text-slate-700 backdrop-blur dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200"
-              >
-                {item}
-              </div>
-            ))}
+    <section className="auth-page min-h-[calc(100vh-5rem)] bg-white px-4 py-5 text-[#172033] sm:px-6">
+      <div className="mx-auto max-w-md">
+        <div className="mb-4 flex items-center gap-3 border-b border-[#eef0f3] pb-4">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#ff6d00] text-white">
+            <ShieldCheck className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-black">ScoreCare</p>
+            <p className="truncate text-xs font-semibold text-[#667085]">Login to manage your credit services</p>
           </div>
         </div>
 
-        <div className="order-1 flex justify-center lg:order-2">
-          <Card className="w-full max-w-md border-[#fffdf7]/70 bg-[#fffdf7]/86 p-4 shadow-[0_30px_100px_rgba(92,62,37,0.16)] sm:p-7">
-            <div className="rounded-[1.75rem] border border-[#6f5948]/12 bg-gradient-to-br from-[#fffdf7] to-[#f7e7c6]/60 p-4 sm:p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-black uppercase tracking-[0.22em] text-[#1f8a5b]">Login</p>
-                  <h2 className="mt-3 text-2xl font-black tracking-tight text-[#2d2119] sm:text-3xl">
-                    Access SCORECARE
-                  </h2>
-                </div>
-                <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[#2d2119] text-[#8bd8b6] shadow-lg sm:size-12">
-                  <Fingerprint className="size-5 sm:size-6" />
-                </div>
-              </div>
+        <div className="rounded-2xl border border-[#e2e5ea] bg-white">
+          <div className="border-b border-[#eef0f3] px-5 py-5">
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#ff6d00]">Login</p>
+            <h1 className="mt-2 text-2xl font-black tracking-tight">Welcome back</h1>
+            <p className="mt-1 text-sm leading-6 text-[#667085]">Use your registered email and password.</p>
+          </div>
 
-              <div className="mt-7 grid gap-3">
-                <Button variant="secondary" className="h-12 w-full justify-center">
-                  <GoogleIcon /> Continue with Google
-                </Button>
-                <Button variant="secondary" className="h-12 w-full justify-center">
-                  <GmailIcon /> Continue with email OTP
-                </Button>
+          <div className="grid gap-4 px-5 py-5">
+            <button className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#e2e5ea] bg-white text-sm font-bold text-[#172033]" type="button">
+              <GoogleIcon /> Continue with Google
+            </button>
+            <button className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#e2e5ea] bg-white text-sm font-bold text-[#172033]" type="button">
+              <GmailIcon /> Continue with email OTP
+            </button>
 
-                <div className="relative py-2 text-center text-xs font-black uppercase tracking-[0.18em] text-[#6f5948]/60">
-                  <span className="bg-[#fffdf7] px-3">or password</span>
-                  <div className="absolute left-0 right-0 top-1/2 -z-10 h-px bg-[#6f5948]/12" />
-                </div>
-
-                <label className="text-sm font-bold text-[#6f5948]">
-                  Email address
-                  <input
-                    className="mt-2 h-12 w-full rounded-full border border-[#6f5948]/12 bg-[#fffdf7] px-4 outline-none transition placeholder:text-[#6f5948]/50 focus:border-[#1f8a5b]/40 focus:ring-4 focus:ring-[#8bd8b6]/20"
-                    placeholder="you@company.com"
-                  />
-                </label>
-                <label className="text-sm font-bold text-[#6f5948]">
-                  Password
-                  <input
-                    className="mt-2 h-12 w-full rounded-full border border-[#6f5948]/12 bg-[#fffdf7] px-4 outline-none transition placeholder:text-[#6f5948]/50 focus:border-[#1f8a5b]/40 focus:ring-4 focus:ring-[#8bd8b6]/20"
-                    placeholder="Enter password"
-                    type="password"
-                  />
-                </label>
-
-                <div className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-                  <label className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                    <input type="checkbox" className="size-4 rounded border-slate-300" />
-                    Remember me
-                  </label>
-                  <a href="#" className="font-black text-[#1f8a5b]">
-                    Forgot password?
-                  </a>
-                </div>
-
-                <Button href="/dashboard" className="mt-2 h-14 w-full">
-                  Login securely <ArrowRight className="size-4" />
-                </Button>
-              </div>
+            <div className="relative py-1 text-center text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#98a2b3]">
+              <span className="relative z-10 bg-white px-3">or</span>
+              <div className="absolute left-0 right-0 top-1/2 h-px bg-[#eef0f3]" />
             </div>
 
-            <div className="mt-4 flex items-start gap-3 rounded-[1.5rem] border border-[#8bd8b6]/30 bg-[#8bd8b6]/12 p-4 text-sm leading-6 text-[#6f5948]">
-              <LockKeyhole className="mt-0.5 size-5 shrink-0 text-[#1f8a5b]" />
-              Your session is protected with secure device checks and OTP recovery.
+            <label className="text-sm font-bold text-[#344054]">
+              Email address
+              <input
+                className="mt-2 h-12 w-full rounded-xl border border-[#dfe4ea] bg-white px-4 text-sm outline-none transition placeholder:text-[#98a2b3] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
+                placeholder="you@company.com"
+              />
+            </label>
+
+            <label className="text-sm font-bold text-[#344054]">
+              Password
+              <input
+                className="mt-2 h-12 w-full rounded-xl border border-[#dfe4ea] bg-white px-4 text-sm outline-none transition placeholder:text-[#98a2b3] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
+                placeholder="Enter password"
+                type="password"
+              />
+            </label>
+
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <label className="flex items-center gap-2 text-[#667085]">
+                <input type="checkbox" className="size-4 rounded border-[#cfd6df]" />
+                Remember me
+              </label>
+              <a href="#" className="font-bold text-[#1677ff]">
+                Forgot?
+              </a>
             </div>
-          </Card>
+
+            <Link href="/dashboard" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#ff6d00] text-sm font-black text-white">
+              Login <ArrowRight className="size-4" />
+            </Link>
+          </div>
         </div>
+
+        <div className="mt-4 flex items-start gap-3 rounded-2xl border border-[#e2e5ea] bg-white p-4 text-sm leading-6 text-[#667085]">
+          <LockKeyhole className="mt-0.5 size-5 shrink-0 text-[#1677ff]" />
+          Your account is protected with secure access and OTP recovery.
+        </div>
+
+        <p className="mt-5 text-center text-sm text-[#667085]">
+          New to ScoreCare?{" "}
+          <Link href="/signup" className="font-black text-[#1677ff]">
+            Create account
+          </Link>
+        </p>
       </div>
     </section>
   );

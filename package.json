@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "android:sync": "npm run build && cap sync android",
+    "android:run": "powershell -ExecutionPolicy Bypass -File scripts/run-android.ps1",
     "apk:debug": "npm run android:sync && cd android && gradlew assembleDebug",
     "start": "next start",
     "lint": "eslint"

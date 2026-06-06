@@ -51,7 +51,7 @@ export default function ProfilePage() {
       <PageContent>
         <div className="space-y-6 animate-[creditPanelIn_0.42s_ease-out]">
           <section className="text-center">
-            <div className="mx-auto grid size-20 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 text-white shadow-[0_18px_42px_rgba(37,99,235,0.22)]">
+            <div className="mx-auto grid size-20 place-items-center rounded-full bg-[var(--portal-blue)] text-white shadow-[0_10px_24px_rgba(22,119,255,0.2)]">
               <UserRound className="size-9" />
             </div>
             <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-700">

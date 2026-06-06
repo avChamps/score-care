@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { Check, ShieldCheck, Sparkles } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Check, UserPlus } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Signup",
@@ -10,50 +9,86 @@ export const metadata: Metadata = {
 
 export default function SignupPage() {
   return (
-    <section className="organic-shell relative isolate overflow-hidden px-4 py-14 sm:px-6 sm:py-18 lg:px-8">
-      <div className="absolute inset-0 -z-10 glass-grid opacity-60" />
-      <div className="organic-blob absolute right-10 top-20 -z-10 size-52 bg-[#8bd8b6]/22" />
-      <div className="mx-auto grid max-w-6xl items-center gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#1f8a5b] sm:text-sm sm:tracking-[0.22em]">Create account</p>
-          <h1 className="mt-4 text-5xl font-black leading-[0.95] text-[#2d2119] sm:text-7xl">Start your credit upgrade path.</h1>
-          <p className="mt-5 text-base leading-7 text-[#6f5948] sm:text-lg">Multi-step registration UI with OTP, password strength, terms, and onboarding preview.</p>
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            {["Instant score check", "AI recommendations", "Repair concierge"].map((item) => (
-              <div key={item} className="rounded-full border border-[#6f5948]/12 bg-[#fffdf7]/78 px-4 py-3 text-sm font-black text-[#6f5948] shadow-sm">
-                {item}
-              </div>
-            ))}
+    <section className="auth-page min-h-[calc(100vh-5rem)] bg-white px-4 py-5 text-[#172033] sm:px-6">
+      <div className="mx-auto max-w-md">
+        <div className="mb-4 flex items-center gap-3 border-b border-[#eef0f3] pb-4">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#1677ff] text-white">
+            <UserPlus className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-black">Create ScoreCare account</p>
+            <p className="truncate text-xs font-semibold text-[#667085]">Verify once and continue to dashboard</p>
           </div>
         </div>
-        <Card className="relative overflow-hidden">
-          <div className="organic-scoop absolute -right-14 -top-14 size-40 bg-[#ffb38a]/24" />
-          <div className="mb-6 grid grid-cols-3 gap-2 text-center text-[0.68rem] font-black sm:text-xs">
-            {["Profile", "OTP", "Welcome"].map((step, i) => (
-              <span key={step} className={`rounded-full px-3 py-2 ${i === 0 ? "bg-[#2d2119] text-[#fff7e8]" : "bg-[#f7e7c6]/70 text-[#6f5948]"}`}>{step}</span>
-            ))}
+
+        <div className="rounded-2xl border border-[#e2e5ea] bg-white">
+          <div className="border-b border-[#eef0f3] px-5 py-5">
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#ff6d00]">Signup</p>
+            <h1 className="mt-2 text-2xl font-black tracking-tight">Set up your account</h1>
+            <p className="mt-1 text-sm leading-6 text-[#667085]">Enter your details to start secure onboarding.</p>
           </div>
-          <div className="grid gap-4">
+
+          <div className="px-5 pt-5">
+            <div className="grid grid-cols-3 gap-2 text-center text-[0.68rem] font-black">
+              <span className="rounded-full bg-[#172033] px-3 py-2 text-white">Profile</span>
+              <span className="rounded-full border border-[#e2e5ea] bg-[#fafafa] px-3 py-2 text-[#667085]">OTP</span>
+              <span className="rounded-full border border-[#e2e5ea] bg-[#fafafa] px-3 py-2 text-[#667085]">Done</span>
+            </div>
+          </div>
+
+          <div className="grid gap-4 px-5 py-5">
             {["Full name", "Email", "Mobile number"].map((label) => (
-              <input key={label} className="h-[3.25rem] rounded-full border border-[#6f5948]/12 bg-[#fffdf7] px-5 text-sm font-semibold outline-none transition focus:border-[#1f8a5b]/40 focus:ring-4 focus:ring-[#8bd8b6]/20" placeholder={label} />
+              <input
+                key={label}
+                className="h-12 rounded-xl border border-[#dfe4ea] bg-white px-4 text-sm font-semibold outline-none transition placeholder:text-[#98a2b3] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
+                placeholder={label}
+              />
             ))}
-            <input className="h-[3.25rem] rounded-full border border-[#6f5948]/12 bg-[#fffdf7] px-5 text-sm font-semibold outline-none transition focus:border-[#1f8a5b]/40 focus:ring-4 focus:ring-[#8bd8b6]/20" placeholder="Create password" type="password" />
-            <div className="h-2 rounded-full bg-[#f7e7c6]"><div className="h-2 w-3/4 rounded-full bg-gradient-to-r from-[#1f8a5b] to-[#8bd8b6]" /></div>
-            <label className="flex gap-3 text-sm leading-6 text-[#6f5948]"><input type="checkbox" /> I agree to terms, privacy, and consent-based credit processing.</label>
-            <Button href="/dashboard">Create account</Button>
+
+            <input
+              className="h-12 rounded-xl border border-[#dfe4ea] bg-white px-4 text-sm font-semibold outline-none transition placeholder:text-[#98a2b3] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
+              placeholder="Create password"
+              type="password"
+            />
+
+            <div>
+              <div className="h-2 overflow-hidden rounded-full bg-[#eef6ff]">
+                <div className="h-full w-3/4 rounded-full bg-[#1677ff]" />
+              </div>
+              <p className="mt-2 text-xs font-semibold text-[#667085]">Password strength: good</p>
+            </div>
+
+            <label className="flex gap-3 text-sm leading-6 text-[#667085]">
+              <input type="checkbox" className="mt-1 size-4 rounded border-[#cfd6df]" />
+              I agree to terms, privacy, and consent-based credit processing.
+            </label>
+
+            <Link href="/dashboard" className="inline-flex h-12 items-center justify-center rounded-xl bg-[#ff6d00] text-sm font-black text-white">
+              Create account
+            </Link>
           </div>
-          <div className="mt-6 rounded-[1.5rem] border border-[#8bd8b6]/30 bg-[#8bd8b6]/14 p-4 text-sm leading-6 text-[#1f8a5b]">
-            <ShieldCheck className="mb-2 size-5" /> OTP verification and welcome onboarding are ready as UI states.
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-[#e2e5ea] bg-white p-4">
+          <div className="flex items-start gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-600">
+              <Check className="size-4" />
+            </span>
+            <div>
+              <p className="text-sm font-black">Secure onboarding</p>
+              <p className="mt-1 text-sm leading-6 text-[#667085]">
+                OTP verification and consent checks continue after account creation.
+              </p>
+            </div>
           </div>
-        </Card>
-      </div>
-      <div className="mx-auto mt-8 grid max-w-6xl gap-4 md:grid-cols-3">
-        {["Secure consent", "Score preview", "Guided next steps"].map((item) => (
-          <Card key={item} className="flex items-center gap-3">
-            {item === "Guided next steps" ? <Sparkles className="size-5 text-[#1f8a5b]" /> : <Check className="size-5 text-[#1f8a5b]" />}
-            <span className="font-black text-[#2d2119]">{item}</span>
-          </Card>
-        ))}
+        </div>
+
+        <p className="mt-5 text-center text-sm text-[#667085]">
+          Already have an account?{" "}
+          <Link href="/login" className="font-black text-[#1677ff]">
+            Login
+          </Link>
+        </p>
       </div>
     </section>
   );

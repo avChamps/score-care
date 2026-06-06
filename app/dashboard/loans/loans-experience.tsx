@@ -109,65 +109,64 @@ function RepaymentsView({
   onFilterChange: (filter: LoanFilter) => void;
 }) {
   return (
-    <div className="space-y-6 animate-[creditPanelIn_0.42s_ease-out]">
+    <div className="space-y-5 animate-[creditPanelIn_0.42s_ease-out]">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-600">EMI workspace</p>
-          <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">Loan Repayments</h2>
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-[var(--portal-orange)]">Loans</p>
+          <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">Repayments</h2>
         </div>
         <button
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 px-4 text-xs font-bold text-white shadow-[0_12px_30px_rgba(37,99,235,0.22)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(37,99,235,0.28)]"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--portal-orange)] px-3.5 text-xs font-bold text-white shadow-[0_2px_6px_rgba(255,109,0,0.22)] transition hover:bg-[var(--portal-orange-deep)]"
           type="button"
           onClick={onApply}
         >
-          <Plus className="size-5" /> Apply for Loan
+          <Plus className="size-4" /> Apply
         </button>
       </div>
 
       <button
-        className="group relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-[0_14px_42px_rgba(15,23,42,0.07)] transition hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-[0_18px_48px_rgba(37,99,235,0.12)]"
+        className="group relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-[var(--portal-shadow-soft)] transition hover:border-slate-300"
         type="button"
         onClick={onApply}
       >
-        <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-blue-600 to-cyan-500" />
-        <div className="absolute -right-12 top-1/2 size-44 -translate-y-1/2 rounded-full bg-cyan-50" />
-        <div className="relative flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-cyan-50 text-cyan-700">
-              <FileCheck2 className="size-8" />
+        <div className="absolute inset-y-0 left-0 w-1 bg-[var(--portal-blue)]" />
+        <div className="relative flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600">
+              <FileCheck2 className="size-5" />
             </span>
-            <span>
-              <span className="block text-lg font-bold text-slate-950">Apply for Loan</span>
-              <span className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-500">
-                <CheckCircle2 className="size-4" /> All requirements met
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-slate-950">Need a new loan?</span>
+              <span className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                <CheckCircle2 className="size-3.5 text-emerald-600" /> CIBIL, KYC and plan are ready
               </span>
             </span>
           </div>
-          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-cyan-100 text-2xl text-cyan-700 transition group-hover:translate-x-1">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-slate-50 text-xl text-slate-500 transition group-hover:text-[var(--portal-blue)]">
             &rsaquo;
           </span>
         </div>
-        <div className="relative mt-5 flex flex-wrap gap-3">
+        <div className="relative mt-4 flex flex-wrap gap-2">
           {["CIBIL", "KYC", "Plan"].map((item) => (
-            <span key={item} className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-4 py-2 text-xs font-bold text-cyan-700">
-              <Check className="size-4" /> {item}
+            <span key={item} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[0.68rem] font-bold text-slate-600">
+              <Check className="size-3.5 text-emerald-600" /> {item}
             </span>
           ))}
         </div>
       </button>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[var(--portal-shadow-soft)]">
         <SummaryCard tone="green" title="Active Loans" value="3" amount="Rs.1,550,000" caption="21/1/2026" />
         <SummaryCard tone="red" title="Overdue" value="3" amount="Rs.1,550,000" caption="Due date: 21/1/2026" />
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto border-b border-slate-200 pb-2">
         {(["All Loans", "Active", "Completed"] as LoanFilter[]).map((tab) => (
           <button
             key={tab}
             className={cn(
-              "shrink-0 rounded-full border px-5 py-2.5 text-xs font-bold transition hover:-translate-y-0.5 hover:shadow-sm",
-              filter === tab ? "border-cyan-200 bg-cyan-50 text-cyan-700" : "border-slate-200 bg-white text-slate-600",
+              "shrink-0 rounded-full border px-4 py-2 text-xs font-bold transition",
+              filter === tab ? "border-[var(--portal-blue)] bg-white text-[var(--portal-blue)]" : "border-slate-200 bg-white text-slate-600",
             )}
             type="button"
             onClick={() => onFilterChange(tab)}
@@ -177,7 +176,7 @@ function RepaymentsView({
         ))}
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="grid gap-3">
         {loans.length ? (
           loans.map((loan, index) => <ProfessionalLoanCard key={loan.id} index={index} loan={loan} />)
         ) : (
@@ -207,23 +206,22 @@ function SummaryCard({
   const isGreen = tone === "green";
 
   return (
-    <AppCard
+    <div
       className={cn(
-        "relative overflow-hidden bg-white transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(15,23,42,0.09)]",
-        isGreen ? "border-emerald-100" : "border-rose-100",
+        "relative border-r border-slate-200 bg-white p-4 last:border-r-0",
+        !isGreen && "bg-rose-50/40",
       )}
     >
-      <div className={cn("absolute inset-y-0 left-0 w-1", isGreen ? "bg-emerald-500" : "bg-rose-500")} />
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-bold leading-tight text-slate-950">{title}</p>
-        <span className={cn("grid size-11 place-items-center rounded-2xl border", isGreen ? "border-emerald-100 bg-emerald-50 text-emerald-600" : "border-rose-100 bg-rose-50 text-rose-600")}>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-bold leading-tight text-slate-600">{title}</p>
+        <span className={cn("grid size-8 place-items-center rounded-lg border", isGreen ? "border-emerald-100 bg-emerald-50 text-emerald-600" : "border-rose-100 bg-rose-50 text-rose-600")}>
           {isGreen ? <FileText className="size-5" /> : <Info className="size-5" />}
         </span>
       </div>
       <p className="mt-3 text-2xl font-black text-slate-950">{value}</p>
-      <p className="mt-3 text-sm font-semibold text-slate-700">{amount}</p>
+      <p className="mt-2 text-sm font-semibold text-slate-700">{amount}</p>
       <p className="mt-1 text-xs text-slate-500">{caption}</p>
-    </AppCard>
+    </div>
   );
 }
 
@@ -233,12 +231,12 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
   return (
     <AppCard
       className={cn(
-        "space-y-5 animate-[creditPanelIn_0.45s_ease-out_both] transition duration-300 hover:-translate-y-0.5",
-        overdue ? "border-rose-200 bg-white hover:shadow-rose-100" : "bg-white hover:border-cyan-200 hover:shadow-cyan-100",
+        "animate-[creditPanelIn_0.45s_ease-out_both] overflow-hidden p-0",
+        overdue ? "border-rose-200 bg-white" : "bg-white",
       )}
       style={{ animationDelay: `${index * 70}ms` }}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-4 py-4 sm:px-5">
         <div>
           <h3 className="text-base font-bold text-slate-950">{loan.bank}</h3>
           <p className="mt-0.5 text-xs text-slate-500">{loan.borrower}</p>
@@ -248,39 +246,32 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
         </span>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <p className="text-2xl font-bold text-slate-950">{loan.amount}</p>
-        <p className="pb-1 text-xs font-medium text-slate-500">Loan Amount</p>
+      <div className="px-4 py-4 sm:px-5">
+        <p className="text-xs font-semibold text-slate-500">Loan Amount</p>
+        <p className="mt-1 text-2xl font-bold text-slate-950">{loan.amount}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 border-y border-slate-100">
         <LoanMetric title="EMI Amount" value={loan.emi} />
         <LoanMetric title="Next EMI" value={loan.nextEmi} />
       </div>
 
       {overdue ? (
-        <div className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-white/80 px-4 py-3 text-xs font-semibold text-rose-600">
+        <div className="mx-4 mt-4 inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600 sm:mx-5">
           <Info className="size-5" /> {loan.overdue}
         </div>
       ) : null}
 
-      <PrimaryPortalButton className={cn("h-12 w-full rounded-2xl text-sm", overdue && "bg-none bg-rose-500 shadow-rose-100")}>
-        <CreditCard className="size-6" /> Pay EMI 15,000
-      </PrimaryPortalButton>
+      <div className="grid grid-cols-3 gap-3 px-4 py-4 text-xs text-slate-600 sm:px-5">
+        <MetaCell label="Sanctioned" value={loan.sanctioned} />
+        <MetaCell label="Disbursed" value={loan.disbursed} />
+        <MetaCell align="right" label="EMIs" value={loan.tenure} />
+      </div>
 
-      <div className="grid grid-cols-3 gap-3 text-xs text-slate-600">
-        <span>
-          <strong className="block text-slate-800">Sanctioned</strong>
-          {loan.sanctioned}
-        </span>
-        <span>
-          <strong className="block text-slate-800">Disbursed</strong>
-          {loan.disbursed}
-        </span>
-        <span className="text-right">
-          <strong className="block text-slate-800">{loan.tenure}</strong>
-          EMIS
-        </span>
+      <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3 sm:px-5">
+        <PrimaryPortalButton className={cn("h-11 w-full rounded-xl text-sm", overdue && "border-rose-500 bg-rose-500 shadow-rose-100 hover:bg-rose-600")}>
+          <CreditCard className="size-5" /> Pay EMI 15,000
+        </PrimaryPortalButton>
       </div>
     </AppCard>
   );
@@ -288,10 +279,19 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
 
 function LoanMetric({ title, value }: { title: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
+    <div className="border-r border-slate-100 bg-white p-4 last:border-r-0">
       <p className="text-xs font-semibold text-slate-500">{title}</p>
       <p className="mt-1 text-sm font-bold text-slate-950">{value}</p>
     </div>
+  );
+}
+
+function MetaCell({ align, label, value }: { align?: "right"; label: string; value: string }) {
+  return (
+    <span className={cn(align === "right" && "text-right")}>
+      <strong className="block text-slate-800">{label}</strong>
+      {value}
+    </span>
   );
 }
 

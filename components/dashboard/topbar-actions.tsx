@@ -110,9 +110,9 @@ export function TopBarActions() {
 
       {drawer && typeof document !== "undefined"
         ? createPortal(
-        <div className="fixed inset-0 z-[100] bg-[#2d2119]/35 backdrop-blur-sm animate-[creditPanelIn_0.2s_ease-out]" onClick={() => setDrawer(null)}>
+        <div className="portal-theme fixed inset-0 z-[100] bg-[rgba(23,32,51,0.42)] backdrop-blur-sm animate-[creditPanelIn_0.2s_ease-out]" onClick={() => setDrawer(null)}>
           <aside
-            className="ml-auto flex h-dvh w-full max-w-md flex-col border-l border-[#6f5948]/12 bg-[#fff7e8] shadow-[0_24px_70px_rgba(92,62,37,0.22)]"
+            className="ml-auto flex h-dvh w-full max-w-md flex-col border-l border-[var(--portal-border)] bg-[var(--portal-bg)] shadow-[0_8px_24px_rgba(23,32,51,0.16)]"
             onClick={(event) => event.stopPropagation()}
           >
             {drawer === "notifications" ? <NotificationsDrawer onClose={() => setDrawer(null)} /> : null}
@@ -130,7 +130,7 @@ function IconButton({ children, label, onClick }: { children: React.ReactNode; l
   return (
     <button
       aria-label={label}
-      className="grid size-9 place-items-center rounded-full border border-[#6f5948]/15 bg-[#fffdf7] text-[#6f5948] shadow-sm transition hover:-translate-y-0.5 hover:border-[#1f8a5b]/35 hover:text-[#1f8a5b] hover:shadow-md sm:size-10"
+      className="grid size-9 place-items-center rounded-full border border-[var(--portal-border)] bg-white text-[var(--portal-muted)] shadow-sm transition hover:border-[var(--portal-blue)] hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)] sm:size-10"
       type="button"
       onClick={onClick}
     >
@@ -141,15 +141,15 @@ function IconButton({ children, label, onClick }: { children: React.ReactNode; l
 
 function DrawerHeader({ eyebrow, icon, onClose, title }: { eyebrow: string; icon: React.ReactNode; onClose: () => void; title: string }) {
   return (
-    <div className="flex shrink-0 items-center justify-between gap-4 border-b border-[#6f5948]/12 px-4 py-4">
+    <div className="flex shrink-0 items-center justify-between gap-4 border-b border-[var(--portal-border)] bg-white/80 px-4 py-4 backdrop-blur">
       <div className="flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-xl bg-[#8bd8b6]/22 text-[#1f8a5b]">{icon}</span>
+        <span className="grid size-10 place-items-center rounded-2xl bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]">{icon}</span>
         <div>
-          <p className="text-[0.6rem] font-black uppercase tracking-[0.16em] text-[#1f8a5b]">{eyebrow}</p>
-          <h2 className="mt-0.5 text-sm font-black text-[#2d2119]">{title}</h2>
+          <p className="text-[0.6rem] font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">{eyebrow}</p>
+          <h2 className="mt-0.5 text-sm font-black text-[var(--portal-ink)]">{title}</h2>
         </div>
       </div>
-      <button aria-label="Close drawer" className="grid size-8 place-items-center rounded-full bg-[#f7e7c6] text-[#6f5948] transition hover:bg-[#ffb38a]/40 hover:text-[#2d2119]" type="button" onClick={onClose}>
+      <button aria-label="Close drawer" className="grid size-8 place-items-center rounded-full border border-[var(--portal-border)] bg-white text-[var(--portal-muted)] transition hover:bg-[var(--portal-orange-soft)] hover:text-[var(--portal-orange)]" type="button" onClick={onClose}>
         <X className="size-4" />
       </button>
     </div>
@@ -164,7 +164,7 @@ function NotificationsDrawer({ onClose }: { onClose: () => void }) {
         <div className="space-y-6">
           {notificationGroups.map((group) => (
             <section key={group.title}>
-              <h3 className="text-xs font-black text-[#2d2119]">{group.title}</h3>
+              <h3 className="text-xs font-black text-[var(--portal-ink)]">{group.title}</h3>
               <div className="mt-3 grid gap-3">
                 {group.items.map((item) => (
                   <NotificationCard key={item.title} item={item} />
@@ -180,23 +180,23 @@ function NotificationsDrawer({ onClose }: { onClose: () => void }) {
 
 function NotificationCard({ item }: { item: (typeof notificationGroups)[number]["items"][number] }) {
   const tone = {
-    amber: { rail: "border-l-[#f8d96b]", icon: "bg-[#f8d96b]/25 text-[#8a6510]" },
-    cyan: { rail: "border-l-[#8bd8b6]", icon: "bg-[#8bd8b6]/24 text-[#1f8a5b]" },
-    rose: { rail: "border-l-[#ff8a7a]", icon: "bg-[#ffb38a]/22 text-[#a33a2d]" },
-    slate: { rail: "border-l-[#6f5948]/20", icon: "bg-[#fff7e8] text-[#6f5948]" },
+    amber: { rail: "border-l-[var(--portal-orange)]", icon: "bg-[var(--portal-orange-soft)] text-[var(--portal-orange)]" },
+    cyan: { rail: "border-l-[var(--portal-blue)]", icon: "bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]" },
+    rose: { rail: "border-l-[#fb7185]", icon: "bg-rose-50 text-rose-600" },
+    slate: { rail: "border-l-slate-200", icon: "bg-[var(--portal-surface-soft)] text-[var(--portal-muted)]" },
   }[item.tone];
 
   return (
-    <article className={cn("relative rounded-[1.35rem] border border-l-4 border-[#6f5948]/12 bg-[#fffdf7] p-4 shadow-sm", tone.rail)}>
+    <article className={cn("relative rounded-[var(--portal-radius)] border border-l-4 border-[var(--portal-border)] bg-white p-4 shadow-sm", tone.rail)}>
       {item.unread ? <span className="absolute right-4 top-4 size-2 rounded-full bg-rose-500" /> : null}
       <div className="flex gap-3 pr-4">
         <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl", tone.icon)}>
           <item.Icon className="size-4" strokeWidth={1.9} />
         </span>
         <div className="min-w-0">
-          <h4 className="text-[0.72rem] font-black text-[#2d2119]">{item.title}</h4>
-          <p className="mt-1 text-[0.68rem] leading-4 text-[#6f5948]">{item.body}</p>
-          <p className="mt-2 text-[0.62rem] font-medium text-[#6f5948]/60">{item.time}</p>
+          <h4 className="text-[0.72rem] font-black text-[var(--portal-ink)]">{item.title}</h4>
+          <p className="mt-1 text-[0.68rem] leading-4 text-[var(--portal-muted)]">{item.body}</p>
+          <p className="mt-2 text-[0.62rem] font-medium text-[var(--portal-muted)]/70">{item.time}</p>
         </div>
       </div>
     </article>
@@ -210,29 +210,29 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="drawer-scroll flex-1 overflow-y-auto px-4 py-5">
           <div className="flex items-start gap-3">
-            <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-[#8bd8b6]/22 text-[#1f8a5b]">
+            <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]">
               <Bot className="size-5" />
             </span>
-            <div className="rounded-2xl border border-[#6f5948]/12 bg-[#fffdf7] p-4 shadow-[0_14px_42px_rgba(92,62,37,0.08)]">
-              <p className="text-[0.72rem] leading-5 text-[#6f5948]">
+            <div className="rounded-2xl border border-[var(--portal-border)] bg-white p-4">
+              <p className="text-[0.72rem] leading-5 text-[var(--portal-muted)]">
                 Hello! I&apos;m your CIBIL assistant. Ask me about checking your score, downloading reports, or resolving issues.
               </p>
-              <p className="mt-3 text-[0.62rem] font-medium text-[#6f5948]/60">09:24</p>
+              <p className="mt-3 text-[0.62rem] font-medium text-[var(--portal-muted)]/70">09:24</p>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-[#6f5948]/12 bg-[#fff7e8] px-4 py-4">
+        <div className="border-t border-[var(--portal-border)] bg-white/85 px-4 py-4 backdrop-blur">
           <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
             {quickActions.map(({ Icon, label }) => (
-              <button key={label} className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[#6f5948]/12 bg-[#fffdf7] px-3 text-[0.68rem] font-black text-[#6f5948] shadow-sm transition hover:border-[#1f8a5b]/35 hover:text-[#1f8a5b]" type="button">
+              <button key={label} className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[var(--portal-border)] bg-white px-3 text-[0.68rem] font-black text-[var(--portal-muted)] shadow-sm transition hover:border-[var(--portal-blue)] hover:text-[var(--portal-blue)]" type="button">
                 <Icon className="size-4" /> {label}
               </button>
             ))}
           </div>
           <div className="flex items-center gap-3">
-            <input className="h-10 min-w-0 flex-1 rounded-full border border-[#6f5948]/12 bg-[#fffdf7] px-4 text-[0.72rem] font-medium text-[#2d2119] shadow-sm outline-none transition placeholder:text-[#6f5948]/50 focus:border-[#1f8a5b]/35 focus:ring-4 focus:ring-[#8bd8b6]/20" placeholder="Type a message..." />
-            <button aria-label="Send message" className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#2d2119] text-[#fff7e8] shadow-[0_12px_30px_rgba(92,62,37,0.16)] transition hover:bg-[#1f8a5b]" type="button">
+            <input className="h-10 min-w-0 flex-1 rounded-full border border-[var(--portal-border)] bg-white px-4 text-[0.72rem] font-medium text-[var(--portal-ink)] shadow-sm outline-none transition placeholder:text-[var(--portal-muted)]/60 focus:border-[var(--portal-blue)] focus:ring-4 focus:ring-[rgba(5,132,254,0.14)]" placeholder="Type a message..." />
+            <button aria-label="Send message" className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--portal-blue)] text-white shadow-[0_12px_30px_rgba(5,132,254,0.22)] transition hover:bg-[var(--portal-blue-deep)]" type="button">
               <Send className="size-5" />
             </button>
           </div>
