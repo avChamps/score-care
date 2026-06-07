@@ -7,6 +7,11 @@ const config: CapacitorConfig = {
   server: {
     appStartPath: "/login.html",
   },
+  plugins: {
+    CapacitorHttp: {
+      enabled: true,
+    },
+  },
 };
 
 export default config;

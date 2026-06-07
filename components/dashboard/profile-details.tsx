@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppCard } from "@/components/dashboard/portal-ui";
-import { apiUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 type UserProfile = {
   id: number;
@@ -42,7 +42,7 @@ export function ProfileDetails() {
       }
 
       try {
-        const response = await fetch(apiUrl("/users/me/profile"), {
+        const response = await apiRequest("/users/me/profile", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

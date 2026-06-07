@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState, type ReactNode } from "react";
 import { ScorecareBrandAnimation } from "@/components/auth/scorecare-brand-animation";
 
@@ -9,14 +9,9 @@ type AuthLaunchMotionProps = {
 };
 
 export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
-  const reduceMotion = useReducedMotion();
   const [showLaunch, setShowLaunch] = useState(false);
 
   useEffect(() => {
-    if (reduceMotion) {
-      return;
-    }
-
     const isNativeShell = document.documentElement.classList.contains("native-shell");
     const isMobileView = window.matchMedia("(max-width: 768px)").matches;
 
@@ -31,7 +26,7 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
     }, 5000);
 
     return () => window.clearTimeout(timer);
-  }, [reduceMotion]);
+  }, []);
 
   return (
     <>
@@ -42,7 +37,7 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
       </AnimatePresence>
 
       <motion.div
-        initial={reduceMotion ? false : { opacity: 0, y: 20, scale: 0.98 }}
+        initial={{ opacity: 0, y: 20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ delay: showLaunch ? 0.2 : 0, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       >

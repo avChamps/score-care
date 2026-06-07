@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import panDetailsImage from "@/assets/pan-details.png";
 import { ButtonLoader } from "@/components/auth/button-loader";
 import { ScorecareBrandAnimation } from "@/components/auth/scorecare-brand-animation";
-import { apiUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 export function LoginFlow() {
@@ -71,14 +71,11 @@ export function LoginFlow() {
     setIsSendingOtp(true);
 
     try {
-      const response = await fetch(apiUrl("/auth/send-otp"), {
+      const response = await apiRequest("/auth/send-otp", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        body: {
           mobileNumber: cleanMobile,
-        }),
+        },
       });
 
       if (!response.ok) {
@@ -104,15 +101,12 @@ export function LoginFlow() {
     setIsVerifyingOtp(true);
 
     try {
-      const response = await fetch(apiUrl("/auth/verify-otp"), {
+      const response = await apiRequest("/auth/verify-otp", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        body: {
           mobileNumber: cleanMobile,
           otp: cleanOtp,
-        }),
+        },
       });
 
       if (!response.ok) {
@@ -166,19 +160,18 @@ export function LoginFlow() {
     setIsSavingProfile(true);
 
     try {
-      const response = await fetch(apiUrl("/users/me/profile"), {
+      const response = await apiRequest("/users/me/profile", {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify({
+        body: {
           panNumber: cleanPan,
           fullName: name.trim(),
           email: email.trim(),
           sendWelcomeMail: true,
           dateOfBirth,
-        }),
+        },
       });
 
       if (!response.ok) {
@@ -251,7 +244,7 @@ export function LoginFlow() {
           </button>
 
           <div className="flex-1">
-            <h1 className="text-3xl font-black tracking-tight text-[#172033]">Enter your PAN details</h1>
+            <h1 className="text-[1.7rem] font-black tracking-tight text-[#172033]">Enter your PAN details</h1>
 
             <div className="mt-10 grid gap-5">
               <label className="text-base font-bold text-[#5f6878]">
@@ -262,7 +255,7 @@ export function LoginFlow() {
                     setProfileError("");
                     setPan(event.target.value);
                   }}
-                  className="mt-3 h-16 w-full rounded-xl border border-[#cfd6df] bg-white px-4 text-xl font-bold uppercase text-[#172033] outline-none transition placeholder:font-medium placeholder:text-[#a6adb8] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
+                  className="mt-2.5 h-14 w-full rounded-xl border border-[#cfd6df] bg-white px-4 text-base font-bold uppercase text-[#172033] outline-none transition placeholder:font-medium placeholder:text-[#a6adb8] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
                   placeholder="ABCDE1234F"
                   inputMode="text"
                 />
@@ -281,7 +274,7 @@ export function LoginFlow() {
                     setProfileError("");
                     setName(event.target.value);
                   }}
-                  className="mt-3 h-16 w-full rounded-xl border border-[#cfd6df] bg-white px-4 text-xl font-semibold text-[#172033] outline-none transition placeholder:font-medium placeholder:text-[#a6adb8] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
+                  className="mt-2.5 h-14 w-full rounded-xl border border-[#cfd6df] bg-white px-4 text-base font-semibold text-[#172033] outline-none transition placeholder:font-medium placeholder:text-[#a6adb8] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
                   placeholder="Your name as per PAN"
                 />
               </label>
@@ -294,7 +287,7 @@ export function LoginFlow() {
                     setProfileError("");
                     setEmail(event.target.value);
                   }}
-                  className="mt-3 h-16 w-full rounded-xl border border-[#cfd6df] bg-white px-4 text-xl font-semibold text-[#172033] outline-none transition placeholder:font-medium placeholder:text-[#a6adb8] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
+                  className="mt-2.5 h-14 w-full rounded-xl border border-[#cfd6df] bg-white px-4 text-base font-semibold text-[#172033] outline-none transition placeholder:font-medium placeholder:text-[#a6adb8] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
                   placeholder="rahul@example.com"
                   inputMode="email"
                   type="email"
@@ -309,7 +302,7 @@ export function LoginFlow() {
                     setProfileError("");
                     setDateOfBirth(event.target.value);
                   }}
-                  className="mt-3 h-16 w-full rounded-xl border border-[#cfd6df] bg-white px-4 text-xl font-semibold text-[#172033] outline-none transition placeholder:text-[#a6adb8] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
+                  className="mt-2.5 h-14 w-full rounded-xl border border-[#cfd6df] bg-white px-4 text-base font-semibold text-[#172033] outline-none transition placeholder:text-[#a6adb8] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
                   type="date"
                 />
               </label>
@@ -348,7 +341,7 @@ export function LoginFlow() {
             disabled={!canSubmit || isSavingProfile}
             onClick={updateProfile}
             className={cn(
-              "relative mb-2 mt-8 inline-flex h-16 w-full items-center justify-center rounded-2xl text-xl font-black text-white transition",
+              "relative mb-2 mt-8 inline-flex h-14 w-full items-center justify-center rounded-2xl text-base font-black text-white transition",
               canSubmit && !isSavingProfile ? "bg-[#ff6d00]" : "bg-[#98a2b3]",
             )}
           >
@@ -385,8 +378,8 @@ export function LoginFlow() {
             <ArrowLeft className="size-5" />
           </button>
 
-          <div className="flex-1 pt-10">
-            <h1 className="max-w-sm text-4xl font-black leading-tight tracking-tight text-[#172033]">
+          <div className="flex-1 pt-8">
+            <h1 className="max-w-sm text-[2rem] font-black leading-tight tracking-tight text-[#172033]">
               Enter OTP
             </h1>
             <p className="mt-4 text-base font-semibold leading-7 text-[#667085]">
@@ -403,7 +396,7 @@ export function LoginFlow() {
                     value={digit}
                     onChange={(event) => updateOtpDigit(index, event.target.value)}
                     onKeyDown={(event) => handleOtpKeyDown(index, event.key)}
-                    className="aspect-square w-full rounded-xl border border-[#cfd6df] bg-white text-center text-2xl font-black text-[#172033] outline-none transition focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
+                    className="aspect-square w-full rounded-xl border border-[#cfd6df] bg-white text-center text-xl font-black text-[#172033] outline-none transition focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
                     inputMode="numeric"
                     type="tel"
                     maxLength={1}
@@ -434,7 +427,7 @@ export function LoginFlow() {
               disabled={!canVerifyOtp || isVerifyingOtp}
               onClick={verifyOtp}
               className={cn(
-                "relative h-16 w-full rounded-2xl text-xl font-black text-white transition",
+                "relative h-14 w-full rounded-2xl text-base font-black text-white transition",
                 canVerifyOtp && !isVerifyingOtp ? "bg-[#ff6d00]" : "bg-[#98a2b3]",
               )}
             >
@@ -461,17 +454,17 @@ export function LoginFlow() {
         transition={{ duration: 0.28, ease: "easeOut" }}
         className="flex min-h-[calc(100dvh-2.5rem)] flex-col"
       >
-        <div className="flex-1 pt-20">
-          <h1 className="max-w-sm text-5xl font-black leading-tight tracking-tight text-[#172033]">
+        <div className="flex-1 pt-14">
+          <h1 className="max-w-sm text-[2.35rem] font-black leading-tight tracking-tight text-[#172033]">
             Enter your mobile number
           </h1>
 
-          <label className="mt-12 flex h-16 items-center rounded-xl border border-[#c3cad5] bg-white px-5 focus-within:border-[#1677ff] focus-within:ring-2 focus-within:ring-[#eef6ff]">
-            <span className="border-r border-[#dfe4ea] pr-4 text-2xl font-bold text-[#344054]">+91</span>
+          <label className="mt-9 flex h-14 items-center rounded-xl border border-[#c3cad5] bg-white px-4 focus-within:border-[#1677ff] focus-within:ring-2 focus-within:ring-[#eef6ff]">
+            <span className="border-r border-[#dfe4ea] pr-3 text-xl font-bold text-[#344054]">+91</span>
             <input
               value={cleanMobile}
               onChange={(event) => setMobile(event.target.value)}
-              className="min-w-0 flex-1 bg-transparent px-4 text-2xl font-semibold text-[#172033] outline-none placeholder:text-[#667085]"
+              className="min-w-0 flex-1 bg-transparent px-3 text-xl font-semibold text-[#172033] outline-none placeholder:text-[#667085]"
               placeholder="Mobile number"
               inputMode="numeric"
               type="tel"
@@ -498,7 +491,7 @@ export function LoginFlow() {
             disabled={!canProceed || isSendingOtp}
             onClick={sendOtp}
             className={cn(
-              "relative h-16 w-full rounded-2xl text-xl font-black text-white transition",
+              "relative h-14 w-full rounded-2xl text-base font-black text-white transition",
               canProceed && !isSendingOtp ? "bg-[#ff6d00]" : "bg-[#98a2b3]",
             )}
           >
