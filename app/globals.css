@@ -385,6 +385,12 @@ body:has(.auth-page) *::-webkit-scrollbar {
   box-shadow: var(--portal-shadow-soft) !important;
 }
 
+.dashboard-actions-disabled a:not([data-dashboard-home="true"]):not([data-dashboard-profile="true"]),
+.dashboard-actions-disabled button:not([data-dashboard-home="true"]) {
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
 .portal-theme [class*="shadow-[0_18px_45px"],
 .portal-theme [class*="shadow-[0_24px_70px"],
 .portal-theme [class*="shadow-[0_18px_48px"],

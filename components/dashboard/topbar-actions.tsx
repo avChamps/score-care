@@ -17,6 +17,7 @@ import {
 import type { ComponentType } from "react";
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { dashboardActionsDisabled } from "@/lib/dashboard-lock";
 import { cn } from "@/lib/utils";
 
 type Drawer = "notifications" | "support" | null;
@@ -100,10 +101,10 @@ export function TopBarActions() {
   return (
     <>
       <div className="flex gap-2">
-        <IconButton label="Support" onClick={() => setDrawer("support")}>
+        <IconButton disabled={dashboardActionsDisabled} label="Support" onClick={() => setDrawer("support")}>
           <Headphones className="size-5" />
         </IconButton>
-        <IconButton label="Notifications" onClick={() => setDrawer("notifications")}>
+        <IconButton disabled={dashboardActionsDisabled} label="Notifications" onClick={() => setDrawer("notifications")}>
           <Bell className="size-5" />
         </IconButton>
       </div>
@@ -126,11 +127,16 @@ export function TopBarActions() {
   );
 }
 
-function IconButton({ children, label, onClick }: { children: React.ReactNode; label: string; onClick: () => void }) {
+function IconButton({ children, disabled = false, label, onClick }: { children: React.ReactNode; disabled?: boolean; label: string; onClick: () => void }) {
   return (
     <button
       aria-label={label}
-      className="grid size-9 place-items-center rounded-full border border-[var(--portal-border)] bg-white text-[var(--portal-muted)] shadow-sm transition hover:border-[var(--portal-blue)] hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)] sm:size-10"
+      aria-disabled={disabled}
+      className={cn(
+        "grid size-9 place-items-center rounded-full border border-[var(--portal-border)] bg-white text-[var(--portal-muted)] shadow-sm transition hover:border-[var(--portal-blue)] hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)] sm:size-10",
+        disabled && "cursor-not-allowed opacity-45 hover:border-[var(--portal-border)] hover:bg-white hover:text-[var(--portal-muted)]",
+      )}
+      disabled={disabled}
       type="button"
       onClick={onClick}
     >

@@ -12,6 +12,7 @@ import {
   User,
 } from "lucide-react";
 import { TopBarActions } from "@/components/dashboard/topbar-actions";
+import { dashboardActionsDisabled } from "@/lib/dashboard-lock";
 import { cn } from "@/lib/utils";
 
 type PortalShellProps = {
@@ -29,10 +30,10 @@ const navItems = [
 
 export function PortalShell({ active, children }: PortalShellProps) {
   return (
-    <section className="portal-theme relative min-h-screen overflow-hidden text-[var(--portal-ink)] lg:h-screen">
+    <section className={cn("portal-theme relative min-h-screen overflow-hidden text-[var(--portal-ink)] lg:h-screen", dashboardActionsDisabled && "dashboard-actions-disabled")}>
       <div className="relative z-10 mx-auto grid min-h-screen max-w-7xl lg:h-screen lg:grid-cols-[248px_1fr]">
         <aside className="portal-surface m-4 hidden rounded-2xl border px-3 py-4 lg:block lg:h-[calc(100vh-2rem)] lg:overflow-hidden">
-          <Link href="/" className="mb-6 flex items-center gap-3 rounded-2xl px-3 py-2 transition hover:bg-[var(--portal-blue-soft)]">
+          <Link href="/dashboard" data-dashboard-home="true" className="mb-6 flex items-center gap-3 rounded-2xl px-3 py-2 transition hover:bg-[var(--portal-blue-soft)]">
             <span className="grid size-9 place-items-center rounded-2xl bg-[var(--portal-blue)] text-[0.7rem] font-black text-white shadow-[0_10px_22px_rgba(7,112,227,0.22)]">
               SC
             </span>
@@ -55,11 +56,11 @@ export function PortalTopBar({ title, backHref }: { title?: string; backHref?: s
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           {backHref ? (
-            <Link href={backHref} aria-label="Back" className="grid size-9 shrink-0 place-items-center rounded-full border border-[var(--portal-border)] bg-white text-[var(--portal-muted)] transition hover:border-[var(--portal-blue)] hover:text-[var(--portal-blue)]">
+            <Link href={backHref} data-dashboard-home={backHref === "/dashboard" ? "true" : undefined} aria-label="Back" className="grid size-9 shrink-0 place-items-center rounded-full border border-[var(--portal-border)] bg-white text-[var(--portal-muted)] transition hover:border-[var(--portal-blue)] hover:text-[var(--portal-blue)]">
               <span className="text-2xl leading-none">&lsaquo;</span>
             </Link>
           ) : (
-            <Link href="/profile" aria-label="Open profile" className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--portal-blue-soft)] text-[var(--portal-blue)] transition hover:bg-[#dceeff]">
+            <Link href="/profile" data-dashboard-profile="true" aria-label="Open profile" className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--portal-blue-soft)] text-[var(--portal-blue)] transition hover:bg-[#dceeff]">
               <User className="size-5" />
             </Link>
           )}
@@ -109,6 +110,14 @@ export function PrimaryPortalButton({ children, href, className, ...props }: Pri
   );
 
   if (href) {
+    if (dashboardActionsDisabled) {
+      return (
+        <span aria-disabled="true" className={cn(classes, "cursor-not-allowed opacity-55 hover:bg-[var(--portal-orange)]")}>
+          {children}
+        </span>
+      );
+    }
+
     return (
       <Link href={href} className={classes}>
         {children}
@@ -117,7 +126,7 @@ export function PrimaryPortalButton({ children, href, className, ...props }: Pri
   }
 
   return (
-    <button className={classes} {...props}>
+    <button {...props} className={cn(classes, dashboardActionsDisabled && "cursor-not-allowed opacity-55 hover:bg-[var(--portal-orange)]")} disabled={dashboardActionsDisabled || props.disabled}>
       {children}
     </button>
   );
@@ -154,8 +163,23 @@ export function CreditReportBanner() {
 }
 
 export function ListAction({ icon, title, subtitle, href }: { icon: React.ReactNode; title: string; subtitle: string; href: string }) {
+  const classes = "group flex items-center gap-3 rounded-[var(--portal-radius)] border border-[var(--portal-border)] bg-white p-4 shadow-[var(--portal-shadow-soft)] transition hover:border-[var(--portal-blue)]";
+
+  if (dashboardActionsDisabled) {
+    return (
+      <div aria-disabled="true" className={cn(classes, "cursor-not-allowed opacity-55 hover:border-[var(--portal-border)]")}>
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-[var(--portal-border)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]">{icon}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-black text-[var(--portal-ink)]">{title}</span>
+          <span className="block text-sm text-[var(--portal-muted)]">{subtitle}</span>
+        </span>
+        <span className="text-2xl leading-none text-[var(--portal-muted)]/35">&rsaquo;</span>
+      </div>
+    );
+  }
+
   return (
-    <Link href={href} className="group flex items-center gap-3 rounded-[var(--portal-radius)] border border-[var(--portal-border)] bg-white p-4 shadow-[var(--portal-shadow-soft)] transition hover:border-[var(--portal-blue)]">
+    <Link href={href} className={classes}>
       <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-[var(--portal-border)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)] transition group-hover:bg-[var(--portal-orange-soft)] group-hover:text-[var(--portal-orange)]">{icon}</span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-black text-[var(--portal-ink)]">{title}</span>
@@ -218,7 +242,7 @@ export function LoanCard({ overdue = false }: { overdue?: boolean }) {
 
 export function UtilityTile({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <button className="min-w-0 rounded-[1.2rem] border border-slate-200 bg-white p-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-lg">
+    <button className="min-w-0 cursor-not-allowed rounded-[1.2rem] border border-slate-200 bg-white p-4 text-center opacity-55 shadow-sm" disabled type="button">
       <span className="mx-auto grid size-12 place-items-center rounded-xl bg-slate-50 text-cyan-600 sm:size-14">{icon}</span>
       <span className="mt-2 block text-xs font-semibold leading-tight text-slate-700 sm:text-sm">{label}</span>
     </button>
@@ -226,6 +250,14 @@ export function UtilityTile({ icon, label }: { icon: React.ReactNode; label: str
 }
 
 export function PlusApplyButton() {
+  if (dashboardActionsDisabled) {
+    return (
+      <span aria-disabled="true" className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-[var(--portal-orange)] px-5 py-3 text-sm font-bold text-white opacity-55 shadow-[0_2px_6px_rgba(255,109,0,0.2)]">
+        <Plus className="size-5" /> Apply for Loan
+      </span>
+    );
+  }
+
   return (
     <Link href="/dashboard/loans" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--portal-orange)] px-5 py-3 text-sm font-bold text-white shadow-[0_2px_6px_rgba(255,109,0,0.2)]">
       <Plus className="size-5" /> Apply for Loan
@@ -239,8 +271,23 @@ function BottomNav({ active }: { active: PortalShellProps["active"] }) {
       <div className="mx-auto grid max-w-md grid-cols-5">
         {navItems.map(({ id, label, href, Icon }) => {
           const selected = id === active;
+          const disabled = dashboardActionsDisabled && id !== "home";
+          if (disabled) {
+            return (
+              <button
+                key={id}
+                aria-disabled="true"
+                className="relative flex cursor-not-allowed flex-col items-center justify-center gap-1 px-1 py-2 text-[0.66rem] font-black text-[var(--portal-muted)] opacity-45"
+                type="button"
+              >
+                <Icon className="size-5" strokeWidth={1.8} />
+                <span className="text-center leading-tight">{label}</span>
+              </button>
+            );
+          }
+
           return (
-            <Link key={id} href={href} className={cn("relative flex flex-col items-center justify-center gap-1 px-1 py-2 text-[0.66rem] font-black text-[var(--portal-muted)]", selected && "text-[var(--portal-ink)] after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:w-9 after:-translate-x-1/2 after:rounded-full after:bg-[var(--portal-orange)]")}>
+            <Link key={id} href={href} data-dashboard-home={id === "home" ? "true" : undefined} className={cn("relative flex flex-col items-center justify-center gap-1 px-1 py-2 text-[0.66rem] font-black text-[var(--portal-muted)]", selected && "text-[var(--portal-ink)] after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:w-9 after:-translate-x-1/2 after:rounded-full after:bg-[var(--portal-orange)]")}>
               <Icon className="size-5" strokeWidth={selected ? 2.5 : 1.8} />
               <span className="text-center leading-tight">{label}</span>
             </Link>
@@ -256,8 +303,23 @@ function NavItems({ active, direction }: { active: PortalShellProps["active"]; d
     <div className={cn("grid gap-1.5", direction === "side" && "text-xs")}>
       {navItems.map(({ id, label, href, Icon }) => {
         const selected = id === active;
+        const disabled = dashboardActionsDisabled && id !== "home";
+        if (disabled) {
+          return (
+            <button
+              key={id}
+              aria-disabled="true"
+              className="flex cursor-not-allowed items-center gap-3 rounded-2xl border-l-4 border-transparent px-3 py-2.5 text-left font-black text-[var(--portal-muted)] opacity-45"
+              type="button"
+            >
+              <Icon className="size-4" />
+              {label}
+            </button>
+          );
+        }
+
         return (
-          <Link key={id} href={href} className={cn("flex items-center gap-3 rounded-2xl border-l-4 border-transparent px-3 py-2.5 font-black text-[var(--portal-muted)] transition hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)]", selected && "border-[var(--portal-orange)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)] hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)]")}>
+          <Link key={id} href={href} data-dashboard-home={id === "home" ? "true" : undefined} className={cn("flex items-center gap-3 rounded-2xl border-l-4 border-transparent px-3 py-2.5 font-black text-[var(--portal-muted)] transition hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)]", selected && "border-[var(--portal-orange)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)] hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)]")}>
             <Icon className="size-4" />
             {label}
           </Link>
