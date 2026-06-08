@@ -11,6 +11,7 @@ import {
   ReceiptText,
   User,
 } from "lucide-react";
+import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
 import { TopBarActions } from "@/components/dashboard/topbar-actions";
 import { dashboardActionsDisabled } from "@/lib/dashboard-lock";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ const navItems = [
 export function PortalShell({ active, children }: PortalShellProps) {
   return (
     <section className={cn("portal-theme relative min-h-screen overflow-hidden text-[var(--portal-ink)] lg:h-screen", dashboardActionsDisabled && "dashboard-actions-disabled")}>
+      <DashboardAuthGuard />
       <div className="relative z-10 mx-auto grid min-h-screen max-w-7xl lg:h-screen lg:grid-cols-[248px_1fr]">
         <aside className="portal-surface m-4 hidden rounded-2xl border px-3 py-4 lg:block lg:h-[calc(100vh-2rem)] lg:overflow-hidden">
           <Link href="/dashboard" data-dashboard-home="true" className="mb-6 flex items-center gap-3 rounded-2xl px-3 py-2 transition hover:bg-[var(--portal-blue-soft)]">

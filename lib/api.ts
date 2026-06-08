@@ -1,6 +1,7 @@
 import { Capacitor, CapacitorHttp, type HttpOptions } from "@capacitor/core";
+import { clearScorecareSession } from "@/lib/auth-session";
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://score-care-service.onrender.com";
+export const API_BASE_URL = 'http://localhost:5000';
 
 export function apiUrl(path: string) {
   return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
@@ -27,6 +28,7 @@ export async function apiRequest(path: string, options: ApiRequestOptions = {}) 
       data: options.body,
     };
     const response = await CapacitorHttp.request(nativeOptions);
+    handleNotFoundRedirect(response.status);
 
     return {
       ok: response.status >= 200 && response.status < 300,
@@ -35,9 +37,25 @@ export async function apiRequest(path: string, options: ApiRequestOptions = {}) 
     };
   }
 
-  return fetch(apiUrl(path), {
+  const response = await fetch(apiUrl(path), {
     method,
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
+
+  handleNotFoundRedirect(response.status);
+
+  return response;
+}
+
+function handleNotFoundRedirect(status: number) {
+  if (status !== 404 || typeof window === "undefined") {
+    return;
+  }
+
+  clearScorecareSession();
+
+  if (window.location.pathname !== "/login") {
+    window.location.replace("/login");
+  }
 }

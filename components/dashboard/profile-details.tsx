@@ -6,12 +6,15 @@ import {
   Mail,
   Phone,
   Shield,
+  LogOut,
   UserRound,
   WalletCards,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppCard } from "@/components/dashboard/portal-ui";
 import { apiRequest } from "@/lib/api";
+import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 
 type UserProfile = {
   id: number;
@@ -27,6 +30,7 @@ type UserProfile = {
 };
 
 export function ProfileDetails() {
+  const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -35,9 +39,9 @@ export function ProfileDetails() {
     async function loadProfile() {
       const token = sessionStorage.getItem("scorecare_token");
 
-      if (!token) {
-        setError("Session expired. Please login again.");
-        setLoading(false);
+      if (!token || isTokenExpired(token)) {
+        clearScorecareSession();
+        router.replace("/login");
         return;
       }
 
@@ -47,6 +51,12 @@ export function ProfileDetails() {
             Authorization: `Bearer ${token}`,
           },
         });
+
+        if (response.status === 401 || response.status === 403) {
+          clearScorecareSession();
+          router.replace("/login");
+          return;
+        }
 
         if (!response.ok) {
           throw new Error("Unable to load profile");
@@ -62,7 +72,12 @@ export function ProfileDetails() {
     }
 
     loadProfile();
-  }, []);
+  }, [router]);
+
+  function logout() {
+    clearScorecareSession();
+    router.replace("/login");
+  }
 
   const details = [
     { label: "Full Name", value: user?.fullName, Icon: UserRound },
@@ -110,6 +125,15 @@ export function ProfileDetails() {
           ))}
         </div>
       </AppCard>
+
+      <button
+        data-dashboard-logout="true"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-rose-100 bg-rose-50 text-sm font-black text-rose-600 shadow-sm transition active:scale-[0.99]"
+        type="button"
+        onClick={logout}
+      >
+        <LogOut className="size-4" /> Logout
+      </button>
     </div>
   );
 }

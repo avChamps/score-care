@@ -386,7 +386,7 @@ body:has(.auth-page) *::-webkit-scrollbar {
 }
 
 .dashboard-actions-disabled a:not([data-dashboard-home="true"]):not([data-dashboard-profile="true"]),
-.dashboard-actions-disabled button:not([data-dashboard-home="true"]) {
+.dashboard-actions-disabled button:not([data-dashboard-home="true"]):not([data-dashboard-logout="true"]) {
   pointer-events: none;
   cursor: not-allowed;
 }

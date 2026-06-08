@@ -342,7 +342,7 @@ export function LoginFlow() {
             onClick={updateProfile}
             className={cn(
               "relative mb-2 mt-8 inline-flex h-14 w-full items-center justify-center rounded-2xl text-base font-black text-white transition",
-              canSubmit && !isSavingProfile ? "bg-[#ff6d00]" : "bg-[#98a2b3]",
+              canSubmit ? "bg-[#ff6d00]" : "bg-[#98a2b3]",
             )}
           >
             {isSavingProfile ? (

@@ -1,1 +1,1 @@
-export const dashboardActionsDisabled = true;
+export const dashboardActionsDisabled = false;
