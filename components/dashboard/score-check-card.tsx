@@ -1,91 +1,615 @@
 "use client";
 
-import { useState } from "react";
-import { Gauge } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  Download,
+  Gauge,
+  RotateCcw,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 import { AppCard, PrimaryPortalButton } from "@/components/dashboard/portal-ui";
+import { apiRequest, apiUrl } from "@/lib/api";
+import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+
+type CibilPayload = {
+  pan: string;
+  mobile: string;
+  name: string;
+  gender: string;
+  consent: "Y";
+};
+
+type UserProfile = {
+  id: number;
+  mobileNumber?: string;
+  panNumber?: string;
+  fullName?: string;
+  email?: string;
+  dateOfBirth?: string;
+  status?: string;
+  cibilScore?: string | number | null;
+  cibilLastCheckedAt?: string;
+  lastLoginAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type ScoreStatus = {
+  label: string;
+  risk: string;
+  tone: "success" | "warning" | "danger" | "neutral";
+};
 
 export function ScoreCheckCard() {
+  const router = useRouter();
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [checked, setChecked] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState("");
+  const [score, setScore] = useState<number | null>(null);
+
+  const canCheckScore = Boolean(user?.panNumber && user?.mobileNumber && user?.fullName);
+  const lastCheckedLabel = formatLastChecked(user?.cibilLastCheckedAt);
+
+  useEffect(() => {
+    async function loadProfile() {
+      const token = sessionStorage.getItem("scorecare_token");
+
+      if (!token || isTokenExpired(token)) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
+      }
+
+      setProfileLoading(true);
+      setError("");
+
+      try {
+        const response = await apiRequest("/users/me/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.status === 401 || response.status === 403) {
+          clearScorecareSession();
+          router.replace("/login");
+          return;
+        }
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result?.message || "Unable to load profile");
+        }
+
+        const profile = result?.data?.user ?? null;
+        setUser(profile);
+
+        const profileScore = readScore(profile);
+
+        if (profileScore) {
+          setScore(profileScore);
+          setChecked(true);
+        }
+
+        if (profile?.mobileNumber) {
+          sessionStorage.setItem("scorecare_mobile_number", profile.mobileNumber);
+        }
+
+        if (profile?.panNumber) {
+          sessionStorage.setItem("scorecare_pan_number", profile.panNumber);
+        }
+
+        if (profile?.fullName) {
+          sessionStorage.setItem("scorecare_full_name", profile.fullName);
+        }
+
+        if (profile?.email) {
+          sessionStorage.setItem("scorecare_email", profile.email);
+        }
+
+        if (profile?.dateOfBirth) {
+          sessionStorage.setItem("scorecare_date_of_birth", profile.dateOfBirth);
+        }
+      } catch {
+        setError("Could not load your profile. Please try again.");
+      } finally {
+        setProfileLoading(false);
+      }
+    }
+
+    loadProfile();
+  }, [router]);
+
+  async function checkCibilScore() {
+    if (checking) return;
+
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
+    if (!canCheckScore) {
+      setError("Profile is missing PAN, mobile number, or name.");
+      return;
+    }
+
+    const cibilPayload: CibilPayload = {
+      pan: user?.panNumber ?? "",
+      mobile: user?.mobileNumber ?? "",
+      name: user?.fullName ?? "",
+      consent: "Y",
+      gender: "male",
+    };
+
+    setError("");
+    setChecking(true);
+
+    try {
+      const response = await apiRequest("/credit-reports/cibil", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: cibilPayload,
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
+      }
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result?.message || "Unable to fetch CIBIL score");
+      }
+
+      const displayResponse = await apiRequest("/credit-reports/cibil/display-data", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (displayResponse.status === 401 || displayResponse.status === 403) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
+      }
+
+      const displayResult = await displayResponse.json();
+
+      if (!displayResponse.ok) {
+        throw new Error(displayResult?.message || "Unable to load CIBIL display data");
+      }
+
+      const latestScore = readScore(displayResult) ?? readScore(result);
+
+      setScore(latestScore);
+      setChecked(true);
+      window.dispatchEvent(new CustomEvent("scorecare:cibil-display-updated", { detail: displayResult }));
+    } catch {
+      setError("Could not check your CIBIL score. Please try again.");
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  async function downloadReport() {
+    if (downloading) return;
+
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
+    setError("");
+    setDownloading(true);
+
+    try {
+      const response = await fetch(apiUrl("/credit-reports/cibil/download-report"), {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Unable to download report");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = getReportFileName(response.headers.get("content-disposition"));
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("Could not download your CIBIL report. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   return (
-    <AppCard className="xl:row-span-2">
+    <AppCard className="overflow-hidden xl:row-span-2">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-black text-[var(--portal-ink)]">Your CIBIL Score</p>
+          <p className="text-sm font-black text-[var(--portal-ink)]">
+            Your CIBIL Score
+          </p>
           <p className="text-xs text-[var(--portal-muted)]">
-            {checked ? "Last checked: just now" : "Meter ready. Tap below to fetch score."}
+            {profileLoading
+              ? "Loading verified profile..."
+              : checked || lastCheckedLabel
+                ? `Last checked: ${lastCheckedLabel ?? "just now"}`
+                : `Ready for ${user?.fullName ?? "your profile"}.`}
           </p>
         </div>
+
         <span className="grid size-9 place-items-center rounded-xl bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]">
           <Gauge className="size-4" />
         </span>
       </div>
 
       <div className="mt-4">
-        <ScoreMeter checked={checked} />
+        <ScoreMeter checked={checked} score={score} />
       </div>
 
-      <ScoreLegend />
+      <ScoreRangeLegend />
 
-      <PrimaryPortalButton type="button" onClick={() => setChecked(true)} className="mt-6 w-full">
-        {checked ? "Refresh Credit Score" : "Check Your Credit Score"}
-      </PrimaryPortalButton>
+      {error ? (
+        <p className="mt-4 rounded-xl bg-rose-50 px-4 py-3 text-xs font-bold text-rose-600">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="mt-6 grid grid-cols-2 gap-3">
+        <PrimaryPortalButton
+          type="button"
+          data-dashboard-home="true"
+          onClick={checkCibilScore}
+          className="w-full px-3"
+          disabled={profileLoading || checking}
+        >
+          <RotateCcw className={checking ? "size-4 animate-spin" : "size-4"} />
+          {profileLoading ? "Loading..." : checking ? "Refreshing..." : "Refresh Score"}
+        </PrimaryPortalButton>
+
+        <button
+          type="button"
+          data-dashboard-home="true"
+          onClick={downloadReport}
+          disabled={downloading}
+          className="inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-xl border border-[var(--portal-border)] bg-white px-3 text-xs font-black text-[var(--portal-ink)] shadow-[var(--portal-shadow-soft)] transition hover:border-[var(--portal-blue)] hover:text-[var(--portal-blue)] sm:h-11 sm:text-sm"
+        >
+          <Download className={downloading ? "size-4 animate-pulse" : "size-4"} />
+          {downloading ? "Downloading..." : "Download Report"}
+        </button>
+      </div>
     </AppCard>
   );
 }
 
-function ScoreMeter({ checked }: { checked: boolean }) {
+function ScoreRangeLegend() {
+  const ranges = [
+    { label: "Poor", range: "300-549", color: "bg-red-500" },
+    { label: "Fair", range: "550-649", color: "bg-lime-400" },
+    { label: "Good", range: "650-749", color: "bg-emerald-500" },
+    { label: "Excellent", range: "750-900", color: "bg-green-500" },
+  ];
+
   return (
-    <div className="relative mx-auto h-48 w-full max-w-xs animate-[meterFade_0.45s_ease-out]">
-      <svg className="absolute left-1/2 top-5 h-28 w-56 -translate-x-1/2 overflow-visible" viewBox="0 0 224 112" aria-hidden="true">
-        <path d="M 8 104 A 104 104 0 0 1 216 104" fill="none" stroke="#dff1ff" strokeLinecap="round" strokeWidth="16" />
-        <path d="M 8 104 A 104 104 0 0 1 216 104" fill="none" stroke="#ff5a1f" strokeDasharray="81.7 245.1" strokeDashoffset="0" strokeLinecap="round" strokeWidth="16" />
-        <path d="M 8 104 A 104 104 0 0 1 216 104" fill="none" stroke="#ff9a3d" strokeDasharray="81.7 245.1" strokeDashoffset="-81.7" strokeLinecap="round" strokeWidth="16" />
-        <path d="M 8 104 A 104 104 0 0 1 216 104" fill="none" stroke="#58b7ff" strokeDasharray="81.7 245.1" strokeDashoffset="-163.4" strokeLinecap="round" strokeWidth="16" />
-        <path d="M 8 104 A 104 104 0 0 1 216 104" fill="none" stroke="#1677ff" strokeDasharray="81.7 245.1" strokeDashoffset="-245.1" strokeLinecap="round" strokeWidth="16" />
+    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-[0.68rem] font-bold text-[var(--portal-muted)]">
+      {ranges.map((item) => (
+        <div key={item.label} className="flex items-center gap-2">
+          <span className={`size-2.5 rounded-full ${item.color}`} />
+          <span>
+            {item.label} - ({item.range})
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ScoreMeter({
+  checked,
+  score,
+}: {
+  checked: boolean;
+  score: number | null;
+}) {
+  const displayScore = score ?? 782;
+  const scoreLabel = getScoreStatus(displayScore).label;
+  const needleAngle = checked ? scoreToNeedleAngle(displayScore) : 270;
+
+  return (
+    <div className="relative mx-auto h-[13.25rem] w-full max-w-[22rem] animate-[meterFade_0.45s_ease-out]">
+      <div className="absolute inset-x-4 bottom-6 top-4 rounded-[2rem] bg-[linear-gradient(180deg,#fbfdff_0%,#ffffff_60%,#f7fbff_100%)]" />
+
+      <svg
+        className="absolute inset-x-0 top-0 h-40 w-full overflow-visible"
+        viewBox="0 0 224 148"
+        aria-hidden="true"
+      >
+        <defs>
+          <filter
+            id="dashboard-meter-soft-shadow"
+            x="-20%"
+            y="-30%"
+            width="140%"
+            height="160%"
+          >
+            <feDropShadow
+              dx="0"
+              dy="5"
+              floodColor="#101828"
+              floodOpacity="0.1"
+              stdDeviation="5"
+            />
+          </filter>
+
+          <linearGradient
+            id="dashboard-meter-arc"
+            x1="18"
+            x2="206"
+            y1="118"
+            y2="118"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0%" stopColor="#ff4d32" />
+            <stop offset="33%" stopColor="#ffb21f" />
+            <stop offset="68%" stopColor="#cbe63c" />
+            <stop offset="100%" stopColor="#20bd6b" />
+          </linearGradient>
+        </defs>
+
+        <path
+          d="M 20 118 A 92 92 0 0 1 204 118"
+          fill="none"
+          pathLength="100"
+          stroke="#e8f1fb"
+          strokeLinecap="round"
+          strokeWidth="18"
+        />
+
+        <path
+          d="M 20 118 A 92 92 0 0 1 204 118"
+          fill="none"
+          filter="url(#dashboard-meter-soft-shadow)"
+          pathLength="100"
+          stroke="url(#dashboard-meter-arc)"
+          strokeLinecap="round"
+          strokeWidth="15"
+        />
+
+        <path
+          d="M 39 118 A 73 73 0 0 1 185 118"
+          fill="none"
+          pathLength="100"
+          stroke="#e4edf7"
+          strokeLinecap="round"
+          strokeWidth="2.5"
+        />
+
+        <path
+          d="M 51 118 A 61 61 0 0 1 173 118"
+          fill="none"
+          pathLength="100"
+          stroke="#eef4fa"
+          strokeDasharray="3 4"
+          strokeLinecap="round"
+          strokeWidth="2"
+        />
+
+        {[0, 20, 40, 60, 80, 100].map((tick) => {
+          const angle = Math.PI - (Math.PI * tick) / 100;
+          const outerX = 112 + Math.cos(angle) * 89;
+          const outerY = 118 - Math.sin(angle) * 89;
+          const innerX = 112 + Math.cos(angle) * 79;
+          const innerY = 118 - Math.sin(angle) * 79;
+
+          return (
+            <line
+              key={tick}
+              stroke={tick === 0 || tick === 100 ? "#98a2b3" : "#cfd8e3"}
+              strokeLinecap="round"
+              strokeWidth={tick === 0 || tick === 100 ? 2.2 : 1.7}
+              x1={innerX}
+              x2={outerX}
+              y1={innerY}
+              y2={outerY}
+            />
+          );
+        })}
+
+        <g
+          className="transition-transform duration-1000 ease-out"
+          style={{
+            transform: `rotate(${needleAngle}deg)`,
+            transformOrigin: "112px 118px",
+          }}
+        >
+          <path
+            d="M112 116.5 L190 111.5 L190 124.5 L112 119.5 Z"
+            fill="#0b376d"
+          />
+          <path
+            d="M112 116.5 L190 111.5 L190 116.2 L112 118 Z"
+            fill="#155aa4"
+            opacity="0.9"
+          />
+        </g>
+
+        <circle cx="112" cy="118" fill="#0b376d" r="9" />
+        <circle cx="112" cy="118" fill="#1677ff" r="5" />
       </svg>
-      <div className="absolute left-1/2 top-[6.8rem] size-4 -translate-x-1/2 rounded-full bg-[var(--portal-blue)] shadow-lg shadow-blue-200" />
-      <div
-        className="absolute left-1/2 top-[7rem] h-2.5 w-24 origin-left rounded-full bg-[var(--portal-blue)] transition-transform duration-1000 ease-out [clip-path:polygon(0_50%,100%_0,100%_100%)]"
-        style={{ transform: `rotate(${checked ? "-36deg" : "-90deg"})` }}
-      />
-      <div className="absolute inset-x-0 bottom-8 flex justify-between text-sm font-semibold text-[var(--portal-muted)]">
+
+      <div className="absolute inset-x-3 bottom-10 flex justify-between px-2 text-xs font-black text-[var(--portal-muted)]">
         <span>300</span>
         <span>900</span>
       </div>
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-center">
-        {checked ? (
-          <>
-            <p className="text-2xl font-black text-[var(--portal-ink)]">782</p>
-            <p className="text-xs font-black text-[var(--portal-blue)]">Excellent</p>
-          </>
-        ) : (
-          <>
-            <p className="text-2xl font-bold text-[var(--portal-muted)]/45">--</p>
-            <p className="text-xs font-bold text-[var(--portal-muted)]/45">Not checked</p>
-          </>
-        )}
+
+      <div className="absolute inset-x-0 bottom-0 text-center">
+        <p className="text-2xl font-black text-[var(--portal-ink)]">
+          {checked ? displayScore : "--"}
+        </p>
+        <p className="text-xs font-bold text-[var(--portal-muted)]">
+          {checked ? scoreLabel : "Check to view score"}
+        </p>
       </div>
     </div>
   );
 }
 
-function ScoreLegend() {
-  const items = [
-    ["bg-red-500", "Poor (300-579)"],
-    ["bg-lime-300", "Fair (580-669)"],
-    ["bg-emerald-400", "Good (670-739)"],
-    ["bg-green-500", "Excellent (740-900)"],
-  ];
+function readScore(result: unknown) {
+  const data = result as {
+    score?: unknown;
+    cibilScore?: unknown;
+    credit_score?: unknown;
+    data?: {
+      score?: unknown;
+      cibilScore?: unknown;
+      credit_score?: unknown;
+      display?: {
+        score?: {
+          value?: unknown;
+        };
+      };
+      report?: {
+        score?: unknown;
+        cibilScore?: unknown;
+        credit_score?: unknown;
+      };
+    };
+  };
 
-  return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[0.68rem] text-[var(--portal-muted)]">
-      {items.map(([color, label]) => (
-        <div key={label} className="flex min-w-0 items-center gap-2">
-          <span className={`size-2.5 shrink-0 rounded-full ${color}`} />
-          <span className="leading-tight">{label}</span>
-        </div>
-      ))}
-    </div>
-  );
+  const score =
+    data.data?.display?.score?.value ??
+    data.data?.report?.cibilScore ??
+    data.data?.report?.score ??
+    data.data?.report?.credit_score ??
+    data.data?.cibilScore ??
+    data.data?.score ??
+    data.data?.credit_score ??
+    data.cibilScore ??
+    data.score ??
+    data.credit_score;
+
+  const numericScore = typeof score === "number" ? score : Number(score);
+
+  return Number.isFinite(numericScore) && numericScore > 0
+    ? numericScore
+    : null;
+}
+
+function getReportFileName(contentDisposition: string | null) {
+  if (!contentDisposition) {
+    const now = new Date();
+
+    const timestamp =
+      now.getFullYear() +
+      String(now.getMonth() + 1).padStart(2, "0") +
+      String(now.getDate()).padStart(2, "0") +
+      "_" +
+      String(now.getHours()).padStart(2, "0") +
+      String(now.getMinutes()).padStart(2, "0") +
+      String(now.getSeconds()).padStart(2, "0");
+
+    return `scorecare-cibil-report-${timestamp}.pdf`;
+  }
+
+  const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(contentDisposition);
+  const quotedMatch = /filename="?([^"]+)"?/i.exec(contentDisposition);
+  const fileName = utf8Match?.[1] ?? quotedMatch?.[1];
+
+  return fileName ? decodeURIComponent(fileName.trim()) : "scorecare-cibil-report.pdf";
+}
+
+function formatLastChecked(value?: string) {
+  if (!value) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function scoreToNeedleAngle(score: number) {
+  const safeScore = Math.min(900, Math.max(300, score));
+  const progress = (safeScore - 300) / 600;
+
+  return Math.round(180 + progress * 180);
+}
+
+function getScoreStatus(score: number): ScoreStatus {
+  if (score >= 800) {
+    return {
+      label: "Excellent",
+      risk: "Very Low Risk",
+      tone: "success",
+    };
+  }
+
+  if (score >= 750) {
+    return {
+      label: "Good",
+      risk: "Low Risk",
+      tone: "success",
+    };
+  }
+
+  if (score >= 700) {
+    return {
+      label: "Fair",
+      risk: "Medium Risk",
+      tone: "warning",
+    };
+  }
+
+  if (score >= 650) {
+    return {
+      label: "Average",
+      risk: "Elevated Risk",
+      tone: "warning",
+    };
+  }
+
+  if (score >= 300) {
+    return {
+      label: "Poor",
+      risk: "High Risk",
+      tone: "danger",
+    };
+  }
+
+  return {
+    label: "Pending",
+    risk: "Not Assessed",
+    tone: "neutral",
+  };
 }

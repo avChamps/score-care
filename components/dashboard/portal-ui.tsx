@@ -1,8 +1,10 @@
+"use client";
+
 import Link from "next/link";
-import { type ComponentPropsWithoutRef } from "react";
+import { useEffect, useState, type ComponentPropsWithoutRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   BadgeIndianRupee,
-  Bell,
   CreditCard,
   Gauge,
   Headphones,
@@ -13,12 +15,22 @@ import {
 } from "lucide-react";
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
 import { TopBarActions } from "@/components/dashboard/topbar-actions";
-import { dashboardActionsDisabled } from "@/lib/dashboard-lock";
+import { apiRequest } from "@/lib/api";
+import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { useDashboardActionsDisabled } from "@/lib/dashboard-lock";
 import { cn } from "@/lib/utils";
 
 type PortalShellProps = {
   active: "home" | "score" | "loans" | "fix" | "bills";
   children: React.ReactNode;
+};
+
+type UserProfile = {
+  mobileNumber?: string;
+  panNumber?: string;
+  fullName?: string;
+  email?: string;
+  dateOfBirth?: string;
 };
 
 const navItems = [
@@ -30,6 +42,8 @@ const navItems = [
 ] as const;
 
 export function PortalShell({ active, children }: PortalShellProps) {
+  const dashboardActionsDisabled = useDashboardActionsDisabled();
+
   return (
     <section className={cn("portal-theme relative min-h-screen overflow-hidden text-[var(--portal-ink)] lg:h-screen", dashboardActionsDisabled && "dashboard-actions-disabled")}>
       <DashboardAuthGuard />
@@ -53,6 +67,72 @@ export function PortalShell({ active, children }: PortalShellProps) {
 }
 
 export function PortalTopBar({ title, backHref }: { title?: string; backHref?: string }) {
+  const router = useRouter();
+  const [displayName, setDisplayName] = useState("");
+
+  useEffect(() => {
+    if (title) {
+      return;
+    }
+
+    async function loadProfile() {
+      const token = sessionStorage.getItem("scorecare_token");
+
+      if (!token || isTokenExpired(token)) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
+      }
+
+      try {
+        const response = await apiRequest("/users/me/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.status === 401 || response.status === 403) {
+          clearScorecareSession();
+          router.replace("/login");
+          return;
+        }
+
+        if (!response.ok) {
+          return;
+        }
+
+        const result = await response.json();
+        const user = (result?.data?.user ?? null) as UserProfile | null;
+
+        setDisplayName(user?.fullName?.trim() ?? "");
+
+        if (user?.mobileNumber) {
+          sessionStorage.setItem("scorecare_mobile_number", user.mobileNumber);
+        }
+
+        if (user?.panNumber) {
+          sessionStorage.setItem("scorecare_pan_number", user.panNumber);
+        }
+
+        if (user?.fullName) {
+          sessionStorage.setItem("scorecare_full_name", user.fullName);
+        }
+
+        if (user?.email) {
+          sessionStorage.setItem("scorecare_email", user.email);
+        }
+
+        if (user?.dateOfBirth) {
+          sessionStorage.setItem("scorecare_date_of_birth", user.dateOfBirth);
+        }
+      } catch {
+        setDisplayName("");
+      }
+    }
+
+    loadProfile();
+  }, [router, title]);
+
   return (
     <div className="sticky top-0 z-20 border-b border-[var(--portal-border)] bg-white/95 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
@@ -74,7 +154,7 @@ export function PortalTopBar({ title, backHref }: { title?: string; backHref?: s
           ) : (
             <div className="min-w-0">
               <p className="text-xs font-bold text-[var(--portal-muted)]">Welcome back</p>
-              <h1 className="truncate text-base font-black tracking-tight text-[var(--portal-ink)] sm:text-lg">Hi Gosu Disendra</h1>
+              <h1 className="truncate text-base font-black tracking-tight text-[var(--portal-ink)] sm:text-lg">Hi {displayName || "there"}</h1>
             </div>
           )}
         </div>
@@ -106,13 +186,19 @@ type PrimaryPortalButtonProps = ComponentPropsWithoutRef<"button"> & {
 };
 
 export function PrimaryPortalButton({ children, href, className, ...props }: PrimaryPortalButtonProps) {
+  const dashboardActionsDisabled = useDashboardActionsDisabled();
+  const bypassDashboardLock =
+    props["data-dashboard-home" as keyof typeof props] === "true" ||
+    props["data-dashboard-profile" as keyof typeof props] === "true" ||
+    props["data-dashboard-logout" as keyof typeof props] === "true";
+  const disabledByDashboardLock = dashboardActionsDisabled && !bypassDashboardLock;
   const classes = cn(
     "inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-xl border border-[var(--portal-orange)] bg-[var(--portal-orange)] px-5 text-xs font-black text-white shadow-[0_2px_6px_rgba(255,109,0,0.24)] transition hover:bg-[var(--portal-orange-deep)] sm:h-11 sm:text-sm",
     className,
   );
 
   if (href) {
-    if (dashboardActionsDisabled) {
+    if (disabledByDashboardLock) {
       return (
         <span aria-disabled="true" className={cn(classes, "cursor-not-allowed opacity-55 hover:bg-[var(--portal-orange)]")}>
           {children}
@@ -128,7 +214,7 @@ export function PrimaryPortalButton({ children, href, className, ...props }: Pri
   }
 
   return (
-    <button {...props} className={cn(classes, dashboardActionsDisabled && "cursor-not-allowed opacity-55 hover:bg-[var(--portal-orange)]")} disabled={dashboardActionsDisabled || props.disabled}>
+    <button {...props} className={cn(classes, disabledByDashboardLock && "cursor-not-allowed opacity-55 hover:bg-[var(--portal-orange)]")} disabled={disabledByDashboardLock || props.disabled}>
       {children}
     </button>
   );
@@ -150,21 +236,22 @@ export function ScoreGauge({ compact = false }: { compact?: boolean }) {
 }
 
 export function CreditReportBanner() {
-  return (
-    <div className="portal-card relative overflow-hidden rounded-[var(--portal-radius)] border p-5">
-      <div className="absolute inset-y-0 left-0 w-1 bg-[var(--portal-blue)]" />
-      <div className="relative z-10 pr-24">
-        <p className="text-sm font-black uppercase tracking-tight text-[var(--portal-ink)]">Credit Report</p>
-        <p className="mt-2 text-xs leading-5 text-[var(--portal-muted)]">Track score health, report status, and improvement opportunities.</p>
-      </div>
-      <div className="absolute right-5 top-1/2 grid size-12 -translate-y-1/2 place-items-center rounded-xl border border-[var(--portal-border)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]">
-        <Bell className="size-6" />
-      </div>
-    </div>
-  );
+  // return (
+  //   <div className="portal-card relative overflow-hidden rounded-[var(--portal-radius)] border p-5">
+  //     <div className="absolute inset-y-0 left-0 w-1 bg-[var(--portal-blue)]" />
+  //     <div className="relative z-10 pr-24">
+  //       <p className="text-sm font-black uppercase tracking-tight text-[var(--portal-ink)]">Credit Report</p>
+  //       <p className="mt-2 text-xs leading-5 text-[var(--portal-muted)]">Track score health, report status, and improvement opportunities.</p>
+  //     </div>
+  //     <div className="absolute right-5 top-1/2 grid size-12 -translate-y-1/2 place-items-center rounded-xl border border-[var(--portal-border)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]">
+  //       <Bell className="size-6" />
+  //     </div>
+  //   </div>
+  // );
 }
 
 export function ListAction({ icon, title, subtitle, href }: { icon: React.ReactNode; title: string; subtitle: string; href: string }) {
+  const dashboardActionsDisabled = useDashboardActionsDisabled();
   const classes = "group flex items-center gap-3 rounded-[var(--portal-radius)] border border-[var(--portal-border)] bg-white p-4 shadow-[var(--portal-shadow-soft)] transition hover:border-[var(--portal-blue)]";
 
   if (dashboardActionsDisabled) {
@@ -252,6 +339,8 @@ export function UtilityTile({ icon, label }: { icon: React.ReactNode; label: str
 }
 
 export function PlusApplyButton() {
+  const dashboardActionsDisabled = useDashboardActionsDisabled();
+
   if (dashboardActionsDisabled) {
     return (
       <span aria-disabled="true" className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-[var(--portal-orange)] px-5 py-3 text-sm font-bold text-white opacity-55 shadow-[0_2px_6px_rgba(255,109,0,0.2)]">
@@ -271,28 +360,39 @@ function BottomNav({ active }: { active: PortalShellProps["active"] }) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--portal-border)] bg-white px-2 py-1.5 shadow-[0_-8px_20px_rgba(16,24,40,0.08)] lg:hidden">
       <div className="mx-auto grid max-w-md grid-cols-5">
-        {navItems.map(({ id, label, href, Icon }) => {
+        {navItems.map(({ id, label, Icon }) => {
           const selected = id === active;
-          const disabled = dashboardActionsDisabled && id !== "home";
-          if (disabled) {
+
+          if (id === "score") {
             return (
-              <button
+              <Link
                 key={id}
-                aria-disabled="true"
-                className="relative flex cursor-not-allowed flex-col items-center justify-center gap-1 px-1 py-2 text-[0.66rem] font-black text-[var(--portal-muted)] opacity-45"
-                type="button"
+                href="/dashboard/credit-score"
+                data-dashboard-score="true"
+                className={cn(
+                  "relative flex flex-col items-center justify-center gap-1 px-1 py-2 text-[0.66rem] font-black text-[var(--portal-muted)] transition hover:text-[var(--portal-blue)]",
+                  selected && "text-[var(--portal-ink)]",
+                )}
               >
-                <Icon className="size-5" strokeWidth={1.8} />
+                <Icon className="size-5" strokeWidth={selected ? 2.5 : 1.8} />
                 <span className="text-center leading-tight">{label}</span>
-              </button>
+              </Link>
             );
           }
 
           return (
-            <Link key={id} href={href} data-dashboard-home={id === "home" ? "true" : undefined} className={cn("relative flex flex-col items-center justify-center gap-1 px-1 py-2 text-[0.66rem] font-black text-[var(--portal-muted)]", selected && "text-[var(--portal-ink)] after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:w-9 after:-translate-x-1/2 after:rounded-full after:bg-[var(--portal-orange)]")}>
+            <button
+              key={id}
+              aria-disabled="true"
+              className={cn(
+                "relative flex cursor-not-allowed flex-col items-center justify-center gap-1 px-1 py-2 text-[0.66rem] font-black text-[var(--portal-muted)] opacity-45",
+                selected && "text-[var(--portal-ink)] opacity-60",
+              )}
+              type="button"
+            >
               <Icon className="size-5" strokeWidth={selected ? 2.5 : 1.8} />
               <span className="text-center leading-tight">{label}</span>
-            </Link>
+            </button>
           );
         })}
       </div>
@@ -303,28 +403,39 @@ function BottomNav({ active }: { active: PortalShellProps["active"] }) {
 function NavItems({ active, direction }: { active: PortalShellProps["active"]; direction: "side" }) {
   return (
     <div className={cn("grid gap-1.5", direction === "side" && "text-xs")}>
-      {navItems.map(({ id, label, href, Icon }) => {
+      {navItems.map(({ id, label, Icon }) => {
         const selected = id === active;
-        const disabled = dashboardActionsDisabled && id !== "home";
-        if (disabled) {
+
+        if (id === "score") {
           return (
-            <button
+            <Link
               key={id}
-              aria-disabled="true"
-              className="flex cursor-not-allowed items-center gap-3 rounded-2xl border-l-4 border-transparent px-3 py-2.5 text-left font-black text-[var(--portal-muted)] opacity-45"
-              type="button"
+              href="/dashboard/credit-score"
+              data-dashboard-score="true"
+              className={cn(
+                "flex items-center gap-3 rounded-2xl border-l-4 border-transparent px-3 py-2.5 text-left font-black text-[var(--portal-muted)] transition hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)]",
+                selected && "border-[var(--portal-orange)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]",
+              )}
             >
               <Icon className="size-4" />
               {label}
-            </button>
+            </Link>
           );
         }
 
         return (
-          <Link key={id} href={href} data-dashboard-home={id === "home" ? "true" : undefined} className={cn("flex items-center gap-3 rounded-2xl border-l-4 border-transparent px-3 py-2.5 font-black text-[var(--portal-muted)] transition hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)]", selected && "border-[var(--portal-orange)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)] hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)]")}>
+          <button
+            key={id}
+            aria-disabled="true"
+            className={cn(
+              "flex cursor-not-allowed items-center gap-3 rounded-2xl border-l-4 border-transparent px-3 py-2.5 text-left font-black text-[var(--portal-muted)] opacity-45",
+              selected && "border-[var(--portal-orange)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)] opacity-60",
+            )}
+            type="button"
+          >
             <Icon className="size-4" />
             {label}
-          </Link>
+          </button>
         );
       })}
     </div>
