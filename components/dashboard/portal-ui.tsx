@@ -190,6 +190,7 @@ export function PrimaryPortalButton({ children, href, className, ...props }: Pri
   const bypassDashboardLock =
     props["data-dashboard-home" as keyof typeof props] === "true" ||
     props["data-dashboard-profile" as keyof typeof props] === "true" ||
+    props["data-dashboard-loans" as keyof typeof props] === "true" ||
     props["data-dashboard-logout" as keyof typeof props] === "true";
   const disabledByDashboardLock = dashboardActionsDisabled && !bypassDashboardLock;
   const classes = cn(
@@ -252,9 +253,10 @@ export function CreditReportBanner() {
 
 export function ListAction({ icon, title, subtitle, href }: { icon: React.ReactNode; title: string; subtitle: string; href: string }) {
   const dashboardActionsDisabled = useDashboardActionsDisabled();
+  const bypassDashboardLock = href === "/dashboard/loans";
   const classes = "group flex items-center gap-3 rounded-[var(--portal-radius)] border border-[var(--portal-border)] bg-white p-4 shadow-[var(--portal-shadow-soft)] transition hover:border-[var(--portal-blue)]";
 
-  if (dashboardActionsDisabled) {
+  if (dashboardActionsDisabled && !bypassDashboardLock) {
     return (
       <div aria-disabled="true" className={cn(classes, "cursor-not-allowed opacity-55 hover:border-[var(--portal-border)]")}>
         <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-[var(--portal-border)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]">{icon}</span>
@@ -268,7 +270,7 @@ export function ListAction({ icon, title, subtitle, href }: { icon: React.ReactN
   }
 
   return (
-    <Link href={href} className={classes}>
+    <Link href={href} data-dashboard-loans={bypassDashboardLock ? "true" : undefined} className={classes}>
       <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-[var(--portal-border)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)] transition group-hover:bg-[var(--portal-orange-soft)] group-hover:text-[var(--portal-orange)]">{icon}</span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-black text-[var(--portal-ink)]">{title}</span>
@@ -343,14 +345,14 @@ export function PlusApplyButton() {
 
   if (dashboardActionsDisabled) {
     return (
-      <span aria-disabled="true" className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-[var(--portal-orange)] px-5 py-3 text-sm font-bold text-white opacity-55 shadow-[0_2px_6px_rgba(255,109,0,0.2)]">
+      <Link href="/dashboard/loans" data-dashboard-loans="true" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--portal-orange)] px-5 py-3 text-sm font-bold text-white shadow-[0_2px_6px_rgba(255,109,0,0.2)]">
         <Plus className="size-5" /> Apply for Loan
-      </span>
+      </Link>
     );
   }
 
   return (
-    <Link href="/dashboard/loans" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--portal-orange)] px-5 py-3 text-sm font-bold text-white shadow-[0_2px_6px_rgba(255,109,0,0.2)]">
+    <Link href="/dashboard/loans" data-dashboard-loans="true" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--portal-orange)] px-5 py-3 text-sm font-bold text-white shadow-[0_2px_6px_rgba(255,109,0,0.2)]">
       <Plus className="size-5" /> Apply for Loan
     </Link>
   );
@@ -363,15 +365,18 @@ function BottomNav({ active }: { active: PortalShellProps["active"] }) {
         {navItems.map(({ id, label, Icon }) => {
           const selected = id === active;
 
-          if (id === "score") {
-            return (
-              <Link
-                key={id}
-                href="/dashboard/credit-score"
-                data-dashboard-score="true"
-                className={cn(
-                  "relative flex flex-col items-center justify-center gap-1 px-1 py-2 text-[0.66rem] font-black text-[var(--portal-muted)] transition hover:text-[var(--portal-blue)]",
-                  selected && "text-[var(--portal-ink)]",
+        if (id === "score" || id === "loans") {
+          const href = id === "score" ? "/dashboard/credit-score" : "/dashboard/loans";
+
+          return (
+            <Link
+              key={id}
+              href={href}
+              data-dashboard-loans={id === "loans" ? "true" : undefined}
+              data-dashboard-score={id === "score" ? "true" : undefined}
+              className={cn(
+                "relative flex flex-col items-center justify-center gap-1 px-1 py-2 text-[0.66rem] font-black text-[var(--portal-muted)] transition hover:text-[var(--portal-blue)]",
+                selected && "text-[var(--portal-ink)]",
                 )}
               >
                 <Icon className="size-5" strokeWidth={selected ? 2.5 : 1.8} />
@@ -406,12 +411,15 @@ function NavItems({ active, direction }: { active: PortalShellProps["active"]; d
       {navItems.map(({ id, label, Icon }) => {
         const selected = id === active;
 
-        if (id === "score") {
+        if (id === "score" || id === "loans") {
+          const href = id === "score" ? "/dashboard/credit-score" : "/dashboard/loans";
+
           return (
             <Link
               key={id}
-              href="/dashboard/credit-score"
-              data-dashboard-score="true"
+              href={href}
+              data-dashboard-loans={id === "loans" ? "true" : undefined}
+              data-dashboard-score={id === "score" ? "true" : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-2xl border-l-4 border-transparent px-3 py-2.5 text-left font-black text-[var(--portal-muted)] transition hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)]",
                 selected && "border-[var(--portal-orange)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]",

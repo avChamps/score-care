@@ -13,7 +13,8 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AppCard,
   PageContent,
@@ -21,47 +22,80 @@ import {
   PortalTopBar,
   PrimaryPortalButton,
 } from "@/components/dashboard/portal-ui";
+import { apiRequest } from "@/lib/api";
+import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { cn } from "@/lib/utils";
 
 type LoanFilter = "All Loans" | "Active" | "Completed";
-
-const loans = [
-  {
-    id: "hdfc-active",
-    bank: "HDFC Bank",
-    borrower: "Suresh patel",
-    amount: "Rs.500,000",
-    emi: "Rs.500,000",
-    nextEmi: "5 Feb",
-    status: "Active",
-    sanctioned: "5/1/2025",
-    disbursed: "5/1/2025",
-    tenure: "1/36",
-    overdue: "",
-  },
-  {
-    id: "hdfc-overdue",
-    bank: "HDFC Bank",
-    borrower: "Suresh patel",
-    amount: "Rs.500,000",
-    emi: "Rs.500,000",
-    nextEmi: "5 Feb",
-    status: "Disbursed",
-    sanctioned: "5/1/2025",
-    disbursed: "5/1/2025",
-    tenure: "1/36",
-    overdue: "Rs.23,200 overdue - Affects CIBIL",
-  },
-];
-
-type Loan = (typeof loans)[number];
+type DisplayDataResponse = {
+  fetchedAt?: string | null;
+  data?: {
+    report?: {
+      credit_score?: string | number | null;
+    };
+    display?: {
+      profile?: {
+        name?: string | null;
+        fetched_at?: string | null;
+      };
+      score?: {
+        value?: string | number | null;
+      };
+      accounts?: CreditAccount[] | null;
+    };
+  };
+};
+type CreditAccount = {
+  account_closed?: string | null;
+  amount_overdue?: string | number | null;
+  current_balance?: string | number | null;
+  emi?: string | number | null;
+  high_credit_amount?: string | number | null;
+  last_payment?: string | null;
+  member_name?: string | null;
+  opened?: string | null;
+  payment_frequency?: string | null;
+  repayment_tenure?: string | number | null;
+  reported_and_certified?: string | null;
+  type?: string | null;
+};
+type Loan = {
+  amount: string;
+  bank: string;
+  borrower: string;
+  disbursed: string;
+  emi: string;
+  id: string;
+  nextEmi: string;
+  overdue: string;
+  paymentFrequency: string;
+  sanctioned: string;
+  status: "Active" | "Completed" | "Overdue";
+  tenure: string;
+};
+type LoanSummary = {
+  activeAmount: string;
+  activeCount: number;
+  lastChecked: string;
+  overdueAmount: string;
+  overdueCount: number;
+};
 
 const employmentTypes = ["Salaried", "Self Employed", "Business Owner", "Professional"];
 
 export function LoansExperience() {
+  const router = useRouter();
   const [applyOpen, setApplyOpen] = useState(false);
   const [filter, setFilter] = useState<LoanFilter>("All Loans");
   const [employmentType, setEmploymentType] = useState("Salaried");
+  const [displayData, setDisplayData] = useState<DisplayDataResponse | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const loans = useMemo(() => buildLoans(displayData), [displayData]);
+  const summary = useMemo(() => buildLoanSummary(loans, displayData), [displayData, loans]);
+  const score = readScore(displayData);
+  const lastChecked = readLastChecked(displayData);
 
   const visibleLoans = useMemo(() => {
     if (filter === "Active") {
@@ -69,28 +103,86 @@ export function LoansExperience() {
     }
 
     if (filter === "Completed") {
-      return [];
+      return loans.filter((loan) => loan.status === "Completed");
     }
 
     return loans;
-  }, [filter]);
+  }, [filter, loans]);
+
+  const loadLoans = useCallback(async () => {
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await apiRequest("/credit-reports/cibil/display-data", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
+      }
+
+      const result = (await response.json()) as DisplayDataResponse;
+
+      if (!response.ok) {
+        throw new Error("Unable to load loans");
+      }
+
+      setDisplayData(result);
+    } catch {
+      setDisplayData(null);
+      setError("Could not load loan accounts from your CIBIL report.");
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    const loadTimer = window.setTimeout(() => {
+      void loadLoans();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(loadTimer);
+    };
+  }, [loadLoans]);
 
   return (
     <PortalShell active="loans">
       <PortalTopBar title="Loan Repayments" />
       <PageContent>
         <RepaymentsView
+          error={error}
           filter={filter}
+          lastChecked={lastChecked}
+          loading={loading}
           loans={visibleLoans}
           onApply={() => setApplyOpen(true)}
           onFilterChange={setFilter}
+          onRefresh={loadLoans}
+          score={score}
+          summary={summary}
         />
       </PageContent>
       {applyOpen ? (
         <ApplyLoanDialog
           employmentType={employmentType}
+          lastChecked={lastChecked}
           onClose={() => setApplyOpen(false)}
           onEmploymentTypeChange={setEmploymentType}
+          score={score}
         />
       ) : null}
     </PortalShell>
@@ -98,15 +190,27 @@ export function LoansExperience() {
 }
 
 function RepaymentsView({
+  error,
   filter,
+  lastChecked,
+  loading,
   loans,
   onApply,
   onFilterChange,
+  onRefresh,
+  score,
+  summary,
 }: {
+  error: string;
   filter: LoanFilter;
+  lastChecked: string | null;
+  loading: boolean;
   loans: Loan[];
   onApply: () => void;
   onFilterChange: (filter: LoanFilter) => void;
+  onRefresh: () => void;
+  score: number | null;
+  summary: LoanSummary;
 }) {
   return (
     <div className="space-y-5 animate-[creditPanelIn_0.42s_ease-out]">
@@ -114,6 +218,7 @@ function RepaymentsView({
         <div>
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-[var(--portal-orange)]">Loans</p>
           <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">Repayments</h2>
+          <p className="mt-1 text-xs text-slate-500">{loading ? "Loading CIBIL accounts..." : lastChecked ? `Report updated ${lastChecked}` : "Report data not available"}</p>
         </div>
         <button
           className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--portal-orange)] px-3.5 text-xs font-bold text-white shadow-[0_2px_6px_rgba(255,109,0,0.22)] transition hover:bg-[var(--portal-orange-deep)]"
@@ -138,7 +243,7 @@ function RepaymentsView({
             <span className="min-w-0">
               <span className="block text-sm font-bold text-slate-950">Need a new loan?</span>
               <span className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                <CheckCircle2 className="size-3.5 text-emerald-600" /> CIBIL, KYC and plan are ready
+                <CheckCircle2 className="size-3.5 text-emerald-600" /> CIBIL score {score ?? "--"} and report details are ready
               </span>
             </span>
           </div>
@@ -156,9 +261,20 @@ function RepaymentsView({
       </button>
 
       <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[var(--portal-shadow-soft)]">
-        <SummaryCard tone="green" title="Active Loans" value="3" amount="Rs.1,550,000" caption="21/1/2026" />
-        <SummaryCard tone="red" title="Overdue" value="3" amount="Rs.1,550,000" caption="Due date: 21/1/2026" />
+        <SummaryCard tone="green" title="Active Loans" value={loading ? "..." : String(summary.activeCount)} amount={loading ? "..." : summary.activeAmount} caption={summary.lastChecked} />
+        <SummaryCard tone="red" title="Overdue" value={loading ? "..." : String(summary.overdueCount)} amount={loading ? "..." : summary.overdueAmount} caption={summary.overdueCount ? "Affects CIBIL" : "No overdue amount"} />
       </div>
+
+      {error ? (
+        <AppCard className="border-rose-200 bg-rose-50">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-bold leading-5 text-rose-700">{error}</p>
+            <button className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[0.68rem] font-bold text-rose-700" type="button" onClick={onRefresh}>
+              Retry
+            </button>
+          </div>
+        </AppCard>
+      ) : null}
 
       <div className="flex gap-2 overflow-x-auto border-b border-slate-200 pb-2">
         {(["All Loans", "Active", "Completed"] as LoanFilter[]).map((tab) => (
@@ -177,12 +293,14 @@ function RepaymentsView({
       </div>
 
       <div className="grid gap-3">
-        {loans.length ? (
+        {loading ? (
+          <LoanLoadingCards />
+        ) : loans.length ? (
           loans.map((loan, index) => <ProfessionalLoanCard key={loan.id} index={index} loan={loan} />)
         ) : (
           <AppCard className="xl:col-span-2">
-            <p className="text-sm font-bold text-slate-800">No completed loans yet</p>
-            <p className="mt-1 text-xs text-slate-500">Completed loan accounts will appear here after closure.</p>
+            <p className="text-sm font-bold text-slate-800">{filter === "Completed" ? "No completed loans yet" : "No loan accounts found"}</p>
+            <p className="mt-1 text-xs text-slate-500">{filter === "Completed" ? "Completed loan accounts will appear here after closure." : "Loan accounts from your latest CIBIL report will appear here."}</p>
           </AppCard>
         )}
       </div>
@@ -226,7 +344,7 @@ function SummaryCard({
 }
 
 function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
-  const overdue = Boolean(loan.overdue);
+  const overdue = loan.status === "Overdue";
 
   return (
     <AppCard
@@ -253,7 +371,7 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
 
       <div className="grid grid-cols-2 border-y border-slate-100">
         <LoanMetric title="EMI Amount" value={loan.emi} />
-        <LoanMetric title="Next EMI" value={loan.nextEmi} />
+        <LoanMetric title="Last Payment" value={loan.nextEmi} />
       </div>
 
       {overdue ? (
@@ -270,10 +388,30 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
 
       <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3 sm:px-5">
         <PrimaryPortalButton className={cn("h-11 w-full rounded-xl text-sm", overdue && "border-rose-500 bg-rose-500 shadow-rose-100 hover:bg-rose-600")}>
-          <CreditCard className="size-5" /> Pay EMI 15,000
+          <CreditCard className="size-5" /> Pay EMI {loan.emi}
         </PrimaryPortalButton>
       </div>
     </AppCard>
+  );
+}
+
+function LoanLoadingCards() {
+  return (
+    <>
+      {[0, 1].map((item) => (
+        <AppCard key={item} className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <span className="h-4 w-36 rounded-full bg-slate-100 animate-pulse" />
+            <span className="h-7 w-20 rounded-full bg-slate-100 animate-pulse" />
+          </div>
+          <span className="block h-8 w-44 rounded-full bg-slate-100 animate-pulse" />
+          <div className="grid grid-cols-2 gap-3">
+            <span className="h-14 rounded-2xl bg-slate-100 animate-pulse" />
+            <span className="h-14 rounded-2xl bg-slate-100 animate-pulse" />
+          </div>
+        </AppCard>
+      ))}
+    </>
   );
 }
 
@@ -297,12 +435,16 @@ function MetaCell({ align, label, value }: { align?: "right"; label: string; val
 
 function ApplyLoanDialog({
   employmentType,
+  lastChecked,
   onClose,
   onEmploymentTypeChange,
+  score,
 }: {
   employmentType: string;
+  lastChecked: string | null;
   onClose: () => void;
   onEmploymentTypeChange: (type: string) => void;
+  score: number | null;
 }) {
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/45 px-4 py-5 backdrop-blur-sm animate-[creditPanelIn_0.2s_ease-out] sm:px-6">
@@ -331,8 +473,8 @@ function ApplyLoanDialog({
                 <CheckCircle2 className="size-6" />
               </span>
               <div>
-                <p className="text-sm font-bold text-emerald-700">CIBIL Score: 742</p>
-                <p className="text-xs text-slate-600">Verified on 10/1/2025</p>
+                <p className="text-sm font-bold text-emerald-700">CIBIL Score: {score ?? "--"}</p>
+                <p className="text-xs text-slate-600">{lastChecked ? `Verified on ${lastChecked}` : "Latest report data will be used when available"}</p>
               </div>
             </div>
             <button className="text-xs font-bold text-cyan-700 transition hover:text-cyan-900" type="button">
@@ -451,4 +593,124 @@ function UploadField({ label }: { label: string }) {
       </label>
     </FormField>
   );
+}
+
+function buildLoans(result: DisplayDataResponse | null): Loan[] {
+  const borrower = result?.data?.display?.profile?.name || "Borrower";
+  const accounts = result?.data?.display?.accounts ?? [];
+
+  return accounts.map((account, index) => {
+    const overdueAmount = readNumericValue(account.amount_overdue);
+    const closed = Boolean(account.account_closed);
+    const status = overdueAmount > 0 ? "Overdue" : closed ? "Completed" : "Active";
+    const emi = formatRupees(account.emi);
+    const amount = readNumericValue(account.high_credit_amount) || readNumericValue(account.current_balance);
+
+    return {
+      amount: formatRupees(amount),
+      bank: account.member_name || "Credit lender",
+      borrower,
+      disbursed: formatCompactDate(account.reported_and_certified || account.opened),
+      emi,
+      id: `${account.member_name || "loan"}-${account.type || "account"}-${index}`,
+      nextEmi: account.last_payment ? formatCompactDate(account.last_payment) : "--",
+      overdue: overdueAmount > 0 ? `${formatRupees(overdueAmount)} overdue - Affects CIBIL` : "",
+      paymentFrequency: formatPaymentFrequency(account.payment_frequency),
+      sanctioned: formatCompactDate(account.opened),
+      status,
+      tenure: account.repayment_tenure ? String(account.repayment_tenure) : "--",
+    };
+  });
+}
+
+function buildLoanSummary(loans: Loan[], result: DisplayDataResponse | null): LoanSummary {
+  const activeLoans = loans.filter((loan) => loan.status === "Active" || loan.status === "Overdue");
+  const overdueLoans = loans.filter((loan) => loan.status === "Overdue");
+  const accounts = result?.data?.display?.accounts ?? [];
+  const activeAmount = accounts
+    .filter((account) => !account.account_closed)
+    .reduce((total, account) => total + (readNumericValue(account.high_credit_amount) || readNumericValue(account.current_balance)), 0);
+  const overdueAmount = accounts.reduce((total, account) => total + readNumericValue(account.amount_overdue), 0);
+
+  return {
+    activeAmount: formatRupees(activeAmount),
+    activeCount: activeLoans.length,
+    lastChecked: readLastChecked(result) ?? "--",
+    overdueAmount: formatRupees(overdueAmount),
+    overdueCount: overdueLoans.length,
+  };
+}
+
+function readScore(result: DisplayDataResponse | null) {
+  const score = result?.data?.display?.score?.value ?? result?.data?.report?.credit_score;
+  const numericScore = typeof score === "number" ? score : Number(score);
+
+  return Number.isFinite(numericScore) && numericScore > 0 ? numericScore : null;
+}
+
+function readLastChecked(result: DisplayDataResponse | null) {
+  const value = result?.data?.display?.profile?.fetched_at ?? result?.fetchedAt;
+
+  return value ? formatDateTime(value) : null;
+}
+
+function readNumericValue(value: unknown) {
+  const numericValue = typeof value === "number" ? value : Number(value);
+
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
+function formatRupees(value: unknown) {
+  const amount = readNumericValue(value);
+
+  if (!amount) return "Rs. 0";
+
+  return new Intl.NumberFormat("en-IN", {
+    currency: "INR",
+    maximumFractionDigits: 0,
+    style: "currency",
+  }).format(amount).replace("₹", "Rs. ");
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return formatCompactDate(value);
+  }
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatCompactDate(value?: string | null) {
+  if (!value) return "--";
+
+  if (/^\d{8}$/.test(value)) {
+    const day = value.slice(0, 2);
+    const month = value.slice(2, 4);
+    const year = value.slice(4);
+
+    if (value === "11111111" || value === "00000000") {
+      return "--";
+    }
+
+    return `${day}/${month}/${year}`;
+  }
+
+  return value;
+}
+
+function formatPaymentFrequency(value?: string | null) {
+  const frequencies: Record<string, string> = {
+    "01": "Weekly",
+    "02": "Fortnightly",
+    "03": "Monthly",
+    "04": "Quarterly",
+  };
+
+  return value ? frequencies[value] ?? value : "--";
 }

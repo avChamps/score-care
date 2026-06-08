@@ -18,7 +18,7 @@ export function getDashboardActionsDisabled() {
 	try {
 		const loggedIn = isLoggedIn();
 		const path = typeof location !== "undefined" ? location.pathname : "";
-		const allowedInteractivePaths = ["/profile", "/dashboard/credit-score"];
+		const allowedInteractivePaths = ["/profile", "/dashboard/credit-score", "/dashboard/loans"];
 
 		if (loggedIn && !allowedInteractivePaths.some((allowedPath) => path.startsWith(allowedPath))) return true;
 		return false;
