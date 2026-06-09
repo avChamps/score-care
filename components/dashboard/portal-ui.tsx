@@ -365,8 +365,13 @@ function BottomNav({ active }: { active: PortalShellProps["active"] }) {
         {navItems.map(({ id, label, Icon }) => {
           const selected = id === active;
 
-        if (id === "score" || id === "loans") {
-          const href = id === "score" ? "/dashboard/credit-score" : "/dashboard/loans";
+          if (id === "score" || id === "loans" || id === "home") {
+            const href =
+              id === "home"
+                ? "/dashboard"
+                : id === "score"
+                  ? "/dashboard/credit-score"
+                  : "/dashboard/loans";
 
           return (
             <Link
@@ -411,8 +416,8 @@ function NavItems({ active, direction }: { active: PortalShellProps["active"]; d
       {navItems.map(({ id, label, Icon }) => {
         const selected = id === active;
 
-        if (id === "score" || id === "loans") {
-          const href = id === "score" ? "/dashboard/credit-score" : "/dashboard/loans";
+        if (id === "score" || id === "loans" || id === "home") {
+          const href = id === "score" ? "/dashboard/credit-score" : id === "loans" ? "/dashboard/loans" : "/dashboard";
 
           return (
             <Link
