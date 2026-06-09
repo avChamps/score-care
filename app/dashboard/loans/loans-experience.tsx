@@ -9,11 +9,12 @@ import {
   FileCheck2,
   FileText,
   Info,
+  LoaderCircle,
   Plus,
   Upload,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AppCard,
@@ -22,11 +23,11 @@ import {
   PortalTopBar,
   PrimaryPortalButton,
 } from "@/components/dashboard/portal-ui";
-import { apiRequest } from "@/lib/api";
+import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { cn } from "@/lib/utils";
 
-type LoanFilter = "All Loans" | "Active" | "Completed";
+type LoanFilter = "All Loans" | "Your Applications";
 type DisplayDataResponse = {
   fetchedAt?: string | null;
   data?: {
@@ -80,17 +81,63 @@ type LoanSummary = {
   overdueAmount: string;
   overdueCount: number;
 };
+type LoanToast = {
+  message: string;
+  title: string;
+};
+type LoanApplication = {
+  applicationStatus?: string | null;
+  id?: string | number | null;
+  loanAmount?: string | number | null;
+  loanType?: string | null;
+  submittedAt?: string | null;
+  updatedAt?: string | null;
+};
 
-const employmentTypes = ["Salaried", "Self Employed", "Business Owner", "Professional"];
+const loanTypes = [
+  { label: "Personal Loan", value: "personal" },
+  { label: "Overdraft Loan", value: "overdraft" },
+  { label: "Home Loan", value: "home" },
+  { label: "Business Loan", value: "business" },
+  { label: "MSME Loan", value: "msme" },
+  { label: "Loan Against Property", value: "loan_against_property" },
+];
+const employmentTypes = [
+  { label: "Salaried", value: "salaried" },
+  { label: "Self Employed", value: "self_employed" },
+  { label: "Business Owner", value: "business_owner" },
+  { label: "Professional", value: "professional" },
+];
+const uploadLimits = {
+  aadhaarCard: 2,
+  bankStatements: 3,
+  panCard: 2,
+  salarySlips: 8,
+};
+
+type UploadFieldName = keyof typeof uploadLimits;
+type SelectedUploadFiles = Record<UploadFieldName, File[]>;
+
+const emptySelectedUploadFiles: SelectedUploadFiles = {
+  aadhaarCard: [],
+  bankStatements: [],
+  panCard: [],
+  salarySlips: [],
+};
 
 export function LoansExperience() {
   const router = useRouter();
   const [applyOpen, setApplyOpen] = useState(false);
   const [filter, setFilter] = useState<LoanFilter>("All Loans");
-  const [employmentType, setEmploymentType] = useState("Salaried");
+  const [loanType, setLoanType] = useState("personal");
+  const [employmentType, setEmploymentType] = useState("salaried");
   const [displayData, setDisplayData] = useState<DisplayDataResponse | null>(null);
   const [error, setError] = useState("");
+  const [application, setApplication] = useState<LoanApplication | null>(null);
+  const [applicationError, setApplicationError] = useState("");
+  const [applicationLoading, setApplicationLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<LoanToast | null>(null);
 
   const loans = useMemo(() => buildLoans(displayData), [displayData]);
   const summary = useMemo(() => buildLoanSummary(loans, displayData), [displayData, loans]);
@@ -98,12 +145,8 @@ export function LoansExperience() {
   const lastChecked = readLastChecked(displayData);
 
   const visibleLoans = useMemo(() => {
-    if (filter === "Active") {
-      return loans.filter((loan) => loan.status === "Active");
-    }
-
-    if (filter === "Completed") {
-      return loans.filter((loan) => loan.status === "Completed");
+    if (filter === "Your Applications") {
+      return [];
     }
 
     return loans;
@@ -149,6 +192,47 @@ export function LoansExperience() {
     }
   }, [router]);
 
+  const loadApplicationStatus = useCallback(async () => {
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
+    setApplicationLoading(true);
+    setApplicationError("");
+
+    try {
+      const response = await apiRequest("/loans/me/status", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const result = (await response.json()) as { data?: LoanApplication | null; message?: string; status?: string };
+
+      if (response.status === 401 || response.status === 403) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
+      }
+
+      if (!response.ok || result.status === "error") {
+        setApplication(null);
+        setApplicationError(result.message || "Loan application not found");
+        return;
+      }
+
+      setApplication(result.data ?? null);
+    } catch {
+      setApplication(null);
+      setApplicationError("Could not load your loan application status.");
+    } finally {
+      setApplicationLoading(false);
+    }
+  }, [router]);
+
   useEffect(() => {
     const loadTimer = window.setTimeout(() => {
       void loadLoans();
@@ -159,18 +243,40 @@ export function LoansExperience() {
     };
   }, [loadLoans]);
 
+  useEffect(() => {
+    if (!toast) return;
+
+    const toastTimer = window.setTimeout(() => {
+      setToast(null);
+    }, 4200);
+
+    return () => {
+      window.clearTimeout(toastTimer);
+    };
+  }, [toast]);
+
   return (
     <PortalShell active="loans">
       <PortalTopBar title="Loan Repayments" />
       <PageContent>
         <RepaymentsView
           error={error}
+          application={application}
+          applicationError={applicationError}
+          applicationLoading={applicationLoading}
           filter={filter}
           lastChecked={lastChecked}
           loading={loading}
           loans={visibleLoans}
           onApply={() => setApplyOpen(true)}
-          onFilterChange={setFilter}
+          onApplicationsRefresh={loadApplicationStatus}
+          onFilterChange={(nextFilter) => {
+            setFilter(nextFilter);
+
+            if (nextFilter === "Your Applications") {
+              void loadApplicationStatus();
+            }
+          }}
           onRefresh={loadLoans}
           score={score}
           summary={summary}
@@ -180,32 +286,53 @@ export function LoansExperience() {
         <ApplyLoanDialog
           employmentType={employmentType}
           lastChecked={lastChecked}
+          loanType={loanType}
           onClose={() => setApplyOpen(false)}
+          onApplicationSuccess={() => {
+            setApplyOpen(false);
+            if (filter === "Your Applications") {
+              void loadApplicationStatus();
+            }
+            setToast({
+              title: "Loan application submitted",
+              message: "Your details and documents were sent successfully. Our team will review them shortly.",
+            });
+          }}
           onEmploymentTypeChange={setEmploymentType}
+          onLoanTypeChange={setLoanType}
           score={score}
         />
       ) : null}
+      {toast ? <LoanSuccessToast message={toast.message} title={toast.title} onClose={() => setToast(null)} /> : null}
     </PortalShell>
   );
 }
 
 function RepaymentsView({
+  application,
+  applicationError,
+  applicationLoading,
   error,
   filter,
   lastChecked,
   loading,
   loans,
+  onApplicationsRefresh,
   onApply,
   onFilterChange,
   onRefresh,
   score,
   summary,
 }: {
+  application: LoanApplication | null;
+  applicationError: string;
+  applicationLoading: boolean;
   error: string;
   filter: LoanFilter;
   lastChecked: string | null;
   loading: boolean;
   loans: Loan[];
+  onApplicationsRefresh: () => void;
   onApply: () => void;
   onFilterChange: (filter: LoanFilter) => void;
   onRefresh: () => void;
@@ -277,7 +404,7 @@ function RepaymentsView({
       ) : null}
 
       <div className="flex gap-2 overflow-x-auto border-b border-slate-200 pb-2">
-        {(["All Loans", "Active", "Completed"] as LoanFilter[]).map((tab) => (
+        {(["All Loans", "Your Applications"] as LoanFilter[]).map((tab) => (
           <button
             key={tab}
             className={cn(
@@ -293,17 +420,128 @@ function RepaymentsView({
       </div>
 
       <div className="grid gap-3">
-        {loading ? (
+        {filter === "Your Applications" ? (
+          <LoanApplicationStatusCard application={application} error={applicationError} loading={applicationLoading} onApply={onApply} onRefresh={onApplicationsRefresh} />
+        ) : loading ? (
           <LoanLoadingCards />
         ) : loans.length ? (
           loans.map((loan, index) => <ProfessionalLoanCard key={loan.id} index={index} loan={loan} />)
         ) : (
           <AppCard className="xl:col-span-2">
-            <p className="text-sm font-bold text-slate-800">{filter === "Completed" ? "No completed loans yet" : "No loan accounts found"}</p>
-            <p className="mt-1 text-xs text-slate-500">{filter === "Completed" ? "Completed loan accounts will appear here after closure." : "Loan accounts from your latest CIBIL report will appear here."}</p>
+            <p className="text-sm font-bold text-slate-800">No loan accounts found</p>
+            <p className="mt-1 text-xs text-slate-500">Loan accounts from your latest CIBIL report will appear here.</p>
           </AppCard>
         )}
       </div>
+    </div>
+  );
+}
+
+function LoanSuccessToast({ message, onClose, title }: { message: string; onClose: () => void; title: string }) {
+  return (
+    <div className="fixed inset-x-4 top-4 z-[90] flex justify-center sm:inset-x-auto sm:right-5 sm:top-5">
+      <div
+        className="flex w-full max-w-md items-start gap-3 rounded-2xl border border-emerald-100 bg-white p-4 shadow-[0_22px_60px_rgba(15,23,42,0.18)] ring-1 ring-emerald-50 animate-[creditPanelIn_0.22s_ease-out]"
+        role="status"
+      >
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-600">
+          <CheckCircle2 className="size-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-black text-slate-950">{title}</span>
+          <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{message}</span>
+        </span>
+        <button
+          aria-label="Close success notification"
+          className="grid size-8 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-slate-50 hover:text-slate-700"
+          type="button"
+          onClick={onClose}
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function LoanApplicationStatusCard({
+  application,
+  error,
+  loading,
+  onApply,
+  onRefresh,
+}: {
+  application: LoanApplication | null;
+  error: string;
+  loading: boolean;
+  onApply: () => void;
+  onRefresh: () => void;
+}) {
+  if (loading) {
+    return (
+      <AppCard>
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-xl bg-cyan-50 text-cyan-600">
+            <LoaderCircle className="size-5 animate-spin" />
+          </span>
+          <div>
+            <p className="text-sm font-bold text-slate-900">Loading application status</p>
+            <p className="mt-1 text-xs font-semibold text-slate-500">Checking your latest loan application.</p>
+          </div>
+        </div>
+      </AppCard>
+    );
+  }
+
+  if (!application) {
+    return (
+      <AppCard className="border-slate-200">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-black text-slate-950">{error || "Loan application not found"}</p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">Your submitted loan application will appear here after you apply.</p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <button className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-slate-300" type="button" onClick={onRefresh}>
+              Refresh
+            </button>
+            <button className="rounded-full bg-[var(--portal-orange)] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--portal-orange-deep)]" type="button" onClick={onApply}>
+              Apply
+            </button>
+          </div>
+        </div>
+      </AppCard>
+    );
+  }
+
+  const status = application.applicationStatus || "submitted";
+
+  return (
+    <AppCard className="overflow-hidden border-emerald-100">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-600">Your Application</p>
+          <h3 className="mt-1 text-lg font-black tracking-tight text-slate-950">{formatRupees(application.loanAmount)}</h3>
+          <p className="mt-1 text-xs font-semibold text-slate-500">{formatLoanTypeLabel(application.loanType)} application</p>
+        </div>
+        <span className="inline-flex w-fit items-center rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-black capitalize text-emerald-700">
+          {status.replace(/_/g, " ")}
+        </span>
+      </div>
+      <div className="mt-4 grid gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3 sm:grid-cols-3">
+        <ApplicationMeta label="Application ID" value={application.id ? String(application.id) : "--"} />
+        <ApplicationMeta label="Submitted" value={formatDateTime(application.submittedAt || "")} />
+        <ApplicationMeta label="Updated" value={formatDateTime(application.updatedAt || "")} />
+      </div>
+    </AppCard>
+  );
+}
+
+function ApplicationMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.1em] text-slate-400">{label}</p>
+      <p className="mt-1 text-sm font-bold text-slate-800">{value}</p>
     </div>
   );
 }
@@ -436,19 +674,163 @@ function MetaCell({ align, label, value }: { align?: "right"; label: string; val
 function ApplyLoanDialog({
   employmentType,
   lastChecked,
+  loanType,
+  onApplicationSuccess,
   onClose,
   onEmploymentTypeChange,
+  onLoanTypeChange,
   score,
 }: {
   employmentType: string;
   lastChecked: string | null;
+  loanType: string;
+  onApplicationSuccess: () => void;
   onClose: () => void;
   onEmploymentTypeChange: (type: string) => void;
+  onLoanTypeChange: (type: string) => void;
   score: number | null;
 }) {
+  const selectedLoanType = loanTypes.find((type) => type.value === loanType) ?? loanTypes[0];
+  const uploadInputRefs = useRef<Record<UploadFieldName, HTMLInputElement | null>>({
+    aadhaarCard: null,
+    bankStatements: null,
+    panCard: null,
+    salarySlips: null,
+  });
+  const [selectedFiles, setSelectedFiles] = useState<SelectedUploadFiles>(emptySelectedUploadFiles);
+  const [submitError, setSubmitError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [loanTypeOpen, setLoanTypeOpen] = useState(false);
+
+  const handleUploadChange = (name: UploadFieldName, event: React.ChangeEvent<HTMLInputElement>) => {
+    const maxFiles = uploadLimits[name];
+    const files = Array.from(event.target.files ?? []);
+    const acceptedFiles = files.slice(0, maxFiles);
+
+    if (files.length > maxFiles) {
+      const dataTransfer = new DataTransfer();
+
+      acceptedFiles.forEach((file) => dataTransfer.items.add(file));
+      event.target.files = dataTransfer.files;
+      setSubmitError(`You can upload up to ${maxFiles} file${maxFiles === 1 ? "" : "s"} for ${formatUploadFieldName(name)}.`);
+    } else {
+      setSubmitError("");
+    }
+
+    setSelectedFiles((currentFiles) => ({
+      ...currentFiles,
+      [name]: acceptedFiles,
+    }));
+  };
+
+  const syncUploadInputFiles = (name: UploadFieldName, files: File[]) => {
+    const input = uploadInputRefs.current[name];
+
+    if (!input) return;
+
+    const dataTransfer = new DataTransfer();
+
+    files.forEach((file) => dataTransfer.items.add(file));
+    input.files = dataTransfer.files;
+  };
+
+  const handleUploadRemove = (name: UploadFieldName, fileIndex: number) => {
+    setSubmitError("");
+    setSelectedFiles((currentFiles) => {
+      const nextFiles = currentFiles[name].filter((_, index) => index !== fileIndex);
+
+      syncUploadInputFiles(name, nextFiles);
+
+      return {
+        ...currentFiles,
+        [name]: nextFiles,
+      };
+    });
+  };
+
+  const handleApplyLoan = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      setSubmitError("Your session has expired. Please login again.");
+      return;
+    }
+
+    const formData = new FormData(form);
+    const payload = new FormData();
+    const requiredFields = ["loanAmount", "monthlyIncome", "workExperience"] as const;
+
+    for (const field of requiredFields) {
+      const value = String(formData.get(field) ?? "").trim();
+
+      if (!value) {
+        setSubmitError("Please complete all required loan details.");
+        return;
+      }
+
+      payload.append(field, value);
+    }
+
+    payload.append("loanType", loanType);
+    payload.append("employmentType", employmentType);
+
+    const requiredFileFields = ["salarySlips", "bankStatements", "aadhaarCard", "panCard"] as const;
+
+    for (const field of requiredFileFields) {
+      const files = formData.getAll(field).filter((file): file is File => file instanceof File && file.size > 0);
+      const maxFiles = uploadLimits[field];
+
+      if (!files.length) {
+        setSubmitError("Please upload all required PDF documents.");
+        return;
+      }
+
+      if (files.length > maxFiles) {
+        setSubmitError(`You can upload up to ${maxFiles} file${maxFiles === 1 ? "" : "s"} for ${formatUploadFieldName(field)}.`);
+        return;
+      }
+
+      files.forEach((file) => payload.append(field, file));
+    }
+
+    setSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const response = await fetch(apiUrl("/loans/apply"), {
+        body: payload,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        method: "POST",
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        clearScorecareSession();
+        throw new Error("Your session has expired. Please login again.");
+      }
+
+      if (!response.ok) {
+        throw new Error((await readApiMessage(response)) || "Unable to submit loan application.");
+      }
+
+      form.reset();
+      setSelectedFiles(emptySelectedUploadFiles);
+      setSubmitting(false);
+      onApplicationSuccess();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Unable to submit loan application.");
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/45 px-4 py-5 backdrop-blur-sm animate-[creditPanelIn_0.2s_ease-out] sm:px-6">
-      <div className="mx-auto flex h-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.24)]">
+    <div className="fixed inset-0 z-[70] bg-slate-950/45 px-4 py-5 backdrop-blur-sm animate-[creditPanelIn_0.2s_ease-out] sm:px-6">
+      <div className="mx-auto flex h-[calc(100dvh-2.5rem)] max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.24)]">
         <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 bg-white px-4 py-4 sm:px-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-600">Loan Application</p>
@@ -482,39 +864,82 @@ function ApplyLoanDialog({
             </button>
           </div>
 
-          <form className="mt-5 grid gap-5" onSubmit={(event) => event.preventDefault()}>
+          <form className="mt-5 grid gap-5" onSubmit={handleApplyLoan}>
             <div className="grid gap-5 sm:grid-cols-2">
               <FormField label="Loan Amount" required>
                 <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-white px-4 shadow-sm focus-within:border-cyan-300">
                   <BadgeIndianRupee className="size-5 shrink-0 text-slate-400" />
-                  <input className="min-w-0 flex-1 bg-transparent px-3 text-sm font-semibold outline-none placeholder:text-slate-400" inputMode="numeric" placeholder="Enter Loan Amount" />
+                  <input className="min-w-0 flex-1 rounded-none bg-transparent px-3 text-sm font-semibold outline-none placeholder:text-slate-400 focus:outline-none focus:ring-0 focus-visible:outline-none" inputMode="numeric" name="loanAmount" placeholder="Enter Loan Amount" required />
                 </div>
               </FormField>
 
               <FormField label="Type of Loan" required>
-                <button className="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm" type="button">
-                  Personal Loan <ChevronDown className="size-5 text-slate-400" />
-                </button>
+                <div
+                  className="relative"
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget)) {
+                      setLoanTypeOpen(false);
+                    }
+                  }}
+                >
+                  <button
+                    aria-expanded={loanTypeOpen}
+                    aria-haspopup="listbox"
+                    className="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:border-cyan-200 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
+                    type="button"
+                    onClick={() => setLoanTypeOpen((open) => !open)}
+                  >
+                    <span>{selectedLoanType.label}</span>
+                    <ChevronDown className={cn("size-5 text-slate-400 transition", loanTypeOpen && "rotate-180")} />
+                  </button>
+                  {loanTypeOpen ? (
+                    <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-[0_18px_45px_rgba(15,23,42,0.18)]" role="listbox">
+                      {loanTypes.map((type) => {
+                        const selected = type.value === loanType;
+
+                        return (
+                          <button
+                            key={type.value}
+                            aria-selected={selected}
+                            className={cn(
+                              "flex w-full items-center justify-between px-4 py-2.5 text-left text-sm font-semibold transition hover:bg-cyan-50",
+                              selected ? "bg-cyan-50 text-cyan-700" : "text-slate-600",
+                            )}
+                            role="option"
+                            type="button"
+                            onClick={() => {
+                              onLoanTypeChange(type.value);
+                              setLoanTypeOpen(false);
+                            }}
+                          >
+                            {type.label}
+                            {selected ? <Check className="size-4 text-cyan-600" /> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
               </FormField>
             </div>
 
             <FormField label="Employment Type" required>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {employmentTypes.map((type) => {
-                  const selected = employmentType === type;
+                  const selected = employmentType === type.value;
 
                   return (
                     <button
-                      key={type}
+                      key={type.value}
                       className={cn(
                         "h-11 rounded-full border px-3 text-xs font-bold transition hover:-translate-y-0.5",
                         selected ? "border-cyan-200 bg-cyan-50 text-cyan-700" : "border-slate-200 bg-white text-slate-600",
                       )}
                       type="button"
-                      onClick={() => onEmploymentTypeChange(type)}
+                      onClick={() => onEmploymentTypeChange(type.value)}
                     >
                       {selected ? <span className="mr-2 inline-block size-2 rounded-full bg-cyan-500" /> : null}
-                      {type}
+                      {type.label}
                     </button>
                   );
                 })}
@@ -523,26 +948,29 @@ function ApplyLoanDialog({
 
             <div className="grid gap-5 sm:grid-cols-2">
               <FormField label="Monthly Income" required>
-                <TextInput placeholder="Enter Monthly Income" />
+                <TextInput inputMode="numeric" name="monthlyIncome" placeholder="Enter Monthly Income" required />
               </FormField>
 
-              <FormField label="Company Name" required>
-                <TextInput placeholder="Enter Company Name" />
+              <FormField label="Company Name">
+                <TextInput name="companyName" placeholder="Enter Company Name" />
               </FormField>
             </div>
 
             <FormField label="Work Experience (Years)" required>
-              <TextInput placeholder="Enter Work Experience (Years)" />
+              <TextInput inputMode="numeric" name="workExperience" placeholder="Enter Work Experience (Years)" required />
             </FormField>
 
             <div className="grid gap-5 sm:grid-cols-2">
-              <UploadField label="Salary Slip" />
-              <UploadField label="Bank Statement (3 Months)" />
-              <UploadField label="Aadhaar Card" />
-              <UploadField label="PAN Card" />
+              <UploadField files={selectedFiles.salarySlips} inputRef={(input) => { uploadInputRefs.current.salarySlips = input; }} label="Salary Slip" maxFiles={uploadLimits.salarySlips} name="salarySlips" onChange={handleUploadChange} onRemove={handleUploadRemove} />
+              <UploadField files={selectedFiles.bankStatements} inputRef={(input) => { uploadInputRefs.current.bankStatements = input; }} label="Bank Statement (3 Months)" maxFiles={uploadLimits.bankStatements} name="bankStatements" onChange={handleUploadChange} onRemove={handleUploadRemove} />
+              <UploadField files={selectedFiles.aadhaarCard} inputRef={(input) => { uploadInputRefs.current.aadhaarCard = input; }} label="Aadhaar Card" maxFiles={uploadLimits.aadhaarCard} name="aadhaarCard" onChange={handleUploadChange} onRemove={handleUploadRemove} />
+              <UploadField files={selectedFiles.panCard} inputRef={(input) => { uploadInputRefs.current.panCard = input; }} label="PAN Card" maxFiles={uploadLimits.panCard} name="panCard" onChange={handleUploadChange} onRemove={handleUploadRemove} />
             </div>
 
-            <div className="sticky bottom-0 -mx-4 bg-white/95 px-4 py-4 backdrop-blur sm:-mx-5 sm:px-5">
+            {submitError ? (
+              <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{submitError}</p>
+            ) : null}
+            <div className="sticky bottom-0 z-20 -mx-4 bg-white/95 px-4 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))] pt-4 backdrop-blur sm:-mx-5 sm:px-5 lg:pb-4">
               <div className="grid gap-3 sm:grid-cols-[0.7fr_1fr]">
                 <button
                   className="h-11 rounded-full border border-slate-200 bg-white text-xs font-bold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300"
@@ -551,8 +979,15 @@ function ApplyLoanDialog({
                 >
                   Cancel
                 </button>
-                <PrimaryPortalButton className="h-11 rounded-full text-xs">
-                  Review & Submit
+                <PrimaryPortalButton className="h-11 rounded-full text-xs" disabled={submitting} type="submit">
+                  {submitting ? (
+                    <>
+                      <LoaderCircle className="size-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    "Review & Submit"
+                  )}
                 </PrimaryPortalButton>
               </div>
             </div>
@@ -574,25 +1009,103 @@ function FormField({ children, label, required }: { children: React.ReactNode; l
   );
 }
 
-function TextInput({ placeholder }: { placeholder: string }) {
+function TextInput({ className, ...props }: React.ComponentPropsWithoutRef<"input">) {
   return (
-    <input className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold shadow-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100" placeholder={placeholder} />
+    <input
+      className={cn(
+        "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold shadow-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:outline-none focus:ring-4 focus:ring-cyan-100 focus-visible:outline-none",
+        className,
+      )}
+      {...props}
+    />
   );
 }
 
-function UploadField({ label }: { label: string }) {
+function UploadField({
+  files,
+  inputRef,
+  label,
+  maxFiles,
+  name,
+  onChange,
+  onRemove,
+}: {
+  files: File[];
+  inputRef: (input: HTMLInputElement | null) => void;
+  label: string;
+  maxFiles: number;
+  name: UploadFieldName;
+  onChange: (name: UploadFieldName, event: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemove: (name: UploadFieldName, fileIndex: number) => void;
+}) {
+  const fileCountLabel = `${files.length}/${maxFiles} file${maxFiles === 1 ? "" : "s"} selected`;
+
   return (
     <FormField label={label} required>
       <label className="grid min-h-32 cursor-pointer place-items-center rounded-2xl border border-dashed border-slate-300 bg-white/80 px-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-cyan-50/40">
-        <input className="sr-only" type="file" accept="application/pdf" />
-        <span>
+        <input ref={inputRef} className="sr-only" type="file" accept="application/pdf" multiple name={name} required onChange={(event) => onChange(name, event)} />
+        <span className="min-w-0">
           <Upload className="mx-auto size-8 text-slate-400" />
           <span className="mt-3 block text-sm font-semibold text-slate-500">Upload {label}</span>
-          <span className="mt-2 block text-xs text-slate-400">Upload PDF format only</span>
+          <span className="mt-2 block text-xs text-slate-400">Upload PDF format only. Max {maxFiles} files.</span>
+          <span className={cn("mt-3 block text-xs font-bold", files.length ? "text-cyan-700" : "text-slate-400")}>{fileCountLabel}</span>
+          {files.length ? (
+            <span className="mt-2 block space-y-1 text-left">
+              {files.map((file, index) => (
+                <span key={`${file.name}-${file.lastModified}`} className="flex min-w-0 items-center gap-2 rounded-lg bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600">
+                  <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                  <button
+                    aria-label={`Remove ${file.name}`}
+                    className="grid size-5 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-white hover:text-rose-600"
+                    type="button"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      onRemove(name, index);
+                    }}
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </span>
+              ))}
+            </span>
+          ) : null}
         </span>
       </label>
     </FormField>
   );
+}
+
+async function readApiMessage(response: Response) {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    const body = (await response.json()) as unknown;
+
+    if (body && typeof body === "object") {
+      const message = "message" in body ? body.message : "error" in body ? body.error : null;
+
+      return typeof message === "string" ? message : "";
+    }
+
+    return "";
+  }
+
+  return response.text();
+}
+
+function formatUploadFieldName(name: UploadFieldName) {
+  const labels: Record<UploadFieldName, string> = {
+    aadhaarCard: "Aadhaar Card",
+    bankStatements: "Bank Statement",
+    panCard: "PAN Card",
+    salarySlips: "Salary Slip",
+  };
+
+  return labels[name];
+}
+
+function formatLoanTypeLabel(value?: string | null) {
+  return loanTypes.find((type) => type.value === value)?.label ?? (value ? value.replace(/_/g, " ") : "Loan");
 }
 
 function buildLoans(result: DisplayDataResponse | null): Loan[] {

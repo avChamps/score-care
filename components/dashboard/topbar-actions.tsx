@@ -14,27 +14,28 @@ import {
   TrendingUp,
   X,
 } from "lucide-react";
-import type { ComponentType } from "react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { apiRequest } from "@/lib/api";
-import { useDashboardActionsDisabled } from "@/lib/dashboard-lock";
+import { apiRequest, apiUrl } from "@/lib/api";
+import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { cn } from "@/lib/utils";
 
 type Drawer = "notifications" | "support" | null;
 type NotificationTone = "amber" | "cyan" | "rose" | "slate";
+type NotificationApiItem = {
+  createdAt?: string | null;
+  data?: Record<string, unknown> | null;
+  id: string | number;
+  isRead?: boolean | null;
+  message?: string | null;
+  readAt?: string | null;
+  title?: string | null;
+  type?: string | null;
+};
 type AssistantMessage = {
   id: string;
   body: string;
   role: "assistant" | "user";
-};
-type NotificationItem = {
-  title: string;
-  body: string;
-  time: string;
-  Icon: ComponentType<{ className?: string; strokeWidth?: number }>;
-  tone: NotificationTone;
-  unread?: boolean;
 };
 type AssistantDisplayData = {
   data?: {
@@ -59,82 +60,76 @@ type AssistantDisplayData = {
   };
 };
 
-const notificationGroups: Array<{ title: string; items: NotificationItem[] }> = [
-  {
-    title: "Now",
-    items: [
-      {
-        title: "CIBIL Score updated",
-        body: "Your CIBIL score has been refreshed. Check your latest score now.",
-        time: "2 hours ago",
-        Icon: CreditCard,
-        tone: "cyan",
-        unread: true,
-      },
-      {
-        title: "EMI Due Reminder",
-        body: "Your EMI of Rs.15,000 for HDFC personal loan is due in 3 days.",
-        time: "2 hours ago",
-        Icon: CalendarClock,
-        tone: "amber",
-        unread: true,
-      },
-      {
-        title: "High credit utilization",
-        body: "Your credit utilization is above 70%. Consider paying down balances.",
-        time: "2 hours ago",
-        Icon: AlertTriangle,
-        tone: "rose",
-        unread: true,
-      },
-    ],
-  },
-  {
-    title: "Earlier",
-    items: [
-      {
-        title: "Loan Application Approved",
-        body: "Congratulations! Your loan application has been approved.",
-        time: "1 day ago",
-        Icon: CheckCircle2,
-        tone: "slate",
-      },
-      {
-        title: "Subscription Expiring Soon",
-        body: "Your premium plan expires in 7 days. Renew to continue access.",
-        time: "2 days ago",
-        Icon: CalendarClock,
-        tone: "slate",
-      },
-      {
-        title: "Score Improvement Tip",
-        body: "Pay your credit card bill before the due date to support your profile.",
-        time: "4 days ago",
-        Icon: TrendingUp,
-        tone: "slate",
-      },
-    ],
-  },
-];
-
 const quickActions = [
   { label: "Check score", Icon: CreditCard },
   { label: "Download Report", Icon: FileText },
   { label: "Raise issue", Icon: ShieldCheck },
 ];
 const assistantContextCacheKey = "scorecare_assistant_context";
+const assistantMessagesCacheKey = "scorecare_assistant_messages";
+const notificationsPageSize = 10;
+const defaultAssistantMessages: AssistantMessage[] = [
+  {
+    id: "welcome",
+    role: "assistant",
+    body: "Hello! I am your CIBIL assistant. Ask me about checking your score, downloading reports, or resolving issues.",
+  },
+];
 
 export function TopBarActions() {
   const [drawer, setDrawer] = useState<Drawer>(null);
-  const dashboardActionsDisabled = useDashboardActionsDisabled();
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  const loadNotificationCount = useCallback(async () => {
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      return;
+    }
+
+    try {
+      const response = await apiRequest(`/notifications?limit=${notificationsPageSize}&unreadOnly=false`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const result = (await response.json()) as {
+        data?: {
+          unreadCount?: number | null;
+        };
+        status?: string;
+      };
+
+      if (result.status === "success") {
+        setNotificationCount(result.data?.unreadCount ?? 0);
+      }
+    } catch {
+      setNotificationCount(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    const loadTimer = window.setTimeout(() => {
+      void loadNotificationCount();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(loadTimer);
+    };
+  }, [loadNotificationCount]);
 
   return (
     <>
       <div className="flex gap-2">
-        <IconButton disabled={dashboardActionsDisabled} label="Support" onClick={() => setDrawer("support")}>
+        <IconButton data-dashboard-support="true" label="Support" onClick={() => setDrawer("support")}>
           <Headphones className="size-5" />
         </IconButton>
-        <IconButton disabled={dashboardActionsDisabled} label="Notifications" onClick={() => setDrawer("notifications")}>
+        <IconButton badgeCount={notificationCount} data-dashboard-notifications="true" label="Notifications" onClick={() => setDrawer("notifications")}>
           <Bell className="size-5" />
         </IconButton>
       </div>
@@ -146,7 +141,7 @@ export function TopBarActions() {
             className="ml-auto flex h-dvh w-full max-w-md flex-col border-l border-[var(--portal-border)] bg-[var(--portal-bg)] shadow-[0_8px_24px_rgba(23,32,51,0.16)]"
             onClick={(event) => event.stopPropagation()}
           >
-            {drawer === "notifications" ? <NotificationsDrawer onClose={() => setDrawer(null)} /> : null}
+            {drawer === "notifications" ? <NotificationsDrawer onClose={() => setDrawer(null)} onUnreadCountChange={setNotificationCount} /> : null}
             {drawer === "support" ? <SupportDrawer onClose={() => setDrawer(null)} /> : null}
           </aside>
         </div>,
@@ -157,13 +152,21 @@ export function TopBarActions() {
   );
 }
 
-function IconButton({ children, disabled = false, label, onClick }: { children: React.ReactNode; disabled?: boolean; label: string; onClick: () => void }) {
+function IconButton({
+  badgeCount = 0,
+  children,
+  disabled = false,
+  label,
+  onClick,
+  ...props
+}: React.ComponentPropsWithoutRef<"button"> & { badgeCount?: number; children: React.ReactNode; label: string; onClick: () => void }) {
   return (
     <button
+      {...props}
       aria-label={label}
       aria-disabled={disabled}
       className={cn(
-        "grid size-9 place-items-center rounded-full border border-[var(--portal-border)] bg-white text-[var(--portal-muted)] shadow-sm transition hover:border-[var(--portal-blue)] hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)] sm:size-10",
+        "relative grid size-9 place-items-center rounded-full border border-[var(--portal-border)] bg-white text-[var(--portal-muted)] shadow-sm transition hover:border-[var(--portal-blue)] hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)] sm:size-10",
         disabled && "cursor-not-allowed opacity-45 hover:border-[var(--portal-border)] hover:bg-white hover:text-[var(--portal-muted)]",
       )}
       disabled={disabled}
@@ -171,6 +174,11 @@ function IconButton({ children, disabled = false, label, onClick }: { children: 
       onClick={onClick}
     >
       {children}
+      {badgeCount > 0 ? (
+        <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[0.58rem] font-black leading-4 text-white ring-2 ring-white">
+          {badgeCount > 99 ? "99+" : badgeCount}
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -192,66 +200,356 @@ function DrawerHeader({ eyebrow, icon, onClose, title }: { eyebrow: string; icon
   );
 }
 
-function NotificationsDrawer({ onClose }: { onClose: () => void }) {
+function NotificationsDrawer({ onClose, onUnreadCountChange }: { onClose: () => void; onUnreadCountChange: (count: number) => void }) {
+  const [error, setError] = useState("");
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [markingAll, setMarkingAll] = useState(false);
+  const [markingIds, setMarkingIds] = useState<Array<string | number>>([]);
+  const [notifications, setNotifications] = useState<NotificationApiItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const loadNotifications = useCallback(async ({ append = false, offset = 0 } = {}) => {
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      setError("Please login again to view notifications.");
+      setLoading(false);
+      return;
+    }
+
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+    setError("");
+
+    try {
+      const response = await apiRequest(`/notifications?limit=${notificationsPageSize}&offset=${offset}&unreadOnly=false`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const result = (await response.json()) as {
+        data?: {
+          notifications?: NotificationApiItem[] | null;
+          unreadCount?: number | null;
+        };
+        message?: string;
+        status?: string;
+      };
+
+      if (response.status === 401 || response.status === 403) {
+        clearScorecareSession();
+        setError("Please login again to view notifications.");
+        return;
+      }
+
+      if (!response.ok || result.status === "error") {
+        throw new Error(result.message || "Unable to load notifications.");
+      }
+
+      const nextNotifications = result.data?.notifications ?? [];
+      setNotifications((current) => (append ? [...current, ...nextNotifications] : nextNotifications));
+      setHasMore(nextNotifications.length === notificationsPageSize);
+      setUnreadCount(result.data?.unreadCount ?? 0);
+      onUnreadCountChange(result.data?.unreadCount ?? 0);
+    } catch (loadError) {
+      if (!append) {
+        setNotifications([]);
+        setUnreadCount(0);
+        onUnreadCountChange(0);
+      }
+      setError(loadError instanceof Error ? loadError.message : "Unable to load notifications.");
+    } finally {
+      if (append) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
+    }
+  }, [onUnreadCountChange]);
+
+  useEffect(() => {
+    const loadTimer = window.setTimeout(() => {
+      void loadNotifications();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(loadTimer);
+    };
+  }, [loadNotifications]);
+
+  function handleNotificationsScroll(event: React.UIEvent<HTMLDivElement>) {
+    const target = event.currentTarget;
+    const nearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 96;
+
+    if (!nearBottom || loading || loadingMore || !hasMore || !notifications.length) {
+      return;
+    }
+
+    void loadNotifications({
+      append: true,
+      offset: notifications.length,
+    });
+  }
+
+  async function markNotificationRead(notification: NotificationApiItem) {
+    if (notification.isRead) return;
+
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      setError("Please login again to update notifications.");
+      return;
+    }
+
+    setMarkingIds((current) => [...current, notification.id]);
+    setError("");
+
+    try {
+      const response = await apiRequest(`/notifications/${notification.id}/read`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to mark notification read.");
+      }
+
+      const nextUnreadCount = Math.max(0, unreadCount - 1);
+
+      setNotifications((current) =>
+        current.map((item) =>
+          item.id === notification.id
+            ? {
+                ...item,
+                isRead: true,
+                readAt: new Date().toISOString(),
+              }
+            : item,
+        ),
+      );
+      setUnreadCount(nextUnreadCount);
+      onUnreadCountChange(nextUnreadCount);
+    } catch (markError) {
+      setError(markError instanceof Error ? markError.message : "Unable to mark notification read.");
+    } finally {
+      setMarkingIds((current) => current.filter((id) => id !== notification.id));
+    }
+  }
+
+  async function markAllNotificationsRead() {
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      setError("Please login again to update notifications.");
+      return;
+    }
+
+    setMarkingAll(true);
+    setError("");
+
+    try {
+      const response = await apiRequest("/notifications/read-all", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to mark all notifications read.");
+      }
+
+      const readAt = new Date().toISOString();
+
+      setNotifications((current) => current.map((item) => ({ ...item, isRead: true, readAt })));
+      setUnreadCount(0);
+      onUnreadCountChange(0);
+    } catch (markError) {
+      setError(markError instanceof Error ? markError.message : "Unable to mark all notifications read.");
+    } finally {
+      setMarkingAll(false);
+    }
+  }
+
   return (
     <>
       <DrawerHeader eyebrow="Alerts center" icon={<Bell className="size-5" />} onClose={onClose} title="Notifications" />
-      <div className="drawer-scroll min-h-0 flex-1 overflow-y-auto px-4 py-5">
-        <div className="space-y-6">
-          {notificationGroups.map((group) => (
-            <section key={group.title}>
-              <h3 className="text-xs font-black text-[var(--portal-ink)]">{group.title}</h3>
-              <div className="mt-3 grid gap-3">
-                {group.items.map((item) => (
-                  <NotificationCard key={item.title} item={item} />
-                ))}
-              </div>
-            </section>
-          ))}
+      <div className="drawer-scroll min-h-0 flex-1 overflow-y-auto px-4 py-5" onScroll={handleNotificationsScroll}>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <p className="text-xs font-bold text-[var(--portal-muted)]">{unreadCount} unread</p>
+          <button
+            className="rounded-full border border-[var(--portal-border)] bg-white px-3 py-1.5 text-[0.68rem] font-black text-[var(--portal-muted)] shadow-sm transition hover:border-[var(--portal-blue)] hover:text-[var(--portal-blue)] disabled:cursor-not-allowed disabled:opacity-50"
+            type="button"
+            disabled={!unreadCount || markingAll}
+            onClick={() => void markAllNotificationsRead()}
+          >
+            {markingAll ? "Updating..." : "Mark all read"}
+          </button>
+        </div>
+
+        {error ? (
+          <div className="mb-4 rounded-2xl border border-rose-100 bg-rose-50 p-3">
+            <p className="text-xs font-bold leading-5 text-rose-700">{error}</p>
+            <button className="mt-2 rounded-full bg-white px-3 py-1.5 text-[0.68rem] font-black text-rose-700" type="button" onClick={() => void loadNotifications()}>
+              Retry
+            </button>
+          </div>
+        ) : null}
+
+        <div className="grid gap-3">
+          {loading ? (
+            <NotificationLoadingCards />
+          ) : notifications.length ? (
+            notifications.map((item) => (
+              <NotificationCard
+                key={String(item.id)}
+                item={item}
+                marking={markingIds.includes(item.id)}
+                onMarkRead={() => void markNotificationRead(item)}
+              />
+            ))
+          ) : (
+            <div className="rounded-[var(--portal-radius)] border border-[var(--portal-border)] bg-white p-5 text-center shadow-sm">
+              <p className="text-sm font-black text-[var(--portal-ink)]">No notifications yet</p>
+              <p className="mt-1 text-xs font-medium text-[var(--portal-muted)]">Loan and CIBIL updates will appear here.</p>
+            </div>
+          )}
+          {loadingMore ? <NotificationLoadingCards count={1} /> : null}
+          {!loading && notifications.length && !hasMore ? (
+            <p className="py-2 text-center text-[0.68rem] font-bold text-[var(--portal-muted)]/70">You are all caught up</p>
+          ) : null}
         </div>
       </div>
     </>
   );
 }
 
-function NotificationCard({ item }: { item: (typeof notificationGroups)[number]["items"][number] }) {
+function NotificationCard({ item, marking, onMarkRead }: { item: NotificationApiItem; marking: boolean; onMarkRead: () => void }) {
+  const { Icon, tone: presentationTone } = getNotificationPresentation(item.type);
   const tone = {
     amber: { rail: "border-l-[var(--portal-orange)]", icon: "bg-[var(--portal-orange-soft)] text-[var(--portal-orange)]" },
     cyan: { rail: "border-l-[var(--portal-blue)]", icon: "bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]" },
     rose: { rail: "border-l-[#fb7185]", icon: "bg-rose-50 text-rose-600" },
     slate: { rail: "border-l-slate-200", icon: "bg-[var(--portal-surface-soft)] text-[var(--portal-muted)]" },
-  }[item.tone];
+  }[presentationTone];
 
   return (
     <article className={cn("relative rounded-[var(--portal-radius)] border border-l-4 border-[var(--portal-border)] bg-white p-4 shadow-sm", tone.rail)}>
-      {item.unread ? <span className="absolute right-4 top-4 size-2 rounded-full bg-rose-500" /> : null}
+      {!item.isRead ? <span className="absolute right-4 top-4 size-2 rounded-full bg-rose-500" /> : null}
       <div className="flex gap-3 pr-4">
         <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl", tone.icon)}>
-          <item.Icon className="size-4" strokeWidth={1.9} />
+          <Icon className="size-4" strokeWidth={1.9} />
         </span>
         <div className="min-w-0">
-          <h4 className="text-[0.72rem] font-black text-[var(--portal-ink)]">{item.title}</h4>
-          <p className="mt-1 text-[0.68rem] leading-4 text-[var(--portal-muted)]">{item.body}</p>
-          <p className="mt-2 text-[0.62rem] font-medium text-[var(--portal-muted)]/70">{item.time}</p>
+          <h4 className="text-[0.72rem] font-black text-[var(--portal-ink)]">{item.title || "Notification"}</h4>
+          <p className="mt-1 text-[0.68rem] leading-4 text-[var(--portal-muted)]">{item.message || "You have a new update."}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <p className="text-[0.62rem] font-medium text-[var(--portal-muted)]/70">{formatNotificationTime(item.createdAt)}</p>
+            {!item.isRead ? (
+              <button
+                className="rounded-full bg-[var(--portal-blue-soft)] px-2.5 py-1 text-[0.62rem] font-black text-[var(--portal-blue)] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                type="button"
+                disabled={marking}
+                onClick={onMarkRead}
+              >
+                {marking ? "Updating..." : "Mark read"}
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
     </article>
   );
 }
 
+function NotificationLoadingCards({ count = 3 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, item) => (
+        <div key={item} className="rounded-[var(--portal-radius)] border border-[var(--portal-border)] bg-white p-4 shadow-sm">
+          <div className="flex gap-3">
+            <span className="size-9 shrink-0 rounded-xl bg-slate-100 animate-pulse" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <span className="block h-3 w-32 rounded-full bg-slate-100 animate-pulse" />
+              <span className="block h-3 w-full rounded-full bg-slate-100 animate-pulse" />
+              <span className="block h-3 w-20 rounded-full bg-slate-100 animate-pulse" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+function getNotificationPresentation(type?: string | null): { Icon: typeof Bell; tone: NotificationTone } {
+  if (type === "loan_applied") {
+    return { Icon: CheckCircle2, tone: "cyan" };
+  }
+
+  if (type === "cibil_report_updated") {
+    return { Icon: CreditCard, tone: "cyan" };
+  }
+
+  if (type?.includes("due") || type?.includes("reminder")) {
+    return { Icon: CalendarClock, tone: "amber" };
+  }
+
+  if (type?.includes("alert") || type?.includes("overdue")) {
+    return { Icon: AlertTriangle, tone: "rose" };
+  }
+
+  if (type?.includes("tip") || type?.includes("score")) {
+    return { Icon: TrendingUp, tone: "slate" };
+  }
+
+  return { Icon: Bell, tone: "slate" };
+}
+
+function formatNotificationTime(value?: string | null) {
+  if (!value) return "--";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "--";
+
+  const diffMs = Date.now() - date.getTime();
+  const minuteMs = 60 * 1000;
+  const hourMs = 60 * minuteMs;
+  const dayMs = 24 * hourMs;
+
+  if (diffMs < minuteMs) return "Just now";
+  if (diffMs < hourMs) return `${Math.floor(diffMs / minuteMs)} min ago`;
+  if (diffMs < dayMs) return `${Math.floor(diffMs / hourMs)} hr ago`;
+  if (diffMs < 7 * dayMs) return `${Math.floor(diffMs / dayMs)} day${Math.floor(diffMs / dayMs) === 1 ? "" : "s"} ago`;
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
 function SupportDrawer({ onClose }: { onClose: () => void }) {
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<AssistantMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      body: "Hello! I am your CIBIL assistant. Ask me about checking your score, downloading reports, or resolving issues.",
-    },
-  ]);
+  const [messages, setMessages] = useState<AssistantMessage[]>(() => readCachedAssistantMessages());
   const [assistantContext, setAssistantContext] = useState<string | null>(() =>
     typeof sessionStorage === "undefined" ? null : sessionStorage.getItem(assistantContextCacheKey),
   );
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    sessionStorage.setItem(assistantMessagesCacheKey, JSON.stringify(messages));
+  }, [messages]);
 
   async function sendAssistantMessage(message: string) {
     const trimmedMessage = message.trim();
@@ -265,10 +563,19 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
       role: "user",
       body: trimmedMessage,
     };
+    const assistantMessageId = crypto.randomUUID();
 
     setInput("");
     setLoading(true);
-    setMessages((current) => [...current, userMessage]);
+    setMessages((current) => [
+      ...current,
+      userMessage,
+      {
+        id: assistantMessageId,
+        role: "assistant",
+        body: "",
+      },
+    ]);
 
     try {
       const context = assistantContext ?? await loadAssistantContext();
@@ -278,35 +585,60 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
         sessionStorage.setItem(assistantContextCacheKey, context);
       }
 
-      const response = await apiRequest("/ai/gemini", {
+      const response = await fetch(apiUrl("/ai/gemini"), {
         method: "POST",
-        body: {
-          message: buildAssistantPrompt(trimmedMessage, context),
+        headers: {
+          Accept: "text/event-stream",
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          message: buildAssistantPrompt(trimmedMessage, context),
+        }),
       });
-      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(readAssistantReply(result) || "Unable to load assistant reply");
+        throw new Error((await readAssistantError(response)) || "Unable to load assistant reply");
       }
 
-      setMessages((current) => [
-        ...current,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          body: readAssistantReply(result) || "I could not find a clear answer, but I can still help you review your credit profile step by step.",
-        },
-      ]);
+      let reply = "";
+
+      await readAssistantSse(response, (delta) => {
+        reply += delta;
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId
+              ? {
+                  ...message,
+                  body: reply,
+                }
+              : message,
+          ),
+        );
+      });
+
+      if (!reply.trim()) {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId
+              ? {
+                  ...message,
+                  body: "I could not find a clear answer, but I can still help you review your credit profile step by step.",
+                }
+              : message,
+          ),
+        );
+      }
     } catch {
-      setMessages((current) => [
-        ...current,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          body: "I could not reach the AI assistant right now. Please try again in a moment.",
-        },
-      ]);
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantMessageId
+            ? {
+                ...message,
+                body: "I could not reach the AI assistant right now. Please try again in a moment.",
+              }
+            : message,
+        ),
+      );
     } finally {
       setLoading(false);
     }
@@ -326,7 +658,6 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
             {messages.map((message) => (
               <AssistantBubble key={message.id} message={message} />
             ))}
-            {loading ? <AssistantLoadingBubble /> : null}
           </div>
         </div>
 
@@ -364,6 +695,7 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
 
 function AssistantBubble({ message }: { message: AssistantMessage }) {
   const isUser = message.role === "user";
+  const waitingForStream = !isUser && !message.body;
 
   return (
     <div className={cn("flex items-start gap-3", isUser && "justify-end")}>
@@ -373,26 +705,21 @@ function AssistantBubble({ message }: { message: AssistantMessage }) {
         </span>
       ) : null}
       <div className={cn("max-w-[82%] rounded-2xl border p-4", isUser ? "border-[var(--portal-blue)] bg-[var(--portal-blue)] text-white" : "border-[var(--portal-border)] bg-white text-[var(--portal-muted)]")}>
-        <AssistantReplyContent body={message.body} isUser={isUser} />
+        {waitingForStream ? <AssistantTypingContent /> : <AssistantReplyContent body={message.body} isUser={isUser} />}
       </div>
     </div>
   );
 }
 
-function AssistantLoadingBubble() {
+function AssistantTypingContent() {
   return (
-    <div className="flex items-start gap-3">
-      <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]">
-        <Bot className="size-5" />
-      </span>
-      <div className="rounded-2xl border border-[var(--portal-border)] bg-white p-4">
-        <div className="flex items-center gap-2">
-          <span className="size-2 rounded-full bg-[var(--portal-blue)] animate-bounce" />
-          <span className="size-2 rounded-full bg-[var(--portal-blue)] animate-bounce [animation-delay:120ms]" />
-          <span className="size-2 rounded-full bg-[var(--portal-blue)] animate-bounce [animation-delay:240ms]" />
-        </div>
-        <p className="mt-3 text-[0.68rem] font-medium text-[var(--portal-muted)]">Reading your credit context...</p>
+    <div>
+      <div className="flex items-center gap-2">
+        <span className="size-2 rounded-full bg-[var(--portal-blue)] animate-bounce" />
+        <span className="size-2 rounded-full bg-[var(--portal-blue)] animate-bounce [animation-delay:120ms]" />
+        <span className="size-2 rounded-full bg-[var(--portal-blue)] animate-bounce [animation-delay:240ms]" />
       </div>
+      <p className="mt-3 text-[0.68rem] font-medium text-[var(--portal-muted)]">Reading your credit context...</p>
     </div>
   );
 }
@@ -413,7 +740,7 @@ function AssistantReplyContent({ body, isUser }: { body: string; isUser: boolean
 
 function buildAssistantPrompt(userMessage: string, context: string) {
   return [
-    "You are Credit Mitra, the SCORECARE dashboard assistant.",
+    "You are Scorecare, the SCORECARE dashboard assistant.",
     "Answer the user's question using the available user credit context. Keep the answer short, clear, and practical.",
     "Do not use markdown symbols, tables, or long paragraphs.",
     "",
@@ -422,6 +749,34 @@ function buildAssistantPrompt(userMessage: string, context: string) {
     "Available context:",
     context,
   ].join("\n");
+}
+
+function readCachedAssistantMessages() {
+  if (typeof sessionStorage === "undefined") {
+    return defaultAssistantMessages;
+  }
+
+  try {
+    const cachedMessages = JSON.parse(sessionStorage.getItem(assistantMessagesCacheKey) || "[]") as unknown;
+
+    if (!Array.isArray(cachedMessages)) {
+      return defaultAssistantMessages;
+    }
+
+    const messages = cachedMessages.filter((message): message is AssistantMessage => {
+      if (!message || typeof message !== "object") {
+        return false;
+      }
+
+      const candidate = message as Partial<AssistantMessage>;
+
+      return typeof candidate.id === "string" && typeof candidate.body === "string" && (candidate.role === "assistant" || candidate.role === "user");
+    });
+
+    return messages.length ? messages : defaultAssistantMessages;
+  } catch {
+    return defaultAssistantMessages;
+  }
 }
 
 async function loadAssistantContext() {
@@ -504,6 +859,111 @@ function readAssistantReply(result: unknown): string {
   }
 
   return readAssistantReply(data.data);
+}
+
+async function readAssistantError(response: Response) {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    return readAssistantReply(await response.json());
+  }
+
+  return response.text();
+}
+
+async function readAssistantSse(response: Response, onDelta: (delta: string) => void) {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    onDelta(readAssistantReply(await response.json()));
+    return;
+  }
+
+  if (!contentType.includes("text/event-stream") && !response.body) {
+    onDelta(await response.text());
+    return;
+  }
+
+  if (!response.body) {
+    onDelta(await response.text());
+    return;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+
+    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+    const events = buffer.split(/\r?\n\r?\n/);
+
+    buffer = events.pop() ?? "";
+
+    for (const event of events) {
+      const delta = readAssistantSseDelta(event);
+
+      if (delta) {
+        onDelta(delta);
+      }
+    }
+
+    if (done) {
+      break;
+    }
+  }
+
+  const delta = readAssistantSseDelta(buffer);
+
+  if (delta) {
+    onDelta(delta);
+  }
+}
+
+function readAssistantSseDelta(event: string) {
+  const data = event
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith("data:"))
+    .map((line) => line.replace(/^data:\s?/, ""))
+    .join("\n")
+    .trim();
+
+  if (!data || data === "[DONE]") {
+    return "";
+  }
+
+  try {
+    const parsed = JSON.parse(data) as unknown;
+
+    return readAssistantDelta(parsed) || readAssistantReply(parsed);
+  } catch {
+    return data;
+  }
+}
+
+function readAssistantDelta(result: unknown): string {
+  if (!result || typeof result !== "object") {
+    return "";
+  }
+
+  const data = result as {
+    choices?: Array<{
+      delta?: {
+        content?: unknown;
+      };
+    }>;
+    data?: unknown;
+    delta?: unknown;
+    token?: unknown;
+  };
+  const delta = data.choices?.[0]?.delta?.content ?? data.delta ?? data.token;
+
+  if (typeof delta === "string" && delta) {
+    return delta;
+  }
+
+  return readAssistantDelta(data.data);
 }
 
 function formatAssistantReply(value: string) {
