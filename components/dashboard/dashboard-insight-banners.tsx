@@ -3,8 +3,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Landmark, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
 
 type DisplayDataResponse = {
   data?: {
@@ -57,24 +57,16 @@ export function DashboardInsightBanners() {
       setLoading(true);
 
       try {
-        const response = await apiRequest("/credit-reports/cibil/display-data", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const result = (await getCachedCibilDisplayData(token)) as DisplayDataResponse;
 
-        if (response.status === 401 || response.status === 403) {
+        setInsights(readDashboardInsights(result));
+      } catch (loadError) {
+        if (loadError instanceof CibilDisplayDataError && (loadError.status === 401 || loadError.status === 403)) {
           clearScorecareSession();
           router.replace("/login");
           return;
         }
 
-        const result = (await response.json()) as DisplayDataResponse;
-
-        if (response.ok) {
-          setInsights(readDashboardInsights(result));
-        }
-      } catch {
         setInsights(null);
       } finally {
         setLoading(false);

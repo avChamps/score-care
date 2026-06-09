@@ -27,6 +27,7 @@ import {
 } from "@/components/dashboard/portal-ui";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
 import { cn } from "@/lib/utils";
 
 type Tab = "score" | "predictor";
@@ -176,26 +177,16 @@ export function CreditScoreExperience() {
     setError("");
 
     try {
-      const response = await apiRequest("/credit-reports/cibil/display-data", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const result = (await getCachedCibilDisplayData(token)) as DisplayDataResponse;
 
-      if (response.status === 401 || response.status === 403) {
+      setDisplayData(result);
+    } catch (loadError) {
+      if (loadError instanceof CibilDisplayDataError && (loadError.status === 401 || loadError.status === 403)) {
         clearScorecareSession();
         router.replace("/login");
         return;
       }
 
-      const result = (await response.json()) as DisplayDataResponse;
-
-      if (!response.ok) {
-        throw new Error("Unable to load CIBIL report data");
-      }
-
-      setDisplayData(result);
-    } catch {
       setError("Could not load your latest CIBIL report data.");
       setDisplayData(null);
     } finally {

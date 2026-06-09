@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { AppCard, PrimaryPortalButton } from "@/components/dashboard/portal-ui";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
 
 type CibilPayload = {
   pan: string;
@@ -172,29 +173,12 @@ export function ScoreCheckCard() {
         throw new Error(result?.message || "Unable to fetch CIBIL score");
       }
 
-      const displayResponse = await apiRequest("/credit-reports/cibil/display-data", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (displayResponse.status === 401 || displayResponse.status === 403) {
-        clearScorecareSession();
-        router.replace("/login");
-        return;
-      }
-
-      const displayResult = await displayResponse.json();
-
-      if (!displayResponse.ok) {
-        throw new Error(displayResult?.message || "Unable to load CIBIL display data");
-      }
+      const displayResult = await getCachedCibilDisplayData(token, { forceRefresh: true });
 
       const latestScore = readScore(displayResult) ?? readScore(result);
 
       setScore(latestScore);
       setChecked(true);
-      window.dispatchEvent(new CustomEvent("scorecare:cibil-display-updated", { detail: displayResult }));
     } catch {
       setError("Could not check your CIBIL score. Please try again.");
     } finally {

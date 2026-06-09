@@ -18,6 +18,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
 import { cn } from "@/lib/utils";
 
 type Drawer = "notifications" | "support" | null;
@@ -117,9 +118,14 @@ export function TopBarActions() {
     const loadTimer = window.setTimeout(() => {
       void loadNotificationCount();
     }, 0);
+    const handleNotificationsUpdated = () => {
+      void loadNotificationCount();
+    };
 
+    window.addEventListener("scorecare:notifications-updated", handleNotificationsUpdated);
     return () => {
       window.clearTimeout(loadTimer);
+      window.removeEventListener("scorecare:notifications-updated", handleNotificationsUpdated);
     };
   }, [loadNotificationCount]);
 
@@ -792,17 +798,7 @@ async function loadAssistantContext() {
   }
 
   try {
-    const response = await apiRequest("/credit-reports/cibil/display-data", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      return sessionContext.join("\n");
-    }
-
-    const result = (await response.json()) as AssistantDisplayData;
+    const result = (await getCachedCibilDisplayData(token)) as AssistantDisplayData;
 
     return [...sessionContext, buildAssistantCreditContext(result)].join("\n");
   } catch {

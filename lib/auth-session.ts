@@ -6,6 +6,10 @@ const SCORECARE_SESSION_KEYS = [
   "scorecare_full_name",
   "scorecare_email",
   "scorecare_date_of_birth",
+  "scorecare_assistant_context",
+  "scorecare_assistant_messages",
+  "scorecare_cibil_display_data",
+  "scorecare_cibil_display_token",
 ];
 
 export function clearScorecareSession() {

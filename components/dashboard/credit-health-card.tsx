@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AppCard } from "@/components/dashboard/portal-ui";
-import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
 
 type DisplayDataResponse = {
   data?: {
@@ -70,26 +70,16 @@ export function CreditHealthCard() {
       setError("");
 
       try {
-        const response = await apiRequest("/credit-reports/cibil/display-data", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const result = (await getCachedCibilDisplayData(token)) as DisplayDataResponse;
 
-        if (response.status === 401 || response.status === 403) {
+        setHealth(readCreditHealth(result));
+      } catch (loadError) {
+        if (loadError instanceof CibilDisplayDataError && (loadError.status === 401 || loadError.status === 403)) {
           clearScorecareSession();
           router.replace("/login");
           return;
         }
 
-        const result = (await response.json()) as DisplayDataResponse;
-
-        if (!response.ok) {
-          throw new Error("Unable to load credit health");
-        }
-
-        setHealth(readCreditHealth(result));
-      } catch {
         setError("Credit health will appear after your latest CIBIL check.");
       } finally {
         setLoading(false);

@@ -25,6 +25,7 @@ import {
 } from "@/components/dashboard/portal-ui";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
 import { cn } from "@/lib/utils";
 
 type LoanFilter = "All Loans" | "Your Applications";
@@ -165,26 +166,16 @@ export function LoansExperience() {
     setError("");
 
     try {
-      const response = await apiRequest("/credit-reports/cibil/display-data", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const result = (await getCachedCibilDisplayData(token)) as DisplayDataResponse;
 
-      if (response.status === 401 || response.status === 403) {
+      setDisplayData(result);
+    } catch (loadError) {
+      if (loadError instanceof CibilDisplayDataError && (loadError.status === 401 || loadError.status === 403)) {
         clearScorecareSession();
         router.replace("/login");
         return;
       }
 
-      const result = (await response.json()) as DisplayDataResponse;
-
-      if (!response.ok) {
-        throw new Error("Unable to load loans");
-      }
-
-      setDisplayData(result);
-    } catch {
       setDisplayData(null);
       setError("Could not load loan accounts from your CIBIL report.");
     } finally {
@@ -290,6 +281,8 @@ export function LoansExperience() {
           onClose={() => setApplyOpen(false)}
           onApplicationSuccess={() => {
             setApplyOpen(false);
+            window.dispatchEvent(new Event("scorecare:notifications-updated"));
+
             if (filter === "Your Applications") {
               void loadApplicationStatus();
             }
