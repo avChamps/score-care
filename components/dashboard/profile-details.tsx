@@ -32,7 +32,7 @@ type UserProfile = {
   isAdmin?: boolean;
 };
 
-export function ProfileDetails() {
+export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean }) {
   const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [error, setError] = useState("");
@@ -91,6 +91,11 @@ export function ProfileDetails() {
     }, 5000);
   }
 
+  function openUserView() {
+    sessionStorage.removeItem("scorecare_admin_view");
+    router.push("/dashboard");
+  }
+
   const details = [
     { label: "Full Name", value: user?.fullName, Icon: UserRound },
     { label: "Email", value: user?.email, Icon: Mail },
@@ -103,7 +108,7 @@ export function ProfileDetails() {
   ];
 
   return (
-    <div className="space-y-6 animate-[creditPanelIn_0.42s_ease-out]">
+    <div className="space-y-3 animate-[creditPanelIn_0.42s_ease-out]">
       {launchingAdmin ? <ScorecareBrandAnimation message="Opening Admin View" /> : null}
 
       <section className="text-center">
@@ -141,24 +146,26 @@ export function ProfileDetails() {
       </AppCard>
 
       {user?.isAdmin ? (
-        <button
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--portal-blue)] bg-[var(--portal-blue)] text-sm font-black text-white shadow-sm transition active:scale-[0.99]"
-          disabled={launchingAdmin}
-          type="button"
-          onClick={openAdminView}
-        >
-          <LayoutDashboard className="size-4" /> {launchingAdmin ? "Opening..." : "Admin View"}
-        </button>
+       <button
+      type="button"
+      onClick={isAdminView ? openUserView : openAdminView}
+      disabled={launchingAdmin}
+      className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-blue-100 bg-white text-[15px] font-semibold text-blue-600 shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50 active:scale-[0.99]"
+    >
+      <LayoutDashboard className="size-5" />
+      {isAdminView ? "User Dashboard" : launchingAdmin ? "Opening Admin Panel..." : "Admin Dashboard"}
+    </button>
       ) : null}
 
       <button
-        data-dashboard-logout="true"
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-rose-100 bg-rose-50 text-sm font-black text-rose-600 shadow-sm transition active:scale-[0.99]"
-        type="button"
-        onClick={logout}
-      >
-        <LogOut className="size-4" /> Logout
-      </button>
+    type="button"
+    onClick={logout}
+    data-dashboard-logout="true"
+    className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-rose-100 bg-white text-[15px] font-semibold text-rose-600 shadow-sm transition-all hover:border-rose-200 hover:bg-rose-50 active:scale-[0.99]"
+  >
+    <LogOut className="size-5" />
+    Logout
+  </button>
     </div>
   );
 }

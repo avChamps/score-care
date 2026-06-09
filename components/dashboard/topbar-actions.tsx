@@ -19,6 +19,7 @@ import { createPortal } from "react-dom";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
+import { useSubscriptionAccess } from "@/lib/subscription-access";
 import { cn } from "@/lib/utils";
 
 type Drawer = "notifications" | "support" | null;
@@ -546,6 +547,7 @@ function formatNotificationTime(value?: string | null) {
 }
 
 function SupportDrawer({ onClose }: { onClose: () => void }) {
+  const { isFreeTier } = useSubscriptionAccess();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<AssistantMessage[]>(() => readCachedAssistantMessages());
   const [assistantContext, setAssistantContext] = useState<string | null>(() =>
@@ -556,6 +558,17 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     sessionStorage.setItem(assistantMessagesCacheKey, JSON.stringify(messages));
   }, [messages]);
+
+  useEffect(() => {
+    if (!isFreeTier) {
+      return;
+    }
+
+    void Promise.resolve().then(() => {
+      setAssistantContext(null);
+      sessionStorage.removeItem(assistantContextCacheKey);
+    });
+  }, [isFreeTier]);
 
   async function sendAssistantMessage(message: string) {
     const trimmedMessage = message.trim();
@@ -584,7 +597,7 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
     ]);
 
     try {
-      const context = assistantContext ?? await loadAssistantContext();
+      const context = assistantContext ?? await loadAssistantContext(isFreeTier);
 
       if (!assistantContext) {
         setAssistantContext(context);
@@ -785,7 +798,7 @@ function readCachedAssistantMessages() {
   }
 }
 
-async function loadAssistantContext() {
+async function loadAssistantContext(isFreeTier: boolean) {
   const token = sessionStorage.getItem("scorecare_token");
   const sessionContext = [
     `Name: ${sessionStorage.getItem("scorecare_full_name") || "Not available"}`,
@@ -793,7 +806,7 @@ async function loadAssistantContext() {
     `PAN available: ${sessionStorage.getItem("scorecare_pan_number") ? "Yes" : "No"}`,
   ];
 
-  if (!token) {
+  if (!token || isFreeTier) {
     return sessionContext.join("\n");
   }
 

@@ -25,9 +25,11 @@ import {
   PortalTopBar,
   PrimaryPortalButton,
 } from "@/components/dashboard/portal-ui";
+import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
+import { useSubscriptionAccess } from "@/lib/subscription-access";
 import { cn } from "@/lib/utils";
 
 type Tab = "score" | "predictor";
@@ -145,6 +147,8 @@ export function CreditScoreExperience() {
   const [scoreHelpAnswer, setScoreHelpAnswer] = useState("");
   const [scoreHelpError, setScoreHelpError] = useState("");
   const [scoreHelpLoading, setScoreHelpLoading] = useState(false);
+  const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
+  const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
   const score = readScore(displayData);
   const lastChecked = readLastChecked(displayData);
@@ -165,6 +169,17 @@ export function CreditScoreExperience() {
   }, [baseScore, selectedActions]);
 
   const loadDisplayData = useCallback(async () => {
+    if (accessLoading) {
+      return;
+    }
+
+    if (isFreeTier) {
+      setDisplayData(null);
+      setError("");
+      setLoading(false);
+      return;
+    }
+
     const token = sessionStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
@@ -192,10 +207,14 @@ export function CreditScoreExperience() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [accessLoading, isFreeTier, router]);
 
   useEffect(() => {
     function handleDisplayUpdate(event: Event) {
+      if (isFreeTier) {
+        return;
+      }
+
       const displayEvent = event as CustomEvent<DisplayDataResponse>;
 
       setDisplayData(displayEvent.detail);
@@ -212,10 +231,15 @@ export function CreditScoreExperience() {
       window.clearTimeout(loadTimer);
       window.removeEventListener("scorecare:cibil-display-updated", handleDisplayUpdate);
     };
-  }, [loadDisplayData]);
+  }, [isFreeTier, loadDisplayData]);
 
   async function downloadReport() {
     if (downloading) return;
+
+    if (isFreeTier) {
+      promptSubscribe();
+      return;
+    }
 
     const token = sessionStorage.getItem("scorecare_token");
 
@@ -264,6 +288,11 @@ export function CreditScoreExperience() {
 
   async function predictScoreWithAiHelp() {
     if (scoreHelpLoading) return;
+
+    if (isFreeTier) {
+      promptSubscribe();
+      return;
+    }
 
     setScoreHelpAnswer("");
     setScoreHelpError("");
@@ -319,7 +348,7 @@ export function CreditScoreExperience() {
           <TabButton active={activeTab === "score"} onClick={() => setActiveTab("score")}>
             <Gauge className="size-5" /> Score
           </TabButton>
-          <TabButton active={activeTab === "predictor"} onClick={() => setActiveTab("predictor")}>
+          <TabButton active={activeTab === "predictor"} onClick={isFreeTier ? promptSubscribe : () => setActiveTab("predictor")}>
             <Sparkles className="size-5" /> Predictor
           </TabButton>
         </div>
@@ -338,23 +367,24 @@ export function CreditScoreExperience() {
             score={score}
           />
 
-          {activeTab === "score" ? (
+          {activeTab === "score" && !isFreeTier ? (
             <ScoreDetails
               accounts={accounts}
               behaviourItems={behaviourItems}
               enquiries={enquiries}
               loading={loading}
             />
-          ) : (
+          ) : activeTab === "predictor" && !isFreeTier ? (
             <PredictorPanel
               currentScore={baseScore}
               disabled={!score}
               onPredict={predictScoreWithAiHelp}
               predictedScore={predictedScore}
             />
-          )}
+          ) : null}
         </div>
       </PageContent>
+      <SubscribePromptOverlay onClose={closeSubscribePrompt} show={showSubscribePrompt} />
       {showScoreInfo ? (
         <ScoreInfoDialog
           aiAnswer={scoreHelpAnswer}

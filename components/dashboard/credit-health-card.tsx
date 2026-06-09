@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AppCard } from "@/components/dashboard/portal-ui";
+import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
+import { useSubscriptionAccess } from "@/lib/subscription-access";
 
 type DisplayDataResponse = {
   data?: {
@@ -45,8 +47,23 @@ export function CreditHealthCard() {
   const [health, setHealth] = useState<CreditHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
+  const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
   useEffect(() => {
+    if (accessLoading) {
+      return;
+    }
+
+    if (isFreeTier) {
+      void Promise.resolve().then(() => {
+        setHealth(null);
+        setError("Subscribe to unlock report health.");
+        setLoading(false);
+      });
+      return;
+    }
+
     function handleDisplayUpdate(event: Event) {
       const displayEvent = event as CustomEvent<DisplayDataResponse>;
 
@@ -91,7 +108,7 @@ export function CreditHealthCard() {
     return () => {
       window.removeEventListener("scorecare:cibil-display-updated", handleDisplayUpdate);
     };
-  }, [router]);
+  }, [accessLoading, isFreeTier, router]);
 
   const items = [
     { label: "Score", value: loading ? "..." : health?.score ? String(health.score) : "--", tone: getScoreTone(health?.score ?? null) },
@@ -100,7 +117,11 @@ export function CreditHealthCard() {
   ];
 
   return (
-    <AppCard className="relative overflow-hidden bg-[linear-gradient(135deg,#ffffff_0%,#f7fbff_58%,#fff8f1_100%)]">
+    <AppCard
+      className={`relative overflow-hidden bg-[linear-gradient(135deg,#ffffff_0%,#f7fbff_58%,#fff8f1_100%)] ${isFreeTier ? "cursor-pointer" : ""}`}
+      onClick={isFreeTier ? promptSubscribe : undefined}
+    >
+      <SubscribePromptOverlay onClose={closeSubscribePrompt} show={showSubscribePrompt} />
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[0.68rem] font-black uppercase text-[var(--portal-orange)]">Credit health</p>

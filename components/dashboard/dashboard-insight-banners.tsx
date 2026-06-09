@@ -3,8 +3,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Landmark, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
+import { useSubscriptionAccess } from "@/lib/subscription-access";
 
 type DisplayDataResponse = {
   data?: {
@@ -34,8 +36,22 @@ export function DashboardInsightBanners() {
   const router = useRouter();
   const [insights, setInsights] = useState<DashboardInsights | null>(null);
   const [loading, setLoading] = useState(true);
+  const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
+  const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
   useEffect(() => {
+    if (accessLoading) {
+      return;
+    }
+
+    if (isFreeTier) {
+      void Promise.resolve().then(() => {
+        setInsights(null);
+        setLoading(false);
+      });
+      return;
+    }
+
     function handleDisplayUpdate(event: Event) {
       const displayEvent = event as CustomEvent<DisplayDataResponse>;
 
@@ -78,25 +94,28 @@ export function DashboardInsightBanners() {
     return () => {
       window.removeEventListener("scorecare:cibil-display-updated", handleDisplayUpdate);
     };
-  }, [router]);
+  }, [accessLoading, isFreeTier, router]);
 
   const scoreFixCount = insights?.scoreFixCount ?? 0;
 
   return (
     <>
+      <SubscribePromptOverlay onClose={closeSubscribePrompt} show={showSubscribePrompt} />
       <VisualBanner
         icon={<ShieldCheck className="size-6" />}
         title="Score Fix"
         body="Open disputes, bureau notes, and repair steps in one desk."
-        metric={loading ? "..." : `${scoreFixCount} ${scoreFixCount === 1 ? "action" : "actions"}`}
+        metric={isFreeTier ? "Subscribe" : loading ? "..." : `${scoreFixCount} ${scoreFixCount === 1 ? "action" : "actions"}`}
         accent="orange"
+        onClick={isFreeTier ? promptSubscribe : undefined}
       />
       <VisualBanner
         icon={<Landmark className="size-6" />}
         title="Loan Eligibility"
         body="Pre-check your borrowing range before you apply."
-        metric={loading ? "..." : insights?.loanEligibility ?? "--"}
+        metric={isFreeTier ? "Subscribe" : loading ? "..." : insights?.loanEligibility ?? "--"}
         accent="blue"
+        onClick={isFreeTier ? promptSubscribe : undefined}
       />
     </>
   );
@@ -145,17 +164,19 @@ function VisualBanner({
   body,
   metric,
   accent,
+  onClick,
 }: {
   icon: ReactNode;
   title: string;
   body: string;
   metric: string;
   accent: "blue" | "orange";
+  onClick?: () => void;
 }) {
   const isBlue = accent === "blue";
 
   return (
-    <div className="portal-card group relative overflow-hidden rounded-[var(--portal-radius)] border p-5">
+    <div className={`portal-card group relative overflow-hidden rounded-[var(--portal-radius)] border p-5 ${onClick ? "cursor-pointer" : ""}`} onClick={onClick}>
       <div className={`absolute inset-y-0 left-0 w-1 ${isBlue ? "bg-[var(--portal-blue)]" : "bg-[var(--portal-orange)]"}`} />
       <div className="relative z-10 flex items-center gap-4">
         <div className={`grid size-12 shrink-0 place-items-center rounded-xl ${isBlue ? "bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]" : "bg-[var(--portal-orange-soft)] text-[var(--portal-orange)]"}`}>

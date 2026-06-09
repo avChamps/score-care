@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { CircleHelp } from "lucide-react";
-import { AdminSectionPlaceholder } from "@/components/dashboard/admin-section-placeholder";
+import { AdminDataTable } from "@/components/dashboard/admin-data-table";
 import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
 
 export const metadata: Metadata = {
@@ -11,13 +10,21 @@ export const metadata: Metadata = {
 export default function AdminHelpPage() {
   return (
     <PortalShell active="help" variant="admin">
-      <PortalTopBar title="Help" />
+      <PortalTopBar title="Help" profileHref="/profile?from=admin" />
       <PageContent>
-        <AdminSectionPlaceholder
-          Icon={CircleHelp}
+        <AdminDataTable
           title="Help"
           description="Manage support tickets, help-center requests, and customer assistance tasks."
-          items={["Support tickets", "Help requests", "Escalations", "Resolved issues"]}
+          endpoint="/admin/help"
+          emptyMessage="No help requests found."
+          columns={[
+            { key: "id", label: "ID" },
+            { key: "user.fullName", label: "Customer" },
+            { key: "category", label: "Category" },
+            { key: "subject", label: "Subject" },
+            { key: "status", label: "Status", type: "status" },
+            { key: "createdAt", label: "Created", type: "datetime" },
+          ]}
         />
       </PageContent>
     </PortalShell>

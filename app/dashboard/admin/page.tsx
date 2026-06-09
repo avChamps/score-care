@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function AdminDashboardPage() {
   return (
     <PortalShell active="home" variant="admin">
-      <PortalTopBar title="Admin View" />
+      <PortalTopBar title="Admin View" profileHref="/profile?from=admin" />
       <PageContent>
         <AdminHome />
       </PageContent>

@@ -75,7 +75,7 @@ export function AdminHome() {
           return;
         }
 
-        const analyticsResponse = await apiRequest("/admin/analytics", {
+        const analyticsResponse = await apiRequest("/admin/dashboard-counts", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

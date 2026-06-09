@@ -24,7 +24,7 @@ import { useDashboardActionsDisabled } from "@/lib/dashboard-lock";
 import { cn } from "@/lib/utils";
 
 type PortalShellProps = {
-  active: "home" | "score" | "loans" | "fix" | "bills" | "users" | "chats" | "help";
+  active: "home" | "score" | "loans" | "fix" | "bills" | "users" | "subscriptions" | "chats" | "help";
   children: React.ReactNode;
   variant?: "user" | "admin";
 };
@@ -48,6 +48,7 @@ const navItems = [
 const adminNavItems = [
   { id: "home", label: "Home", href: "/dashboard/admin", Icon: Home },
   { id: "users", label: "Users", href: "/dashboard/admin/users", Icon: Users },
+  { id: "subscriptions", label: "Subscriptions", href: "/dashboard/admin/subscriptions", Icon: CreditCard },
   { id: "loans", label: "Loans", href: "/dashboard/admin/loans", Icon: BadgeIndianRupee },
   { id: "chats", label: "Chats", href: "/dashboard/admin/chats", Icon: MessageCircle },
   { id: "help", label: "Help", href: "/dashboard/admin/help", Icon: CircleHelp },
@@ -79,7 +80,7 @@ export function PortalShell({ active, children, variant = "user" }: PortalShellP
   );
 }
 
-export function PortalTopBar({ title, backHref }: { title?: string; backHref?: string }) {
+export function PortalTopBar({ title, backHref, profileHref = "/profile" }: { title?: string; backHref?: string; profileHref?: string }) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
 
@@ -155,7 +156,7 @@ export function PortalTopBar({ title, backHref }: { title?: string; backHref?: s
               <span className="text-2xl leading-none">&lsaquo;</span>
             </Link>
           ) : (
-            <Link href="/profile" data-dashboard-profile="true" aria-label="Open profile" className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--portal-blue-soft)] text-[var(--portal-blue)] transition hover:bg-[#dceeff]">
+            <Link href={profileHref} data-dashboard-profile="true" aria-label="Open profile" className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--portal-blue-soft)] text-[var(--portal-blue)] transition hover:bg-[#dceeff]">
               <User className="size-5" />
             </Link>
           )}
@@ -376,7 +377,7 @@ function BottomNav({ active, variant }: { active: PortalShellProps["active"]; va
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--portal-border)] bg-white px-2 py-1.5 shadow-[0_-8px_20px_rgba(16,24,40,0.08)] lg:hidden">
-      <div className="mx-auto grid max-w-md grid-cols-5">
+      <div className={cn("mx-auto grid max-w-md", variant === "admin" ? "grid-cols-6" : "grid-cols-5")}>
         {items.map(({ id, label, href, Icon }) => {
           const selected = id === active;
 

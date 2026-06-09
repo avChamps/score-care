@@ -8,9 +8,11 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AppCard, PrimaryPortalButton } from "@/components/dashboard/portal-ui";
+import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
+import { useSubscriptionAccess } from "@/lib/subscription-access";
 
 type CibilPayload = {
   pan: string;
@@ -50,6 +52,8 @@ export function ScoreCheckCard() {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
   const [score, setScore] = useState<number | null>(null);
+  const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
+  const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
   const canCheckScore = Boolean(user?.panNumber && user?.mobileNumber && user?.fullName);
   const lastCheckedLabel = formatLastChecked(user?.cibilLastCheckedAt);
@@ -173,8 +177,7 @@ export function ScoreCheckCard() {
         throw new Error(result?.message || "Unable to fetch CIBIL score");
       }
 
-      const displayResult = await getCachedCibilDisplayData(token, { forceRefresh: true });
-
+      const displayResult = accessLoading || isFreeTier ? null : await getCachedCibilDisplayData(token, { forceRefresh: true });
       const latestScore = readScore(displayResult) ?? readScore(result);
 
       setScore(latestScore);
@@ -188,6 +191,11 @@ export function ScoreCheckCard() {
 
   async function downloadReport() {
     if (downloading) return;
+
+    if (isFreeTier) {
+      promptSubscribe();
+      return;
+    }
 
     const token = sessionStorage.getItem("scorecare_token");
 
@@ -235,6 +243,7 @@ export function ScoreCheckCard() {
 
   return (
     <AppCard className="overflow-hidden xl:row-span-2">
+      <SubscribePromptOverlay onClose={closeSubscribePrompt} show={showSubscribePrompt} />
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-black text-[var(--portal-ink)]">

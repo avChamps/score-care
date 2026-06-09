@@ -23,9 +23,11 @@ import {
   PortalTopBar,
   PrimaryPortalButton,
 } from "@/components/dashboard/portal-ui";
+import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
+import { useSubscriptionAccess } from "@/lib/subscription-access";
 import { cn } from "@/lib/utils";
 
 type LoanFilter = "All Loans" | "Your Applications";
@@ -139,6 +141,8 @@ export function LoansExperience() {
   const [applicationLoading, setApplicationLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<LoanToast | null>(null);
+  const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
+  const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
   const loans = useMemo(() => buildLoans(displayData), [displayData]);
   const summary = useMemo(() => buildLoanSummary(loans, displayData), [displayData, loans]);
@@ -146,14 +150,25 @@ export function LoansExperience() {
   const lastChecked = readLastChecked(displayData);
 
   const visibleLoans = useMemo(() => {
-    if (filter === "Your Applications") {
+    if (isFreeTier || filter === "Your Applications") {
       return [];
     }
 
     return loans;
-  }, [filter, loans]);
+  }, [filter, isFreeTier, loans]);
 
   const loadLoans = useCallback(async () => {
+    if (accessLoading) {
+      return;
+    }
+
+    if (isFreeTier) {
+      setDisplayData(null);
+      setError("");
+      setLoading(false);
+      return;
+    }
+
     const token = sessionStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
@@ -181,7 +196,7 @@ export function LoansExperience() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [accessLoading, isFreeTier, router]);
 
   const loadApplicationStatus = useCallback(async () => {
     const token = sessionStorage.getItem("scorecare_token");
@@ -246,6 +261,17 @@ export function LoansExperience() {
     };
   }, [toast]);
 
+  useEffect(() => {
+    if (accessLoading || !isFreeTier || filter === "Your Applications") {
+      return;
+    }
+
+    void Promise.resolve().then(() => {
+      setFilter("Your Applications");
+      void loadApplicationStatus();
+    });
+  }, [accessLoading, filter, isFreeTier, loadApplicationStatus]);
+
   return (
     <PortalShell active="loans">
       <PortalTopBar title="Loan Repayments" />
@@ -262,6 +288,11 @@ export function LoansExperience() {
           onApply={() => setApplyOpen(true)}
           onApplicationsRefresh={loadApplicationStatus}
           onFilterChange={(nextFilter) => {
+            if (isFreeTier && nextFilter === "All Loans") {
+              promptSubscribe();
+              return;
+            }
+
             setFilter(nextFilter);
 
             if (nextFilter === "Your Applications") {
@@ -269,10 +300,13 @@ export function LoansExperience() {
             }
           }}
           onRefresh={loadLoans}
+          onSubscribePrompt={promptSubscribe}
           score={score}
           summary={summary}
+          subscriptionLocked={isFreeTier}
         />
       </PageContent>
+      <SubscribePromptOverlay onClose={closeSubscribePrompt} show={showSubscribePrompt} />
       {applyOpen ? (
         <ApplyLoanDialog
           employmentType={employmentType}
@@ -314,8 +348,10 @@ function RepaymentsView({
   onApply,
   onFilterChange,
   onRefresh,
+  onSubscribePrompt,
   score,
   summary,
+  subscriptionLocked,
 }: {
   application: LoanApplication | null;
   applicationError: string;
@@ -329,8 +365,10 @@ function RepaymentsView({
   onApply: () => void;
   onFilterChange: (filter: LoanFilter) => void;
   onRefresh: () => void;
+  onSubscribePrompt: () => void;
   score: number | null;
   summary: LoanSummary;
+  subscriptionLocked: boolean;
 }) {
   return (
     <div className="space-y-5 animate-[creditPanelIn_0.42s_ease-out]">
@@ -381,8 +419,8 @@ function RepaymentsView({
       </button>
 
       <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[var(--portal-shadow-soft)]">
-        <SummaryCard tone="green" title="Active Loans" value={loading ? "..." : String(summary.activeCount)} amount={loading ? "..." : summary.activeAmount} caption={summary.lastChecked} />
-        <SummaryCard tone="red" title="Overdue" value={loading ? "..." : String(summary.overdueCount)} amount={loading ? "..." : summary.overdueAmount} caption={summary.overdueCount ? "Affects CIBIL" : "No overdue amount"} />
+        <SummaryCard tone="green" title="Active Loans" value={loading ? "..." : String(summary.activeCount)} amount={loading ? "..." : summary.activeAmount} caption={summary.lastChecked} onClick={subscriptionLocked ? onSubscribePrompt : undefined} />
+        <SummaryCard tone="red" title="Overdue" value={loading ? "..." : String(summary.overdueCount)} amount={loading ? "..." : summary.overdueAmount} caption={summary.overdueCount ? "Affects CIBIL" : "No overdue amount"} onClick={subscriptionLocked ? onSubscribePrompt : undefined} />
       </div>
 
       {error ? (
@@ -542,12 +580,14 @@ function ApplicationMeta({ label, value }: { label: string; value: string }) {
 function SummaryCard({
   amount,
   caption,
+  onClick,
   title,
   tone,
   value,
 }: {
   amount: string;
   caption: string;
+  onClick?: () => void;
   title: string;
   tone: "green" | "red";
   value: string;
@@ -555,11 +595,14 @@ function SummaryCard({
   const isGreen = tone === "green";
 
   return (
-    <div
+    <button
       className={cn(
-        "relative border-r border-slate-200 bg-white p-4 last:border-r-0",
+        "relative border-r border-slate-200 bg-white p-4 text-left last:border-r-0",
+        onClick && "cursor-pointer transition hover:bg-slate-50",
         !isGreen && "bg-rose-50/40",
       )}
+      onClick={onClick}
+      type="button"
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-bold leading-tight text-slate-600">{title}</p>
@@ -570,7 +613,7 @@ function SummaryCard({
       <p className="mt-3 text-2xl font-black text-slate-950">{value}</p>
       <p className="mt-2 text-sm font-semibold text-slate-700">{amount}</p>
       <p className="mt-1 text-xs text-slate-500">{caption}</p>
-    </div>
+    </button>
   );
 }
 

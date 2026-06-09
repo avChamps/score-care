@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
-import { ProfileDetails } from "@/components/dashboard/profile-details";
+import { ProfilePageShell } from "@/components/dashboard/profile-page-shell";
 
 export const metadata: Metadata = {
   title: "Profile",
@@ -8,12 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function ProfilePage() {
-  return (
-    <PortalShell active="home">
-      <PortalTopBar title="Profile" backHref="/dashboard" />
-      <PageContent>
-        <ProfileDetails />
-      </PageContent>
-    </PortalShell>
-  );
+  return <ProfilePageShell />;
 }
