@@ -10,6 +10,7 @@ const SCORECARE_SESSION_KEYS = [
   "scorecare_assistant_messages",
   "scorecare_cibil_display_data",
   "scorecare_cibil_display_token",
+  "scorecare_admin_view",
 ];
 
 export function clearScorecareSession() {

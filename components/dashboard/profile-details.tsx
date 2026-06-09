@@ -3,6 +3,7 @@
 import {
   BadgeCheck,
   CalendarDays,
+  LayoutDashboard,
   Mail,
   Phone,
   Shield,
@@ -13,6 +14,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppCard } from "@/components/dashboard/portal-ui";
+import { ScorecareBrandAnimation } from "@/components/auth/scorecare-brand-animation";
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 
@@ -27,6 +29,7 @@ type UserProfile = {
   lastLoginAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  isAdmin?: boolean;
 };
 
 export function ProfileDetails() {
@@ -34,6 +37,7 @@ export function ProfileDetails() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [launchingAdmin, setLaunchingAdmin] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
@@ -79,6 +83,14 @@ export function ProfileDetails() {
     router.replace("/login");
   }
 
+  function openAdminView() {
+    setLaunchingAdmin(true);
+    sessionStorage.setItem("scorecare_admin_view", "true");
+    window.setTimeout(() => {
+      router.push("/dashboard/admin");
+    }, 5000);
+  }
+
   const details = [
     { label: "Full Name", value: user?.fullName, Icon: UserRound },
     { label: "Email", value: user?.email, Icon: Mail },
@@ -92,6 +104,8 @@ export function ProfileDetails() {
 
   return (
     <div className="space-y-6 animate-[creditPanelIn_0.42s_ease-out]">
+      {launchingAdmin ? <ScorecareBrandAnimation message="Opening Admin View" /> : null}
+
       <section className="text-center">
         <div className="mx-auto grid size-20 place-items-center rounded-full bg-[var(--portal-blue)] text-white shadow-[0_10px_24px_rgba(22,119,255,0.2)]">
           <UserRound className="size-9" />
@@ -125,6 +139,17 @@ export function ProfileDetails() {
           ))}
         </div>
       </AppCard>
+
+      {user?.isAdmin ? (
+        <button
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--portal-blue)] bg-[var(--portal-blue)] text-sm font-black text-white shadow-sm transition active:scale-[0.99]"
+          disabled={launchingAdmin}
+          type="button"
+          onClick={openAdminView}
+        >
+          <LayoutDashboard className="size-4" /> {launchingAdmin ? "Opening..." : "Admin View"}
+        </button>
+      ) : null}
 
       <button
         data-dashboard-logout="true"

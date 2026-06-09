@@ -5,13 +5,16 @@ import { useEffect, useState, type ComponentPropsWithoutRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   BadgeIndianRupee,
+  CircleHelp,
   CreditCard,
   Gauge,
   Headphones,
   Home,
+  MessageCircle,
   Plus,
   ReceiptText,
   User,
+  Users,
 } from "lucide-react";
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
 import { TopBarActions } from "@/components/dashboard/topbar-actions";
@@ -21,8 +24,9 @@ import { useDashboardActionsDisabled } from "@/lib/dashboard-lock";
 import { cn } from "@/lib/utils";
 
 type PortalShellProps = {
-  active: "home" | "score" | "loans" | "fix" | "bills";
+  active: "home" | "score" | "loans" | "fix" | "bills" | "users" | "chats" | "help";
   children: React.ReactNode;
+  variant?: "user" | "admin";
 };
 
 type UserProfile = {
@@ -41,8 +45,17 @@ const navItems = [
   { id: "bills", label: "Bill payments", href: "/dashboard/bill-payments", Icon: ReceiptText },
 ] as const;
 
-export function PortalShell({ active, children }: PortalShellProps) {
+const adminNavItems = [
+  { id: "home", label: "Home", href: "/dashboard/admin", Icon: Home },
+  { id: "users", label: "Users", href: "/dashboard/admin/users", Icon: Users },
+  { id: "loans", label: "Loans", href: "/dashboard/admin/loans", Icon: BadgeIndianRupee },
+  { id: "chats", label: "Chats", href: "/dashboard/admin/chats", Icon: MessageCircle },
+  { id: "help", label: "Help", href: "/dashboard/admin/help", Icon: CircleHelp },
+] as const;
+
+export function PortalShell({ active, children, variant = "user" }: PortalShellProps) {
   const dashboardActionsDisabled = useDashboardActionsDisabled();
+  const isAdminVariant = variant === "admin";
 
   return (
     <section className={cn("portal-theme relative min-h-screen overflow-hidden text-[var(--portal-ink)] lg:h-screen", dashboardActionsDisabled && "dashboard-actions-disabled")}>
@@ -53,15 +66,15 @@ export function PortalShell({ active, children }: PortalShellProps) {
             <span className="grid size-9 place-items-center rounded-2xl bg-[var(--portal-blue)] text-[0.7rem] font-black text-white shadow-[0_10px_22px_rgba(7,112,227,0.22)]">
               SC
             </span>
-            <span className="text-sm font-black tracking-tight text-[var(--portal-ink)]">SCORECARE</span>
+            <span className="text-sm font-black tracking-tight text-[var(--portal-ink)]">{isAdminVariant ? "ADMIN VIEW" : "SCORECARE"}</span>
           </Link>
-          <NavItems active={active} direction="side" />
+          <NavItems active={active} direction="side" variant={variant} />
         </aside>
         <div className="min-w-0 pb-24 lg:h-screen lg:overflow-y-auto lg:pb-0">
           {children}
         </div>
       </div>
-      <BottomNav active={active} />
+      <BottomNav active={active} variant={variant} />
     </section>
   );
 }
@@ -358,25 +371,22 @@ export function PlusApplyButton() {
   );
 }
 
-function BottomNav({ active }: { active: PortalShellProps["active"] }) {
+function BottomNav({ active, variant }: { active: PortalShellProps["active"]; variant: NonNullable<PortalShellProps["variant"]> }) {
+  const items = variant === "admin" ? adminNavItems : navItems;
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--portal-border)] bg-white px-2 py-1.5 shadow-[0_-8px_20px_rgba(16,24,40,0.08)] lg:hidden">
       <div className="mx-auto grid max-w-md grid-cols-5">
-        {navItems.map(({ id, label, Icon }) => {
+        {items.map(({ id, label, href, Icon }) => {
           const selected = id === active;
 
-          if (id === "score" || id === "loans" || id === "home") {
-            const href =
-              id === "home"
-                ? "/dashboard"
-                : id === "score"
-                  ? "/dashboard/credit-score"
-                  : "/dashboard/loans";
+          if (variant === "admin" || id === "score" || id === "loans" || id === "home") {
 
           return (
             <Link
               key={id}
               href={href}
+              data-dashboard-admin={variant === "admin" ? "true" : undefined}
               data-dashboard-loans={id === "loans" ? "true" : undefined}
               data-dashboard-score={id === "score" ? "true" : undefined}
               className={cn(
@@ -410,19 +420,20 @@ function BottomNav({ active }: { active: PortalShellProps["active"] }) {
   );
 }
 
-function NavItems({ active, direction }: { active: PortalShellProps["active"]; direction: "side" }) {
+function NavItems({ active, direction, variant }: { active: PortalShellProps["active"]; direction: "side"; variant: NonNullable<PortalShellProps["variant"]> }) {
+  const items = variant === "admin" ? adminNavItems : navItems;
+
   return (
     <div className={cn("grid gap-1.5", direction === "side" && "text-xs")}>
-      {navItems.map(({ id, label, Icon }) => {
+      {items.map(({ id, label, href, Icon }) => {
         const selected = id === active;
 
-        if (id === "score" || id === "loans" || id === "home") {
-          const href = id === "score" ? "/dashboard/credit-score" : id === "loans" ? "/dashboard/loans" : "/dashboard";
-
+        if (variant === "admin" || id === "score" || id === "loans" || id === "home") {
           return (
             <Link
               key={id}
               href={href}
+              data-dashboard-admin={variant === "admin" ? "true" : undefined}
               data-dashboard-loans={id === "loans" ? "true" : undefined}
               data-dashboard-score={id === "score" ? "true" : undefined}
               className={cn(
