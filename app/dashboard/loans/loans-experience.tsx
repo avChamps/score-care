@@ -26,7 +26,7 @@ import {
 import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
-import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
+import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +37,7 @@ type DisplayDataResponse = {
     report?: {
       credit_score?: string | number | null;
     };
+    credit_score?: string | number | null;
     display?: {
       profile?: {
         name?: string | null;
@@ -162,18 +163,18 @@ export function LoansExperience() {
       return;
     }
 
-    if (isFreeTier) {
-      setDisplayData(null);
-      setError("");
-      setLoading(false);
-      return;
-    }
-
     const token = sessionStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
       router.replace("/login");
+      return;
+    }
+
+    if (isFreeTier) {
+      setDisplayData(getStoredLatestCibilScoreCheckData(token) as DisplayDataResponse | null);
+      setError("");
+      setLoading(false);
       return;
     }
 
@@ -191,8 +192,10 @@ export function LoansExperience() {
         return;
       }
 
-      setDisplayData(null);
-      setError("Could not load loan accounts from your CIBIL report.");
+      const cachedResult = getStoredLatestCibilScoreCheckData(token) as DisplayDataResponse | null;
+
+      setDisplayData(cachedResult);
+      setError(cachedResult ? "" : "Could not load loan accounts from your CIBIL report.");
     } finally {
       setLoading(false);
     }
@@ -661,8 +664,15 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
       </div>
 
       <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3 sm:px-5">
-        <PrimaryPortalButton className={cn("h-11 w-full rounded-xl text-sm", overdue && "border-rose-500 bg-rose-500 shadow-rose-100 hover:bg-rose-600")}>
-          <CreditCard className="size-5" /> Pay EMI {loan.emi}
+        <PrimaryPortalButton
+          disabled
+          className={cn(
+            "h-11 w-full rounded-xl text-sm",
+            overdue && "border-rose-500 bg-rose-500 shadow-rose-100 hover:bg-rose-600"
+          )}
+        >
+          <CreditCard className="size-5" />
+          Pay EMI {loan.emi}
         </PrimaryPortalButton>
       </div>
     </AppCard>
@@ -737,6 +747,15 @@ function ApplyLoanDialog({
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [loanTypeOpen, setLoanTypeOpen] = useState(false);
+  const [scoreRefreshing, setScoreRefreshing] = useState(false);
+
+  const handleScoreRefresh = async () => {
+    if (scoreRefreshing) return;
+
+    setScoreRefreshing(true);
+    await wait(3000);
+    setScoreRefreshing(false);
+  };
 
   const handleUploadChange = (name: UploadFieldName, event: React.ChangeEvent<HTMLInputElement>) => {
     const maxFiles = uploadLimits[name];
@@ -895,8 +914,9 @@ function ApplyLoanDialog({
                 <p className="text-xs text-slate-600">{lastChecked ? `Verified on ${lastChecked}` : "Latest report data will be used when available"}</p>
               </div>
             </div>
-            <button className="text-xs font-bold text-cyan-700 transition hover:text-cyan-900" type="button">
-              Refresh
+            <button className="inline-flex items-center gap-1.5 text-xs font-bold text-cyan-700 transition hover:text-cyan-900" type="button" onClick={handleScoreRefresh} disabled={scoreRefreshing}>
+              {scoreRefreshing ? <LoaderCircle className="size-3.5 animate-spin" /> : null}
+              {scoreRefreshing ? "Loading..." : "Refresh"}
             </button>
           </div>
 
@@ -1191,10 +1211,14 @@ function buildLoanSummary(loans: Loan[], result: DisplayDataResponse | null): Lo
 }
 
 function readScore(result: DisplayDataResponse | null) {
-  const score = result?.data?.display?.score?.value ?? result?.data?.report?.credit_score;
+  const score = result?.data?.display?.score?.value ?? result?.data?.credit_score ?? result?.data?.report?.credit_score;
   const numericScore = typeof score === "number" ? score : Number(score);
 
   return Number.isFinite(numericScore) && numericScore > 0 ? numericScore : null;
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 function readLastChecked(result: DisplayDataResponse | null) {

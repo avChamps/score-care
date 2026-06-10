@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Download,
   Gauge,
@@ -11,7 +11,7 @@ import { AppCard, PrimaryPortalButton } from "@/components/dashboard/portal-ui";
 import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
-import { getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
+import { CibilDisplayDataError, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
 
 type CibilPayload = {
@@ -52,10 +52,10 @@ export function ScoreCheckCard() {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
   const [score, setScore] = useState<number | null>(null);
+  const autoCheckStarted = useRef(false);
   const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
-  const canCheckScore = Boolean(user?.panNumber && user?.mobileNumber && user?.fullName);
   const lastCheckedLabel = formatLastChecked(user?.cibilLastCheckedAt);
 
   useEffect(() => {
@@ -119,6 +119,11 @@ export function ScoreCheckCard() {
         if (profile?.dateOfBirth) {
           sessionStorage.setItem("scorecare_date_of_birth", profile.dateOfBirth);
         }
+
+        if (!autoCheckStarted.current && profile?.panNumber && profile?.mobileNumber && profile?.fullName) {
+          autoCheckStarted.current = true;
+          void checkCibilScore(profile, token);
+        }
       } catch {
         setError("Could not load your profile. Please try again.");
       } finally {
@@ -129,7 +134,72 @@ export function ScoreCheckCard() {
     loadProfile();
   }, [router]);
 
-  async function checkCibilScore() {
+  async function checkCibilScore(profile = user, tokenOverride?: string) {
+    if (checking) return;
+
+    const token = tokenOverride ?? sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
+    if (!profile?.panNumber || !profile?.mobileNumber || !profile?.fullName) {
+      setError("Profile is missing PAN, mobile number, or name.");
+      return;
+    }
+
+    const cibilPayload: CibilPayload = {
+      pan: profile.panNumber,
+      mobile: profile.mobileNumber,
+      name: profile.fullName,
+      consent: "Y",
+      gender: "male",
+    };
+
+    setError("");
+    setChecking(true);
+
+    try {
+      const result = await getCachedCibilScoreCheckData(token, cibilPayload);
+      let displayResult = null;
+
+      if (!accessLoading && !isFreeTier) {
+        try {
+          displayResult = await getCachedCibilDisplayData(token);
+        } catch {
+          displayResult = null;
+        }
+      }
+
+      const latestScore = readScore(displayResult) ?? readScore(result);
+
+      setScore(latestScore);
+      setChecked(true);
+    } catch (error) {
+      if (error instanceof CibilDisplayDataError && (error.status === 401 || error.status === 403)) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
+      }
+
+      const cachedScore = readScore(getStoredCibilScoreCheckData(token, cibilPayload)) ?? readScore(profile);
+
+      if (cachedScore) {
+        setScore(cachedScore);
+        setChecked(true);
+        setError("");
+        return;
+      }
+
+      setError("Could not check your CIBIL score. Please try again.");
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  async function refreshCachedCibilScore() {
     if (checking) return;
 
     const token = sessionStorage.getItem("scorecare_token");
@@ -140,15 +210,15 @@ export function ScoreCheckCard() {
       return;
     }
 
-    if (!canCheckScore) {
+    if (!user?.panNumber || !user?.mobileNumber || !user?.fullName) {
       setError("Profile is missing PAN, mobile number, or name.");
       return;
     }
 
     const cibilPayload: CibilPayload = {
-      pan: user?.panNumber ?? "",
-      mobile: user?.mobileNumber ?? "",
-      name: user?.fullName ?? "",
+      pan: user.panNumber,
+      mobile: user.mobileNumber,
+      name: user.fullName,
       consent: "Y",
       gender: "male",
     };
@@ -157,32 +227,16 @@ export function ScoreCheckCard() {
     setChecking(true);
 
     try {
-      const response = await apiRequest("/credit-reports/cibil", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: cibilPayload,
-      });
+      await wait(3000);
 
-      if (response.status === 401 || response.status === 403) {
-        clearScorecareSession();
-        router.replace("/login");
+      const cachedScore = readScore(getStoredCibilScoreCheckData(token, cibilPayload)) ?? readScore(user);
+
+      if (cachedScore) {
+        setScore(cachedScore);
+        setChecked(true);
         return;
       }
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result?.message || "Unable to fetch CIBIL score");
-      }
-
-      const displayResult = accessLoading || isFreeTier ? null : await getCachedCibilDisplayData(token, { forceRefresh: true });
-      const latestScore = readScore(displayResult) ?? readScore(result);
-
-      setScore(latestScore);
-      setChecked(true);
-    } catch {
       setError("Could not check your CIBIL score. Please try again.");
     } finally {
       setChecking(false);
@@ -279,7 +333,7 @@ export function ScoreCheckCard() {
         <PrimaryPortalButton
           type="button"
           data-dashboard-home="true"
-          onClick={checkCibilScore}
+          onClick={refreshCachedCibilScore}
           className="w-full px-3"
           disabled={profileLoading || checking}
         >
@@ -513,6 +567,10 @@ function readScore(result: unknown) {
   return Number.isFinite(numericScore) && numericScore > 0
     ? numericScore
     : null;
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 function getReportFileName(contentDisposition: string | null) {

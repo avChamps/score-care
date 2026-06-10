@@ -10,6 +10,9 @@ const SCORECARE_SESSION_KEYS = [
   "scorecare_assistant_messages",
   "scorecare_cibil_display_data",
   "scorecare_cibil_display_token",
+  "scorecare_cibil_score_check_data",
+  "scorecare_cibil_score_check_token",
+  "scorecare_cibil_score_check_payload",
   "scorecare_admin_view",
 ];
 

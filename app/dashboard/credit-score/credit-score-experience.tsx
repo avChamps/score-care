@@ -28,7 +28,7 @@ import {
 import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
-import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
+import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +61,7 @@ type DisplayDataResponse = {
       has_pdf?: boolean;
       download_url?: string | null;
     };
+    credit_score?: string | number | null;
     display?: {
       profile?: {
         name?: string | null;
@@ -173,18 +174,18 @@ export function CreditScoreExperience() {
       return;
     }
 
-    if (isFreeTier) {
-      setDisplayData(null);
-      setError("");
-      setLoading(false);
-      return;
-    }
-
     const token = sessionStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
       router.replace("/login");
+      return;
+    }
+
+    if (isFreeTier) {
+      setDisplayData(getStoredLatestCibilScoreCheckData(token) as DisplayDataResponse | null);
+      setError("");
+      setLoading(false);
       return;
     }
 
@@ -202,8 +203,10 @@ export function CreditScoreExperience() {
         return;
       }
 
-      setError("Could not load your latest CIBIL report data.");
-      setDisplayData(null);
+      const cachedResult = getStoredLatestCibilScoreCheckData(token) as DisplayDataResponse | null;
+
+      setError(cachedResult ? "" : "Could not load your latest CIBIL report data.");
+      setDisplayData(cachedResult);
     } finally {
       setLoading(false);
     }
@@ -283,6 +286,28 @@ export function CreditScoreExperience() {
       setError("Could not download your CIBIL report. Please try again.");
     } finally {
       setDownloading(false);
+    }
+  }
+
+  async function refreshCachedScore() {
+    if (loading) return;
+
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      await wait(3000);
+      setDisplayData((currentData) => (getStoredLatestCibilScoreCheckData(token) as DisplayDataResponse | null) ?? currentData);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -373,7 +398,7 @@ export function CreditScoreExperience() {
             lastChecked={lastChecked}
             loading={loading}
             onDownload={downloadReport}
-            onRefresh={loadDisplayData}
+            onRefresh={refreshCachedScore}
             range={displayData?.data?.display?.score?.range ?? "300 to 900"}
             score={score}
           />
@@ -1130,10 +1155,15 @@ function buildBehaviourItems(result: DisplayDataResponse | null): BehaviourItem[
 function readScore(result: DisplayDataResponse | null) {
   const score =
     result?.data?.display?.score?.value ??
+    result?.data?.credit_score ??
     result?.data?.report?.credit_score;
   const numericScore = typeof score === "number" ? score : Number(score);
 
   return Number.isFinite(numericScore) && numericScore > 0 ? numericScore : null;
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 function readLastChecked(result: DisplayDataResponse | null) {

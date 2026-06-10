@@ -522,29 +522,47 @@ function getNotificationPresentation(type?: string | null): { Icon: typeof Bell;
   return { Icon: Bell, tone: "slate" };
 }
 
+
 function formatNotificationTime(value?: string | null) {
   if (!value) return "--";
 
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) return "--";
 
   const diffMs = Date.now() - date.getTime();
-  const minuteMs = 60 * 1000;
-  const hourMs = 60 * minuteMs;
-  const dayMs = 24 * hourMs;
 
-  if (diffMs < minuteMs) return "Just now";
-  if (diffMs < hourMs) return `${Math.floor(diffMs / minuteMs)} min ago`;
-  if (diffMs < dayMs) return `${Math.floor(diffMs / hourMs)} hr ago`;
-  if (diffMs < 7 * dayMs) return `${Math.floor(diffMs / dayMs)} day${Math.floor(diffMs / dayMs) === 1 ? "" : "s"} ago`;
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const month = 30 * day;
+  const year = 365 * day;
 
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
+  if (diffMs < minute) return "Just now";
+
+  if (diffMs < hour) {
+    const mins = Math.floor(diffMs / minute);
+    return `${mins} min${mins > 1 ? "s" : ""} ago`;
+  }
+
+  if (diffMs < day) {
+    const hrs = Math.floor(diffMs / hour);
+    return `${hrs} hr${hrs > 1 ? "s" : ""} ago`;
+  }
+
+  if (diffMs < month) {
+    const days = Math.floor(diffMs / day);
+    return `${days} day${days > 1 ? "s" : ""} ago`;
+  }
+
+  if (diffMs < year) {
+    const months = Math.floor(diffMs / month);
+    return `${months} month${months > 1 ? "s" : ""} ago`;
+  }
+
+  const years = Math.floor(diffMs / year);
+  return `${years} year${years > 1 ? "s" : ""} ago`;
 }
+
 
 function SupportDrawer({ onClose }: { onClose: () => void }) {
   const { isFreeTier } = useSubscriptionAccess();
