@@ -598,6 +598,13 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
 
     try {
       const context = assistantContext ?? await loadAssistantContext(isFreeTier);
+      const token = sessionStorage.getItem("scorecare_token");
+
+      if (!token || isTokenExpired(token)) {
+        clearScorecareSession();
+        window.location.href = "/login";
+        return;
+      }
 
       if (!assistantContext) {
         setAssistantContext(context);
@@ -608,6 +615,7 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
         method: "POST",
         headers: {
           Accept: "text/event-stream",
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

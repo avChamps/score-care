@@ -294,6 +294,14 @@ export function CreditScoreExperience() {
       return;
     }
 
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
     setScoreHelpAnswer("");
     setScoreHelpError("");
     setScoreHelpLoading(true);
@@ -302,6 +310,9 @@ export function CreditScoreExperience() {
     try {
       const response = await apiRequest("/ai/gemini", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: {
           message: buildCreditScoreAiPrompt({
             displayData,
