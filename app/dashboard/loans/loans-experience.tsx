@@ -884,8 +884,8 @@ function ApplyLoanDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] bg-slate-950/45 px-4 py-5 backdrop-blur-sm animate-[creditPanelIn_0.2s_ease-out] sm:px-6">
-      <div className="mx-auto flex h-[calc(100dvh-2.5rem)] max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.24)]">
+    <div className="fixed inset-0 z-[120] bg-slate-950/45 px-3 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))] pt-4 backdrop-blur-sm animate-[creditPanelIn_0.2s_ease-out] sm:px-6 sm:py-5 lg:pb-5">
+      <div className="mx-auto flex h-[calc(100dvh-6.75rem-env(safe-area-inset-bottom,0px))] max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.24)] sm:h-[calc(100dvh-2.5rem)]">
         <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 bg-white px-4 py-4 sm:px-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-600">Loan Application</p>
@@ -988,14 +988,14 @@ function ApplyLoanDialog({
                     <button
                       key={type.value}
                       className={cn(
-                        "h-11 rounded-full border px-3 text-xs font-bold transition hover:-translate-y-0.5",
+                        "flex min-h-12 items-center justify-center gap-2 rounded-full border px-3 text-center text-xs font-bold leading-tight transition hover:-translate-y-0.5",
                         selected ? "border-cyan-200 bg-cyan-50 text-cyan-700" : "border-slate-200 bg-white text-slate-600",
                       )}
                       type="button"
                       onClick={() => onEmploymentTypeChange(type.value)}
                     >
-                      {selected ? <span className="mr-2 inline-block size-2 rounded-full bg-cyan-500" /> : null}
-                      {type.label}
+                      {selected ? <span className="size-2 shrink-0 rounded-full bg-cyan-500" /> : null}
+                      <span className="min-w-0">{type.label}</span>
                     </button>
                   );
                 })}
@@ -1026,7 +1026,7 @@ function ApplyLoanDialog({
             {submitError ? (
               <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{submitError}</p>
             ) : null}
-            <div className="sticky bottom-0 z-20 -mx-4 bg-white/95 px-4 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))] pt-4 backdrop-blur sm:-mx-5 sm:px-5 lg:pb-4">
+            <div className="-mx-4 border-t border-slate-100 bg-white px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-4 sm:-mx-5 sm:px-5">
               <div className="grid gap-3 sm:grid-cols-[0.7fr_1fr]">
                 <button
                   className="h-11 rounded-full border border-slate-200 bg-white text-xs font-bold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300"

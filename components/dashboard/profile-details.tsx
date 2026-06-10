@@ -145,7 +145,7 @@ export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean 
         </div>
       </AppCard>
 
-      {user?.isAdmin ? (
+      {/* {user?.isAdmin ? (
        <button
       type="button"
       onClick={isAdminView ? openUserView : openAdminView}
@@ -155,7 +155,7 @@ export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean 
       <LayoutDashboard className="size-5" />
       {isAdminView ? "User Dashboard" : launchingAdmin ? "Opening Admin Panel..." : "Admin Dashboard"}
     </button>
-      ) : null}
+      ) : null} */}
 
       <button
     type="button"
