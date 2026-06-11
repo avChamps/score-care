@@ -9,7 +9,9 @@ import {
   ArrowUpRight,
   ArrowLeft,
   Bell,
+  Bot,
   CircleHelp,
+  CreditCard,
   Crown,
   FileText,
   Gift,
@@ -88,6 +90,13 @@ const bottomNav = [
   { label: "Improve", href: "/dashboard/score-fix", Icon: TrendingUp },
   { label: "Offers", href: "/pricing", Icon: Gift },
   { label: "Loans", href: "/dashboard/loans", Icon: ReceiptText },
+];
+const appTiles = [
+  { href: "/dashboard/credit-score", Icon: CreditCard, title: "Credit Score", value: "Up to", meta: "900" },
+  { href: "/report", Icon: FileText, title: "Reports", value: "Full", meta: "CIBIL" },
+  { href: "/dashboard/score-fix", Icon: ShieldAlert, title: "Score Fix", value: "Dispute", meta: "Help", alert: true },
+  { href: "/dashboard/loans", Icon: ReceiptText, title: "Loans", value: "Smart", meta: "Offers", offer: true },
+  { href: "/pricing", Icon: Gift, title: "Premium", value: "Unlock", meta: "Plan", offer: true },
 ];
 const notificationsPageSize = 10;
 const actionPlanAiCache = new Map<string, Promise<string>>();
@@ -168,21 +177,21 @@ export function HomeDashboard() {
   } : {};
 
   return (
-    <div className="page min-h-screen overflow-x-hidden bg-[#070B12] pb-32 text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
+    <div className="page min-h-screen overflow-x-hidden bg-[#050912] pb-32 text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
       <DashboardAuthGuard />
       <section
-        className="hero-header fixed inset-x-0 top-0 z-0 min-h-[300px] bg-cover bg-center px-5 pb-28 pt-7 shadow-[0_22px_48px_rgba(108,114,255,0.26)] sm:px-8"
-        style={{ backgroundImage: `linear-gradient(145deg, rgba(108,114,255,0.42), rgba(154,124,255,0.28)), url(${dashboardBg.src})` }}
+        className="hero-header fixed inset-x-0 top-0 z-0 min-h-[360px] bg-cover bg-center px-5 pb-20 pt-6 shadow-[0_26px_58px_rgba(94,99,235,0.34)] sm:min-h-[430px] sm:px-8 sm:pb-28 sm:pt-7"
+        style={{ backgroundImage: `linear-gradient(135deg, rgba(104,111,242,0.86), rgba(178,167,255,0.62) 48%, rgba(116,112,255,0.78)), url(${dashboardBg.src})` }}
       >
         <div className="mx-auto max-w-5xl">
           <div className="flex items-center justify-between">
-            <button className="grid size-12 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[0_12px_24px_rgba(20,26,86,0.18)] backdrop-blur-xl" type="button" aria-label="Open profile menu" onClick={() => setShowProfile(true)}>
-              <Menu className="size-6" strokeWidth={1.8} />
+            <button className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl sm:size-16" type="button" aria-label="Open profile menu" onClick={() => setShowProfile(true)}>
+              <Menu className="size-5 sm:size-6" strokeWidth={1.8} />
             </button>
             {isFreeTier ? (
               <button
                 aria-label="Premium benefits"
-                className="grid size-12 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[0_12px_24px_rgba(20,26,86,0.18)] backdrop-blur-xl"
+                className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl sm:size-16"
                 type="button"
                 onClick={() => setShowBenefitsPrompt(true)}
               >
@@ -191,24 +200,25 @@ export function HomeDashboard() {
             ) : null}
           </div>
 
-          <div className="mt-10">
+          <div className="mt-14 max-w-sm sm:mt-16">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase leading-none tracking-[3.5px] text-white/78">ScoreCare</p>
-              <h1 className="mt-3 truncate text-[19px] font-semibold leading-6 text-white">Hi, {name} 👋</h1>
-              <p className="mt-2 max-w-[17rem] text-[13px] font-medium leading-5 text-white/72">Your credit health dashboard is ready.</p>
+              <p className="text-[18px] font-medium italic leading-5 text-[#10206B] sm:text-[20px] sm:leading-6">Up to</p>
+              <h1 className="mt-1 text-[31px] font-medium italic leading-none text-[#10206B] sm:text-[35px]">750+</h1>
+              <p className="mt-1.5 text-[20px] font-medium leading-5 text-white sm:text-[22px] sm:leading-6">Credit Ready</p>
+              <p className="mt-4 inline-flex rounded-full bg-[#112C8F] px-4 py-2 text-[12px] font-normal text-white shadow-[0_12px_26px_rgba(17,44,143,0.22)] sm:mt-5 sm:text-[13px]">Hi, {name}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <main className="dashboard-shell relative z-10 mx-auto mt-[210px] max-w-5xl rounded-t-[32px] bg-[#070B12] px-4 pb-8 pt-5 shadow-[0_-18px_44px_rgba(7,11,18,0.48)] sm:px-6 lg:px-8">
+      <main className="dashboard-shell relative z-10 mx-auto mt-[300px] max-w-5xl rounded-t-[30px] bg-[#050912] px-4 pb-8 pt-6 sm:mt-[350px] sm:px-6 sm:pt-7 lg:px-8">
         {isLoading ? (
-          <div className="mt-5 rounded-[26px] bg-[linear-gradient(145deg,#111821,#151E2A)] p-7 text-center text-[13px] font-medium text-[#AAB6C8] shadow-[0_18px_38px_rgba(0,0,0,0.2)]">Preparing your dashboard...</div>
+          <DashboardHomeSkeleton />
         ) : score ? (
           <>
-            <section {...premiumClickProps} className={cn("mt-5 rounded-[28px] bg-[radial-gradient(circle_at_80%_0%,rgba(94,242,194,0.12),transparent_34%),linear-gradient(145deg,#111821,#151E2A)] p-5 shadow-[0_22px_46px_rgba(0,0,0,0.24)]", isFreeTier && "cursor-pointer")}>
-              <div className="grid gap-5 sm:grid-cols-[15rem_1fr] sm:items-center">
-                <div className="relative mx-auto grid size-52 place-items-center">
+            <section {...premiumClickProps} className={cn("mt-4 rounded-[26px] bg-[radial-gradient(circle_at_80%_0%,rgba(94,242,194,0.12),transparent_34%),linear-gradient(145deg,#111821,#151E2A)] p-4 shadow-[0_22px_46px_rgba(0,0,0,0.24)] sm:mt-5 sm:rounded-[28px] sm:p-5", isFreeTier && "cursor-pointer")}>
+              <div className="grid gap-4 sm:grid-cols-[15rem_1fr] sm:items-center sm:gap-5">
+                <div className="relative mx-auto grid size-44 place-items-center sm:size-52">
                   <svg className="absolute inset-0 size-full -rotate-90" viewBox="0 0 220 220" aria-hidden="true">
                     <circle cx="110" cy="110" r="94" fill="none" stroke="#273241" strokeWidth="14" />
                     <circle
@@ -223,16 +233,16 @@ export function HomeDashboard() {
                       className="drop-shadow-[0_0_12px_rgba(94,242,194,0.55)] transition-all duration-500"
                     />
                   </svg>
-                  <div className="absolute inset-7 rounded-full bg-[#0B111A] shadow-[inset_0_12px_28px_rgba(0,0,0,0.26)]" />
+                  <div className="absolute inset-6 rounded-full bg-[#0B111A] shadow-[inset_0_12px_28px_rgba(0,0,0,0.26)] sm:inset-7" />
                   <div className="relative text-center">
-                    <p className="text-[46px] font-semibold leading-none tracking-normal">{score}</p>
-                    <p className="mt-2 text-[11px] font-medium text-[#5EF2C2]">{visibleDashboard.rating}</p>
-                    <p className="mt-1 text-[11px] font-medium text-[#AAB6C8]">out of 900</p>
-                    <p className="mt-3 inline-flex rounded-full bg-white/8 px-3 py-1 text-[11px] font-medium text-[#FFD34D]">Grade {visibleDashboard.grade}</p>
+                    <p className="text-[37px] font-medium leading-none tracking-normal sm:text-[43px]">{score}</p>
+                    <p className="mt-2 text-[10px] font-medium text-[#5EF2C2]">{visibleDashboard.rating}</p>
+                    <p className="mt-1 text-[10px] font-normal text-[#AAB6C8]">out of 900</p>
+                    <p className="mt-3 inline-flex rounded-full bg-white/8 px-3 py-1 text-[10px] font-medium text-[#FFD34D]">Grade {visibleDashboard.grade}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
                   <SummaryTile label="Monthly" value={formatSignedValue(visibleDashboard.monthlyChange)} onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
                   <SummaryTile label="6 Months" value={formatSignedValue(visibleDashboard.sixMonthChange)} onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
                   <SummaryTile label="Target" value={String(visibleDashboard.targetScore)} target onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
@@ -241,16 +251,18 @@ export function HomeDashboard() {
             </section>
 
             <section className="mt-5 grid grid-cols-2 gap-4">
-              <QuickCard href="/dashboard/score-fix" Icon={ShieldAlert} title="Dispute Centre" value={formatActiveValue(visibleDashboard.activeDisputes)} meta={formatPossibleGain(visibleDashboard.scoreGain)} alert locked={isFreeTier} onLockedClick={() => setShowBenefitsPrompt(true)} />
-              <QuickCard href="/dashboard/loans" Icon={ReceiptText} title="Pay EMIs" value={visibleDashboard.emiDue} meta={`Due ${visibleDashboard.dueMonth}`} locked={isFreeTier} onLockedClick={() => setShowBenefitsPrompt(true)} />
-              <QuickCard href="/dashboard/score-fix" Icon={TrendingUp} title="Improve Score" value={formatSignedValue(visibleDashboard.improvement)} meta="score points" locked={isFreeTier} onLockedClick={() => setShowBenefitsPrompt(true)} />
-              <QuickCard href="/pricing" Icon={Gift} title="Get Offers" value={`${visibleDashboard.offers}`} meta="pre-approved" offer locked={isFreeTier} onLockedClick={() => setShowBenefitsPrompt(true)} />
+              {appTiles.map((tile, index) => (
+                <QuickCard key={tile.title} {...tile} locked={isFreeTier} tall={index < 2} onLockedClick={() => setShowBenefitsPrompt(true)} />
+              ))}
+              <button className="min-h-24 rounded-[20px] bg-[#121820] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_18px_36px_rgba(0,0,0,0.24)]" type="button" onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : () => setShowActionPlan(true)}>
+                <QuickCardContent Icon={Bot} meta="AI Agents" title="Your" value="Score Coach" />
+              </button>
             </section>
 
             <section {...premiumClickProps} className={cn("mt-5 rounded-[28px] bg-[linear-gradient(145deg,#111821,#151E2A)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.2)]", isFreeTier && "cursor-pointer")}>
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-[17px] font-semibold tracking-normal">Score Journey</h2>
-                <span className="rounded-full bg-[#5EF2C2]/12 px-3 py-1 text-[11px] font-medium text-[#5EF2C2]">+{growth} growth</span>
+                <h2 className="text-[15px] font-medium tracking-normal">Score Journey</h2>
+                <span className="rounded-full bg-[#5EF2C2]/12 px-3 py-1 text-[10px] font-medium text-[#5EF2C2]">+{growth} growth</span>
               </div>
               <svg className="mt-5 h-36 w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="10 month score trend">
                 <defs>
@@ -275,13 +287,13 @@ export function HomeDashboard() {
             </section>
 
             <section {...premiumClickProps} className={cn("mt-5 rounded-[28px] bg-[linear-gradient(145deg,#111821,#151E2A)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.2)]", isFreeTier && "cursor-pointer")}>
-              <h2 className="text-[17px] font-semibold tracking-normal">Score Factors</h2>
+              <h2 className="text-[15px] font-medium tracking-normal">Score Factors</h2>
               <div className="mt-6 space-y-5">
                 {visibleDashboard.factors.map((factor) => (
                   <div key={factor.name}>
-                    <div className="flex items-center justify-between gap-3 text-[13px]">
-                      <p className="font-medium text-white">{factor.name}</p>
-                      <p className={cn("font-medium", factor.tone === "good" && "text-[#5EF2C2]", factor.tone === "warn" && "text-[#FFD34D]", factor.tone === "alert" && "text-[#FF5C8A]")}>{factor.meta}</p>
+                    <div className="flex items-center justify-between gap-3 text-[12px]">
+                      <p className="font-normal text-white">{factor.name}</p>
+                      <p className={cn("font-normal", factor.tone === "good" && "text-[#5EF2C2]", factor.tone === "warn" && "text-[#FFD34D]", factor.tone === "alert" && "text-[#FF5C8A]")}>{factor.meta}</p>
                     </div>
                     <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-white/8">
                       <div
@@ -300,15 +312,15 @@ export function HomeDashboard() {
                   <Lightbulb className="size-7" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[12px] font-medium text-[#5EF2C2]">AI Credit Coach</p>
-                  <h2 className="mt-2 text-[14px] font-medium leading-5 tracking-normal">{visibleDashboard.coach}</h2>
-                  <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-medium">
+                  <p className="text-[11px] font-medium text-[#5EF2C2]">AI Credit Coach</p>
+                  <h2 className="mt-2 text-[13px] font-normal leading-5 tracking-normal">{visibleDashboard.coach}</h2>
+                  <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-medium">
                     <span className="rounded-full bg-[#5EF2C2]/12 px-3 py-1 text-[#5EF2C2]">+{visibleDashboard.coachGain} points</span>
                     <span className="rounded-full bg-white/8 px-3 py-1 text-[#AAB6C8]">{visibleDashboard.coachTime}</span>
                   </div>
                 </div>
               </div>
-              <button className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#5EF2C2,#22D983)] text-[13px] font-semibold text-[#06221a] shadow-[0_12px_24px_rgba(94,242,194,0.2)]" type="button" onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : () => setShowActionPlan(true)}>
+              <button className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#5EF2C2,#22D983)] text-[12px] font-medium text-[#06221a] shadow-[0_12px_24px_rgba(94,242,194,0.2)]" type="button" onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : () => setShowActionPlan(true)}>
                 View Action Plan <ArrowUpRight className="size-5" />
               </button>
             </section>
@@ -319,7 +331,7 @@ export function HomeDashboard() {
       </main>
 
       <div className="fixed bottom-4 left-0 right-0 z-30 px-4 pb-[env(safe-area-inset-bottom)]">
-        <nav className="floating-bottom-nav mx-auto grid max-w-[20rem] grid-cols-5 rounded-full border border-white/10 bg-[#151E2A]/82 px-2 py-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.36)] backdrop-blur-2xl">
+        <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-full border border-white/12 bg-[#171F29]/88 px-2 py-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.42)] backdrop-blur-2xl">
           {bottomNav.map(({ label, href, Icon }) => {
             const active = label === "Home";
 
@@ -330,15 +342,15 @@ export function HomeDashboard() {
                 data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
                 aria-disabled={!active}
                 tabIndex={active ? 0 : -1}
-                className={cn("flex flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-1 text-[10px] font-medium text-[#8E99AA]", active ? "text-[#FFD34D]" : "pointer-events-none opacity-65")}
+                className={cn("flex flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-1 text-[11px] font-normal text-[#B9C0CC]", active ? "text-[#FF9D28]" : "pointer-events-none opacity-72")}
                 onClick={(event) => {
                   if (!active) {
                     event.preventDefault();
                   }
                 }}
               >
-                <span className={cn("grid size-7 place-items-center rounded-full", active && "bg-[#FF7A00]/26 shadow-[0_0_16px_rgba(255,122,0,0.3)]")}>
-                  <Icon className="size-4" strokeWidth={active ? 2.1 : 1.75} />
+                <span className={cn("grid size-8 place-items-center rounded-full", active && "bg-[#9B5C18]/74 shadow-[0_0_18px_rgba(255,122,0,0.4)]")}>
+                  <Icon className="size-4" strokeWidth={active ? 2 : 1.65} />
                 </span>
                 <span>{label}</span>
               </Link>
@@ -376,8 +388,8 @@ export function HomeDashboard() {
 function SummaryTile({ label, onClick, value, target = false }: { label: string; onClick?: () => void; value: string; target?: boolean }) {
   return (
     <button className={cn("rounded-[20px] bg-white/[0.06] p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]", onClick && "cursor-pointer")} type="button" onClick={onClick}>
-      <p className="text-[11px] font-normal text-[#AAB6C8]">{label}</p>
-      <p className={cn("mt-2 flex items-center gap-1 text-[16px] font-semibold", target ? "text-[#FFD34D]" : "text-[#5EF2C2]")}>
+      <p className="text-[10px] font-normal text-[#AAB6C8]">{label}</p>
+      <p className={cn("mt-2 flex items-center gap-1 text-[14px] font-medium", target ? "text-[#FFD34D]" : "text-[#5EF2C2]")}>
         {!target ? <ArrowUpRight className="size-4" /> : <Target className="size-4" />}
         {value}
       </p>
@@ -385,31 +397,61 @@ function SummaryTile({ label, onClick, value, target = false }: { label: string;
   );
 }
 
-function QuickCard({ href, Icon, title, value, meta, alert = false, locked = false, offer = false, onLockedClick }: { href: string; Icon: typeof ShieldAlert; title: string; value: string; meta: string; alert?: boolean; locked?: boolean; offer?: boolean; onLockedClick?: () => void }) {
+function DashboardHomeSkeleton() {
+  return (
+    <div className="mt-5 space-y-5">
+      <section className="rounded-[26px] bg-[linear-gradient(145deg,#111821,#151E2A)] p-4 shadow-[0_22px_46px_rgba(0,0,0,0.24)] sm:rounded-[28px] sm:p-5">
+        <div className="grid gap-4 sm:grid-cols-[15rem_1fr] sm:items-center sm:gap-5">
+          <div className="mx-auto grid size-44 place-items-center rounded-full bg-white/[0.06] sm:size-52">
+            <div className="size-32 animate-pulse rounded-full bg-white/[0.08] sm:size-36" />
+          </div>
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="h-20 animate-pulse rounded-[20px] bg-white/[0.06]" />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-2 gap-4">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className={cn("animate-pulse rounded-[20px] bg-[#121820]", index < 2 ? "min-h-36" : "min-h-24")} />
+        ))}
+      </section>
+
+      <section className="rounded-[28px] bg-[linear-gradient(145deg,#111821,#151E2A)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.2)]">
+        <div className="h-4 w-28 animate-pulse rounded-full bg-white/[0.08]" />
+        <div className="mt-5 h-32 animate-pulse rounded-[22px] bg-white/[0.06]" />
+      </section>
+    </div>
+  );
+}
+
+function QuickCard({ Icon, title, value, meta, alert = false, locked = false, offer = false, onLockedClick, tall = false }: { href: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; title: string; value: string; meta: string; alert?: boolean; locked?: boolean; offer?: boolean; onLockedClick?: () => void; tall?: boolean }) {
   if (locked) {
     return (
-      <button className="min-h-36 rounded-[26px] bg-[radial-gradient(circle_at_85%_85%,rgba(94,242,194,0.11),transparent_35%),linear-gradient(145deg,#111821,#151E2A)] p-4 text-left shadow-[0_18px_36px_rgba(0,0,0,0.2)]" type="button" onClick={onLockedClick}>
+      <button className={cn("rounded-[20px] bg-[#121820] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_18px_36px_rgba(0,0,0,0.24)]", tall ? "min-h-36" : "min-h-24")} type="button" onClick={onLockedClick}>
         <QuickCardContent Icon={Icon} alert={alert} meta={meta} offer={offer} title={title} value={value} />
       </button>
     );
   }
 
   return (
-    <button className="min-h-36 rounded-[26px] bg-[radial-gradient(circle_at_85%_85%,rgba(94,242,194,0.11),transparent_35%),linear-gradient(145deg,#111821,#151E2A)] p-4 text-left shadow-[0_18px_36px_rgba(0,0,0,0.2)]" type="button">
+    <button className={cn("rounded-[20px] bg-[#121820] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_18px_36px_rgba(0,0,0,0.24)]", tall ? "min-h-36" : "min-h-24")} type="button">
       <QuickCardContent Icon={Icon} alert={alert} meta={meta} offer={offer} title={title} value={value} />
     </button>
   );
 }
 
-function QuickCardContent({ Icon, alert, meta, offer, title, value }: { Icon: typeof ShieldAlert; alert?: boolean; meta: string; offer?: boolean; title: string; value: string }) {
+function QuickCardContent({ Icon, alert, meta, offer, title, value }: { Icon: ComponentType<{ className?: string; strokeWidth?: number }>; alert?: boolean; meta: string; offer?: boolean; title: string; value: string }) {
   return (
     <>
-      <span className={cn("grid size-12 place-items-center rounded-[18px] shadow-[0_12px_24px_rgba(0,0,0,0.2)]", alert ? "bg-[#FF5C8A]/14 text-[#FF5C8A]" : offer ? "bg-[#FFD34D]/14 text-[#FFD34D]" : "bg-[#5EF2C2]/14 text-[#5EF2C2]")}>
-        <Icon className="size-6" strokeWidth={1.8} />
+      <span className={cn("grid size-12 place-items-center rounded-full bg-[#173B66] text-[#DFEBFF] shadow-[0_0_0_7px_rgba(13,69,126,0.2),0_0_20px_rgba(21,101,192,0.32)]", alert && "text-[#FF8AAB]", offer && "text-[#FFD34D]")}>
+        <Icon className="size-4" strokeWidth={1.6} />
       </span>
-      <p className="mt-4 text-[14px] font-medium leading-tight text-white">{title}</p>
-      <p className="mt-2 text-[16px] font-semibold tracking-normal text-white">{value}</p>
-      <p className={cn("mt-1 text-[12px] font-medium", alert ? "text-[#FF5C8A]" : offer ? "text-[#FFD34D]" : "text-[#5EF2C2]")}>{meta}</p>
+      <p className="mt-4 text-[14px] font-normal leading-5 text-white">{title}</p>
+      <p className="mt-1 text-[10px] font-normal tracking-normal text-white/82">{value}</p>
+      <p className={cn("mt-0.5 text-[11px] font-medium", alert ? "text-[#FF8AAB]" : offer ? "text-[#FFD34D]" : "text-[#59DFAE]")}>{meta}</p>
     </>
   );
 }
@@ -417,8 +459,8 @@ function QuickCardContent({ Icon, alert, meta, offer, title, value }: { Icon: ty
 function JourneyStat({ label, onClick, value, gold = false }: { label: string; onClick?: () => void; value: string; gold?: boolean }) {
   return (
     <button className={cn("rounded-[20px] bg-white/[0.06] p-3 text-left", onClick && "cursor-pointer")} type="button" onClick={onClick}>
-      <p className="text-[11px] font-normal text-[#AAB6C8]">{label}</p>
-      <p className={cn("mt-1 text-[12px] font-semibold", gold ? "text-[#FFD34D]" : "text-white")}>{value}</p>
+      <p className="text-[10px] font-normal text-[#AAB6C8]">{label}</p>
+      <p className={cn("mt-1 text-[11px] font-medium", gold ? "text-[#FFD34D]" : "text-white")}>{value}</p>
     </button>
   );
 }
@@ -734,7 +776,7 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
         </button>
 
         <div className="mt-8 rounded-[24px] bg-white/35 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
-          <div className="mb-5 inline-flex rounded-full bg-[#C9F9DF] px-4 py-1.5 text-[11px] font-semibold text-[#07844E]">{completion}% Complete</div>
+          <div className="mb-5 inline-flex rounded-full bg-[#C9F9DF] px-4 py-1.5 text-[10px] font-medium text-[#07844E]">{completion}% Complete</div>
           <div className="grid gap-3.5">
             <ProfileField label="Full name" value={profile?.fullName || name} />
             <ProfileField label="Phone number" value={formatPhone(phone)} />
@@ -745,7 +787,7 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
       </section>
 
       <section className="mx-auto mt-6 max-w-md rounded-[26px] bg-[#111821] p-5 shadow-[0_18px_36px_rgba(0,0,0,0.22)]">
-        <p className="text-[12px] font-medium uppercase tracking-wide text-[#AAB6C8]">Other Options</p>
+        <p className="text-[11px] font-medium uppercase tracking-wide text-[#AAB6C8]">Other Options</p>
         <ProfileOption title="Notification" Icon={Bell} onClick={openNotifications} />
         <ProfileOption title="Help" Icon={CircleHelp} onClick={onHelp} />
         <ProfileOption title="Share App" Icon={Share2} />
@@ -761,7 +803,7 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
         />
       ) : null}
 
-      <p className="mt-6 text-center text-[12px] font-normal text-[#6F7B8E]">Application Version 7.0.4</p>
+      <p className="mt-6 text-center text-[11px] font-normal text-[#6F7B8E]">V 1.0.0</p>
     </div>
   );
 }
@@ -773,26 +815,43 @@ function NotificationsScreen({ error, loading, notifications, onBack }: { error:
         <button className="grid size-6 place-items-center text-[#1F2937]" type="button" aria-label="Back" onClick={onBack}>
           <ArrowLeft className="size-6" strokeWidth={2.2} />
         </button>
-        <h1 className="text-[14px] font-semibold text-[#1F2937]">Notifications</h1>
+        <h1 className="text-[13px] font-medium text-[#1F2937]">Notifications</h1>
       </header>
 
       <main>
         {loading ? (
-          <p className="px-5 py-5 text-[12px] font-normal text-[#111827]">Loading notifications...</p>
+          <NotificationScreenSkeleton />
         ) : error ? (
-          <p className="px-5 py-5 text-[12px] font-normal text-[#FF5C8A]">{error}</p>
+          <p className="px-5 py-5 text-[11px] font-normal text-[#FF5C8A]">{error}</p>
         ) : notifications.length ? (
           notifications.map((notification) => (
             <article key={notification.id} className="border-b border-black/20 px-5 py-5">
-              <h2 className="text-[13px] font-semibold leading-5 text-black">{notification.title || "Notification"}</h2>
-              <p className="mt-2 text-[12px] font-normal leading-5 text-black">{notification.message || "--"}</p>
-              {notification.createdAt ? <p className="mt-5 text-right text-[11px] font-normal text-black">{formatNotificationRelativeTime(notification.createdAt)}</p> : null}
+              <h2 className="text-[12px] font-medium leading-5 text-black">{notification.title || "Notification"}</h2>
+              <p className="mt-2 text-[11px] font-normal leading-4 text-black">{notification.message || "--"}</p>
+              {notification.createdAt ? <p className="mt-5 text-right text-[10px] font-normal text-black">{formatNotificationRelativeTime(notification.createdAt)}</p> : null}
             </article>
           ))
         ) : (
-          <p className="px-5 py-5 text-[12px] font-normal text-[#111827]">No notifications yet.</p>
+          <p className="px-5 py-5 text-[11px] font-normal text-[#111827]">No notifications yet.</p>
         )}
       </main>
+    </div>
+  );
+}
+
+function NotificationScreenSkeleton() {
+  return (
+    <div>
+      {Array.from({ length: 5 }).map((_, index) => (
+        <article key={index} className="border-b border-black/10 px-5 py-5">
+          <div className="h-3 w-2/5 animate-pulse rounded-full bg-black/10" />
+          <div className="mt-3 space-y-2">
+            <div className="h-2.5 w-full animate-pulse rounded-full bg-black/10" />
+            <div className="h-2.5 w-4/5 animate-pulse rounded-full bg-black/10" />
+          </div>
+          <div className="ml-auto mt-5 h-2.5 w-20 animate-pulse rounded-full bg-black/10" />
+        </article>
+      ))}
     </div>
   );
 }
@@ -800,8 +859,8 @@ function NotificationsScreen({ error, loading, notifications, onBack }: { error:
 function ProfileField({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-[10px] font-medium uppercase tracking-[2.2px] text-[#6F7280]">{label}</p>
-      <p className="mt-1 break-words text-[14px] font-semibold tracking-[0.6px] text-[#111827]">{value || "--"}</p>
+      <p className="text-[9px] font-medium uppercase tracking-[2px] text-[#6F7280]">{label}</p>
+      <p className="mt-1 break-words text-[12px] font-medium tracking-[0.3px] text-[#111827]">{value || "--"}</p>
     </div>
   );
 }
@@ -811,9 +870,9 @@ function ProfileOption({ Icon, danger = false, href, onClick, title }: { Icon?: 
     <>
       <span className="flex items-center gap-3">
         {Icon ? <Icon className="size-5" strokeWidth={1.7} /> : null}
-        <span className={cn("text-[14px] font-normal", danger ? "text-[#FF5C8A]" : "text-white")}>{title}</span>
+        <span className={cn("text-[13px] font-normal", danger ? "text-[#FF5C8A]" : "text-white")}>{title}</span>
       </span>
-      <span className={cn("text-[24px] font-light leading-none", danger ? "text-[#FF5C8A]" : "text-white")}>›</span>
+      <span className={cn("text-[20px] font-light leading-none", danger ? "text-[#FF5C8A]" : "text-white")}>›</span>
     </>
   );
 
@@ -1137,7 +1196,7 @@ function readEnquiries(result: unknown) {
 
 function calculateUtilization(accounts: Array<Record<string, unknown>>, outstandingBalance: number) {
   const activeAccounts = accounts.filter(isActiveAccount);
-  const totals = activeAccounts.reduce(
+  const totals = activeAccounts.reduce<{ balance: number; limit: number }>(
     (sum, account) => ({
       balance: sum.balance + readNumber(account.current_balance ?? account.Current_Balance),
       limit: sum.limit + readNumber(account.high_credit_amount ?? account.Credit_Limit_Amount ?? account.Highest_Credit_or_Original_Loan_Amount),
@@ -1377,10 +1436,6 @@ function formatSignedValue(value: number | string) {
 
 function formatActiveValue(value: number | string) {
   return typeof value === "number" ? `${value} Active` : value;
-}
-
-function formatPossibleGain(value: number | string) {
-  return typeof value === "number" ? `+${value} possible` : value;
 }
 
 function formatNotificationRelativeTime(value: string) {
