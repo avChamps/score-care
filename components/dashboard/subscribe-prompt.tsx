@@ -97,7 +97,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
     <AnimatePresence>
       {show ? (
         <motion.div
-          className="fixed inset-0 z-[9999] flex items-end bg-slate-950/55 px-2 backdrop-blur-[3px]"
+          className="fixed inset-0 z-[9999] flex items-end bg-[#050910]/70 px-3 backdrop-blur-[5px]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -105,25 +105,25 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
           onClick={closePrompt}
         >
           <motion.div
-            className="relative flex max-h-[calc(100dvh-5rem)] min-h-[25rem] w-full flex-col overflow-hidden rounded-t-[2rem] bg-white shadow-[0_-24px_80px_rgba(15,23,42,0.28)] sm:mx-auto sm:max-w-md sm:rounded-[2rem]"
+            className="relative mx-auto flex max-h-[calc(100dvh-4rem)] min-h-[25rem] w-full max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-[#0D131C] text-white shadow-[0_-24px_80px_rgba(0,0,0,0.42)] sm:rounded-[2rem]"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(180deg,#f4f9ff_0%,#ffffff_100%)]" />
+            <div className="absolute inset-x-0 top-0 h-32 bg-[radial-gradient(circle_at_80%_0%,rgba(94,242,194,0.18),transparent_34%),linear-gradient(180deg,#151E2A_0%,#0D131C_100%)]" />
             <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-4 sm:px-6">
-              <div className="mx-auto h-1.5 w-12 rounded-full bg-slate-200" />
+              <div className="mx-auto h-1.5 w-12 rounded-full bg-white/16" />
               <div className="relative mx-auto mt-5 flex max-w-md items-start justify-between gap-4">
                 <div>
-                  <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">Subscribe</p>
-                  <h2 className="mt-1 text-xl font-black tracking-tight text-[var(--portal-ink)]">Unlock premium features</h2>
-                  <p className="mt-2 text-xs font-semibold leading-5 text-[var(--portal-muted)]">Choose a plan to continue using reports, health insights, and predictor tools.</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#FFD34D]">Subscribe</p>
+                  <h2 className="mt-2 text-[21px] font-semibold leading-7 text-white">Unlock premium features</h2>
+                  <p className="mt-2 text-[12px] font-medium leading-5 text-[#AAB6C8]">Choose a plan to continue using reports, health insights, and predictor tools.</p>
                 </div>
                 <button
                   aria-label="Close subscription prompt"
-                  className="grid size-10 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                  className="grid size-10 shrink-0 place-items-center rounded-full bg-white/8 text-[#AAB6C8] shadow-[0_10px_22px_rgba(0,0,0,0.18)] transition hover:bg-white/12 hover:text-white"
                   onClick={closePrompt}
                   type="button"
                 >
@@ -134,15 +134,15 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
               <div className="relative mx-auto mt-6 grid max-w-md grid-cols-2 gap-3 pb-4">
                 {plansLoading ? (
                   Array.from({ length: 2 }).map((_, index) => (
-                    <div key={index} className="min-h-[5.5rem] animate-pulse rounded-2xl border border-[var(--portal-border)] bg-slate-50 px-3 py-3">
-                      <div className="h-3 w-16 rounded-full bg-slate-200" />
-                      <div className="mt-4 h-5 w-20 rounded-full bg-slate-200" />
+                    <div key={index} className="min-h-[5.5rem] animate-pulse rounded-[22px] bg-white/[0.06] px-3 py-3">
+                      <div className="h-3 w-16 rounded-full bg-white/12" />
+                      <div className="mt-4 h-5 w-20 rounded-full bg-white/12" />
                     </div>
                   ))
                 ) : null}
 
                 {!plansLoading && plansError ? (
-                  <div className="col-span-2 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-xs font-bold leading-5 text-rose-700">
+                  <div className="col-span-2 rounded-2xl bg-[#FF5C8A]/12 px-4 py-3 text-xs font-medium leading-5 text-[#FF8BAA]">
                     {plansError}
                   </div>
                 ) : null}
@@ -154,31 +154,31 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
                   return (
                   <button
                     key={planId}
-                    className={`relative min-h-[4.5rem] rounded-2xl border px-3 py-3 text-left shadow-sm transition ${
+                    className={`relative min-h-[5.4rem] rounded-[22px] px-3 py-3 text-left shadow-[0_14px_28px_rgba(0,0,0,0.18)] transition ${
                       selected
-                        ? "border-[var(--portal-blue)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)] shadow-[0_10px_24px_rgba(22,119,255,0.12)]"
-                        : "border-[var(--portal-border)] bg-white text-[var(--portal-ink)] hover:border-[var(--portal-blue)] hover:bg-slate-50"
+                        ? "bg-[linear-gradient(145deg,rgba(94,242,194,0.2),rgba(21,30,42,0.96))] text-white ring-1 ring-[#5EF2C2]/70"
+                        : "bg-[#151E2A] text-white hover:bg-[#1A2634]"
                     }`}
                     onClick={() => setSelectedPlanId(planId)}
                     type="button"
                   >
                     {plan.offerTag ? (
-                      <span className="absolute right-2 top-2 max-w-[4.5rem] truncate rounded-full bg-[var(--portal-orange-soft)] px-1.5 py-0.5 text-[0.45rem] font-black uppercase leading-none text-[var(--portal-orange)]">
+                      <span className="absolute right-2 top-2 max-w-[4.5rem] truncate rounded-full bg-[#FF7A00]/16 px-1.5 py-0.5 text-[8px] font-semibold uppercase leading-none text-[#FFD34D]">
                         {plan.offerTag}
                       </span>
                     ) : null}
-                    <span className="block pr-[4.75rem] text-sm font-black">{plan.planName}</span>
-                    <span className="mt-1 block text-lg font-black">{formatPlanAmount(plan.amount, plan.currency)}</span>
-                    {plan.recommendedFor ? <span className="mt-1 block text-[0.65rem] font-bold leading-4 text-[var(--portal-muted)]">{plan.recommendedFor}</span> : null}
+                    <span className="block pr-[4.75rem] text-[13px] font-semibold leading-5">{plan.planName}</span>
+                    <span className="mt-1 block text-[18px] font-semibold text-[#FFD34D]">{formatPlanAmount(plan.amount, plan.currency)}</span>
+                    {plan.recommendedFor ? <span className="mt-1 block text-[11px] font-medium leading-4 text-[#AAB6C8]">{plan.recommendedFor}</span> : null}
                   </button>
                   );
                 }) : null}
               </div>
             </div>
 
-            <div className="relative border-t border-slate-100 bg-white px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6">
+            <div className="relative border-t border-white/8 bg-[#0D131C] px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6">
               <button
-                className="mx-auto block h-[3.25rem] w-full max-w-md rounded-2xl bg-[var(--portal-orange)] text-sm font-black text-white shadow-[0_14px_28px_rgba(255,109,0,0.24)] transition hover:bg-[var(--portal-orange-deep)]"
+                className="mx-auto block h-[3.25rem] w-full max-w-md rounded-2xl bg-[linear-gradient(135deg,#FF7A00,#FFD34D)] text-sm font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)] transition disabled:opacity-60"
                 disabled={!selectedPlanId || plansLoading}
                 type="button"
               >

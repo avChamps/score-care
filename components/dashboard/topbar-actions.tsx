@@ -18,7 +18,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
-import { getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
+import { getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +40,17 @@ type AssistantMessage = {
   role: "assistant" | "user";
 };
 type AssistantDisplayData = {
+  cibilScore?: string | number | null;
+  credit_score?: string | number | null;
+  score?: string | number | null;
   data?: {
+    cibilScore?: string | number | null;
+    credit_report?: {
+      SCORE?: {
+        FCIREXScore?: string | number | null;
+      } | null;
+    } | null;
+    credit_score?: string | number | null;
     display?: {
       profile?: {
         name?: string | null;
@@ -59,6 +69,12 @@ type AssistantDisplayData = {
       }> | null;
       enquiries?: unknown[] | null;
     };
+    report?: {
+      cibilScore?: string | number | null;
+      credit_score?: string | number | null;
+      score?: string | number | null;
+    } | null;
+    score?: string | number | null;
   };
 };
 
@@ -190,14 +206,14 @@ function IconButton({
   );
 }
 
-function DrawerHeader({ eyebrow, icon, onClose, title }: { eyebrow: string; icon: React.ReactNode; onClose: () => void; title: string }) {
+function DrawerHeader({ eyebrow, icon, iconTone = "blue", onClose, title }: { eyebrow: string; icon: React.ReactNode; iconTone?: "blue" | "orange"; onClose: () => void; title: string }) {
   return (
     <div className="flex shrink-0 items-center justify-between gap-4 border-b border-[var(--portal-border)] bg-white/80 px-4 py-4 backdrop-blur">
       <div className="flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-2xl bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]">{icon}</span>
+        <span className={cn("grid size-10 place-items-center rounded-2xl", iconTone === "orange" ? "bg-[var(--portal-orange-soft)] text-[var(--portal-orange)]" : "bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]")}>{icon}</span>
         <div>
-          <p className="text-[0.6rem] font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">{eyebrow}</p>
-          <h2 className="mt-0.5 text-sm font-black text-[var(--portal-ink)]">{title}</h2>
+          <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[var(--portal-orange)]">{eyebrow}</p>
+          <h2 className="mt-0.5 text-[0.95rem] font-extrabold text-[var(--portal-ink)]">{title}</h2>
         </div>
       </div>
       <button aria-label="Close drawer" className="grid size-8 place-items-center rounded-full border border-[var(--portal-border)] bg-white text-[var(--portal-muted)] transition hover:bg-[var(--portal-orange-soft)] hover:text-[var(--portal-orange)]" type="button" onClick={onClose}>
@@ -564,13 +580,10 @@ function formatNotificationTime(value?: string | null) {
 }
 
 
-function SupportDrawer({ onClose }: { onClose: () => void }) {
+export function SupportDrawer({ onClose }: { onClose: () => void }) {
   const { isFreeTier } = useSubscriptionAccess();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<AssistantMessage[]>(() => readCachedAssistantMessages());
-  const [assistantContext, setAssistantContext] = useState<string | null>(() =>
-    typeof sessionStorage === "undefined" ? null : sessionStorage.getItem(assistantContextCacheKey),
-  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -583,7 +596,6 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
     }
 
     void Promise.resolve().then(() => {
-      setAssistantContext(null);
       sessionStorage.removeItem(assistantContextCacheKey);
     });
   }, [isFreeTier]);
@@ -615,7 +627,7 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
     ]);
 
     try {
-      const context = assistantContext ?? await loadAssistantContext(isFreeTier);
+      const context = await loadAssistantContext(isFreeTier);
       const token = sessionStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) {
@@ -624,10 +636,7 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
         return;
       }
 
-      if (!assistantContext) {
-        setAssistantContext(context);
-        sessionStorage.setItem(assistantContextCacheKey, context);
-      }
+      sessionStorage.setItem(assistantContextCacheKey, context);
 
       const response = await fetch(apiUrl("/ai/gemini"), {
         method: "POST",
@@ -696,8 +705,8 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <DrawerHeader eyebrow="Assistant" icon={<Bot className="size-5" />} onClose={onClose} title="Score Care" />
-      <div className="flex min-h-0 flex-1 flex-col">
+      <DrawerHeader eyebrow="Assistant" icon={<Bot className="size-5" />} iconTone="orange" onClose={onClose} title="Score Care" />
+      <div className="flex min-h-0 flex-1 flex-col bg-[linear-gradient(180deg,#fff8f2_0%,#f7f8fb_42%,#ffffff_100%)]">
         <div className="drawer-scroll flex-1 overflow-y-auto px-4 py-5">
           <div className="space-y-4">
             {messages.map((message) => (
@@ -706,12 +715,12 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="border-t border-[var(--portal-border)] bg-white/85 px-4 py-4 backdrop-blur">
-          <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+        <div className="border-t border-orange-100 bg-white px-4 py-4 shadow-[0_-12px_28px_rgba(16,24,40,0.06)]">
+          <div className="drawer-scroll mb-3 flex gap-2 overflow-x-auto pb-1">
             {quickActions.map(({ Icon, label }) => (
               <button
                 key={label}
-                className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[var(--portal-border)] bg-white px-3 text-[0.68rem] font-black text-[var(--portal-muted)] shadow-sm transition hover:border-[var(--portal-blue)] hover:text-[var(--portal-blue)] disabled:cursor-not-allowed disabled:opacity-55"
+                className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-orange-100 bg-[var(--portal-orange-soft)] px-3 text-[0.72rem] font-semibold text-[var(--portal-orange)] shadow-sm transition hover:border-[var(--portal-orange)] hover:bg-white disabled:cursor-not-allowed disabled:opacity-55"
                 type="button"
                 disabled={loading}
                 onClick={() => void sendAssistantMessage(label)}
@@ -722,13 +731,13 @@ function SupportDrawer({ onClose }: { onClose: () => void }) {
           </div>
           <form className="flex items-center gap-3" onSubmit={handleSubmit}>
             <input
-              className="h-10 min-w-0 flex-1 rounded-full border border-[var(--portal-border)] bg-white px-4 text-[0.72rem] font-medium text-[var(--portal-ink)] shadow-sm outline-none transition placeholder:text-[var(--portal-muted)]/60 focus:border-[var(--portal-blue)] focus:ring-4 focus:ring-[rgba(5,132,254,0.14)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-11 min-w-0 flex-1 rounded-full border border-orange-100 bg-[#fffaf6] px-4 text-[0.78rem] font-medium text-[var(--portal-ink)] shadow-sm outline-none transition placeholder:text-[var(--portal-muted)]/55 focus:border-[var(--portal-orange)] focus:bg-white focus:ring-4 focus:ring-[rgba(255,109,0,0.14)] disabled:cursor-not-allowed disabled:opacity-60"
               placeholder="Type a message..."
               value={input}
               disabled={loading}
               onChange={(event) => setInput(event.target.value)}
             />
-            <button aria-label="Send message" className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--portal-blue)] text-white shadow-[0_12px_30px_rgba(5,132,254,0.22)] transition hover:bg-[var(--portal-blue-deep)] disabled:cursor-not-allowed disabled:opacity-55" type="submit" disabled={loading || !input.trim()}>
+            <button aria-label="Send message" className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--portal-orange)] text-white shadow-[0_12px_26px_rgba(255,109,0,0.28)] transition hover:bg-[var(--portal-orange-deep)] disabled:cursor-not-allowed disabled:opacity-55" type="submit" disabled={loading || !input.trim()}>
               <Send className="size-5" />
             </button>
           </form>
@@ -745,11 +754,11 @@ function AssistantBubble({ message }: { message: AssistantMessage }) {
   return (
     <div className={cn("flex items-start gap-3", isUser && "justify-end")}>
       {!isUser ? (
-        <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]">
+        <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-[var(--portal-orange-soft)] text-[var(--portal-orange)]">
           <Bot className="size-5" />
         </span>
       ) : null}
-      <div className={cn("max-w-[82%] rounded-2xl border p-4", isUser ? "border-[var(--portal-blue)] bg-[var(--portal-blue)] text-white" : "border-[var(--portal-border)] bg-white text-[var(--portal-muted)]")}>
+      <div className={cn("max-w-[82%] rounded-[1.35rem] border px-4 py-3.5 shadow-sm", isUser ? "border-[var(--portal-orange)] bg-[var(--portal-orange)] text-white" : "border-orange-100 bg-white text-[var(--portal-muted)]")}>
         {waitingForStream ? <AssistantTypingContent /> : <AssistantReplyContent body={message.body} isUser={isUser} />}
       </div>
     </div>
@@ -760,11 +769,11 @@ function AssistantTypingContent() {
   return (
     <div>
       <div className="flex items-center gap-2">
-        <span className="size-2 rounded-full bg-[var(--portal-blue)] animate-bounce" />
-        <span className="size-2 rounded-full bg-[var(--portal-blue)] animate-bounce [animation-delay:120ms]" />
-        <span className="size-2 rounded-full bg-[var(--portal-blue)] animate-bounce [animation-delay:240ms]" />
+        <span className="size-2 rounded-full bg-[var(--portal-orange)] animate-bounce" />
+        <span className="size-2 rounded-full bg-[var(--portal-orange)] animate-bounce [animation-delay:120ms]" />
+        <span className="size-2 rounded-full bg-[var(--portal-orange)] animate-bounce [animation-delay:240ms]" />
       </div>
-      <p className="mt-3 text-[0.68rem] font-medium text-[var(--portal-muted)]">Reading your credit context...</p>
+      <p className="mt-3 text-[0.74rem] font-medium text-[var(--portal-muted)]">Reading your credit context...</p>
     </div>
   );
 }
@@ -775,7 +784,7 @@ function AssistantReplyContent({ body, isUser }: { body: string; isUser: boolean
   return (
     <div className="space-y-2">
       {lines.map((line, index) => (
-        <p key={`${line}-${index}`} className={cn("text-[0.72rem] leading-5", isUser ? "text-white" : "text-[var(--portal-muted)]")}>
+        <p key={`${line}-${index}`} className={cn("text-[0.72rem] font-medium leading-5", isUser ? "text-white" : "text-[#536079]")}>
           {line}
         </p>
       ))}
@@ -832,15 +841,26 @@ async function loadAssistantContext(isFreeTier: boolean) {
     `PAN available: ${sessionStorage.getItem("scorecare_pan_number") ? "Yes" : "No"}`,
   ];
 
-  if (!token || isFreeTier) {
+  if (!token) {
     return sessionContext.join("\n");
   }
 
   try {
-    const result = (await getCachedCibilDisplayData(token)) as AssistantDisplayData;
+    const latestScoreCheck = getStoredLatestCibilScoreCheckData(token) as AssistantDisplayData | null;
+    const result = latestScoreCheck ?? ((await getCachedCibilDisplayData(token)) as AssistantDisplayData);
 
     return [...sessionContext, buildAssistantCreditContext(result)].join("\n");
   } catch {
+    if (!isFreeTier) {
+      return sessionContext.join("\n");
+    }
+
+    const latestScoreCheck = getStoredLatestCibilScoreCheckData(token) as AssistantDisplayData | null;
+
+    if (latestScoreCheck) {
+      return [...sessionContext, buildAssistantCreditContext(latestScoreCheck)].join("\n");
+    }
+
     return sessionContext.join("\n");
   }
 }
@@ -849,7 +869,7 @@ function buildAssistantCreditContext(result: AssistantDisplayData) {
   const display = result.data?.display;
   const accounts = display?.accounts ?? [];
   const enquiries = display?.enquiries ?? [];
-  const score = readAssistantNumber(display?.score?.value);
+  const score = readAssistantScore(result);
   const activeAccounts = accounts.filter((account) => !account.account_closed).length;
   const overdueAccounts = accounts.filter((account) => readAssistantNumber(account.amount_overdue) > 0).length;
   const totalBalance = accounts.reduce((total, account) => total + readAssistantNumber(account.current_balance), 0);
@@ -857,7 +877,7 @@ function buildAssistantCreditContext(result: AssistantDisplayData) {
   const utilization = totalLimit > 0 ? Math.round((totalBalance / totalLimit) * 100) : null;
 
   return [
-    `Credit score: ${score || "Not available"}`,
+    `Credit score: ${score ?? "Not available"}`,
     `Score range: ${display?.score?.range || "300 to 900"}`,
     `Score factors: ${display?.score?.factors?.length ? display.score.factors.join(", ") : "Not available"}`,
     `Active accounts: ${activeAccounts}`,
@@ -866,6 +886,30 @@ function buildAssistantCreditContext(result: AssistantDisplayData) {
     `Estimated utilization: ${utilization === null ? "Not available" : `${utilization}%`}`,
     `Recent enquiries: ${enquiries.length}`,
   ].join("\n");
+}
+
+function readAssistantScore(result: AssistantDisplayData) {
+  for (const value of [
+    result.data?.display?.score?.value,
+    result.data?.report?.cibilScore,
+    result.data?.report?.score,
+    result.data?.credit_score,
+    result.data?.report?.credit_score,
+    result.data?.credit_report?.SCORE?.FCIREXScore,
+    result.data?.cibilScore,
+    result.data?.score,
+    result.cibilScore,
+    result.score,
+    result.credit_score,
+  ]) {
+    const score = readAssistantNumber(value);
+
+    if (score > 0) {
+      return score;
+    }
+  }
+
+  return null;
 }
 
 function readAssistantReply(result: unknown): string {
