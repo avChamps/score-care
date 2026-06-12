@@ -70,6 +70,7 @@ type DashboardData = {
   dueMonth: string;
   improvement: number | string;
   offers: number | string;
+  hasReportData?: boolean;
   trend: number[];
   factors: Array<{ name: string; value: number; meta: string; tone: "good" | "warn" | "alert" }>;
   coach: string;
@@ -135,6 +136,12 @@ const appTiles = [
   { href: "/dashboard/loans", Icon: BadgeIndianRupee, title: "Pay EMIs", value: "₹29,050", meta: "due Jun" },
   { href: "/dashboard/credit-score", Icon: ChartNoAxesCombined, title: "Improve Score", value: "+58 pts", meta: "possible" },
   { href: "/pricing", Icon: CreditCard, title: "Get Offers", value: "3", meta: "pre-approved", offer: true },
+];
+const freeTierAppTiles = [
+  { href: "/dashboard/credit-score", Icon: CreditCard, title: "Credit Score", value: "-", meta: "-" },
+  { href: "/dashboard/loans", Icon: BadgeIndianRupee, title: "Pay EMIs", value: "-", meta: "-" },
+  { href: "/dashboard/credit-score", Icon: ChartNoAxesCombined, title: "Improve Score", value: "-", meta: "-" },
+  { href: "/pricing", Icon: CreditCard, title: "Get Offers", value: "-", meta: "-", offer: true },
 ];
 const notificationsPageSize = 10;
 const actionPlanAiCache = new Map<string, Promise<string>>();
@@ -268,6 +275,8 @@ export function HomeDashboard() {
     role: "button",
     tabIndex: 0,
   } : {};
+  const reportUnavailable = Boolean(error) || !visibleDashboard.hasReportData;
+  const dashboardTiles = isFreeTier ? freeTierAppTiles : buildAppTiles(visibleDashboard, reportUnavailable);
 
   return (
     <div className="page min-h-screen overflow-x-hidden bg-[#050912] pb-32 text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
@@ -426,8 +435,8 @@ export function HomeDashboard() {
 
 
             <section className="mt-5 grid grid-cols-2 gap-4">
-              {(isFreeTier ? [{ href: "/dashboard/credit-score", Icon: CreditCard, title: "Credit Score", value: "Up to", meta: "900" }, ...appTiles.slice(1)] : appTiles).map((tile) => (
-                <QuickCard key={tile.title} {...tile} locked={isFreeTier} onLockedClick={() => setShowBenefitsPrompt(true)} />
+              {dashboardTiles.map((tile) => (
+                <QuickCard key={tile.title} {...tile} disabled={!isFreeTier && reportUnavailable} locked={isFreeTier} onLockedClick={() => setShowBenefitsPrompt(true)} />
               ))}
               {/* <button className="min-h-[122px] rounded-[20px] border border-white/10 bg-white/[0.07] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_36px_rgba(0,0,0,0.24)] backdrop-blur-xl" type="button" onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : () => setShowActionPlan(true)}>
                 <QuickCardContent Icon={Bot} meta="AI Agents" title="Your" value="Score Coach" />
@@ -901,7 +910,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
               <ContactCard
                 Icon={MessageCircle}
                 label="Live Chat"
-                sub="Reply in 2 min"
+                sub="Reply in 10 sec"
                 color="#5EF2C2"
                 onClick={openLiveChat}
               />
@@ -1232,12 +1241,49 @@ function LanguageApplyLoader() {
   );
 }
 
-function QuickCard({ href, Icon, title, value, meta, alert = false, locked = false, offer = false, onLockedClick }: { href: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; title: string; value: string; meta: string; alert?: boolean; locked?: boolean; offer?: boolean; onLockedClick?: () => void }) {
+function buildAppTiles(dashboard: DashboardData, unavailable: boolean) {
+  if (unavailable) {
+    return appTiles.map((tile) => ({ ...tile, value: "-", meta: "-" }));
+  }
+
+  return [
+    {
+      ...appTiles[0],
+      value: dashboard.activeDisputes === "-" ? "-" : `${dashboard.activeDisputes} active`,
+      meta: dashboard.scoreGain === "-" ? "-" : `${formatSignedValue(dashboard.scoreGain)} pts`,
+    },
+    {
+      ...appTiles[1],
+      value: dashboard.emiDue || "-",
+      meta: dashboard.dueMonth && dashboard.dueMonth !== "--" ? `due ${dashboard.dueMonth}` : "-",
+    },
+    {
+      ...appTiles[2],
+      value: dashboard.improvement === "-" ? "-" : `${formatSignedValue(dashboard.improvement)} pts`,
+      meta: dashboard.improvement === "-" ? "-" : "possible",
+    },
+    {
+      ...appTiles[3],
+      value: String(dashboard.offers ?? "-"),
+      meta: dashboard.offers === "-" ? "-" : "pre-approved",
+    },
+  ];
+}
+
+function QuickCard({ disabled = false, href, Icon, title, value, meta, alert = false, locked = false, offer = false, onLockedClick }: { disabled?: boolean; href: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; title: string; value: string; meta: string; alert?: boolean; locked?: boolean; offer?: boolean; onLockedClick?: () => void }) {
   const className = "min-h-[122px] rounded-[20px] border border-white/10 bg-white/[0.07] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_36px_rgba(0,0,0,0.24)] backdrop-blur-xl transition hover:bg-white/[0.1]";
+
+  if (disabled) {
+    return (
+      <div className={className}>
+        <QuickCardContent Icon={Icon} alert={alert} meta={meta} offer={offer} title={title} value={value} />
+      </div>
+    );
+  }
 
   if (locked) {
     return (
-      <button className={className} type="button" onClick={onLockedClick}>
+      <button className={className} data-dashboard-subscribe="true" type="button" onClick={onLockedClick}>
         <QuickCardContent Icon={Icon} alert={alert} meta={meta} offer={offer} title={title} value={value} />
       </button>
     );
@@ -1729,7 +1775,6 @@ function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, onProfil
   const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
-    loadGoogleTranslate();
     void refreshProfileNotifications();
 
     window.addEventListener("scorecare:profile-notifications-refresh", refreshProfileNotifications);
@@ -2278,7 +2323,12 @@ function applyGoogleLanguageWithRetry(language: string) {
 function applyProfileLanguage(profile: UserProfile | null) {
   const profileLanguage = normalizeLanguageCode(profile?.selectedLanguage);
 
-  if (!profileLanguage || profileLanguage === "en") return false;
+  if (!profileLanguage) return false;
+
+  if (profileLanguage === "en") {
+    resetGoogleLanguage();
+    return false;
+  }
 
   loadGoogleTranslate();
   applyGoogleLanguageWithRetry(profileLanguage);
@@ -2308,6 +2358,22 @@ function applyGoogleLanguage(language: string, reloadWhenMissing = true) {
 
   select.value = language;
   select.dispatchEvent(new Event("change"));
+}
+
+function resetGoogleLanguage() {
+  localStorage.setItem("scorecare_language", "en");
+  document.cookie = "googtrans=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  document.cookie = `googtrans=;domain=${window.location.hostname};path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  document.cookie = "googtrans=/en/en;path=/";
+  document.cookie = `googtrans=/en/en;domain=${window.location.hostname};path=/`;
+  document.body.style.top = "0";
+
+  const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+
+  if (select) {
+    select.value = "en";
+    select.dispatchEvent(new Event("change"));
+  }
 }
 
 
@@ -2485,6 +2551,7 @@ function buildDashboardData(result: unknown, profile: UserProfile | null): Dashb
   const paymentHistory = calculatePaymentHistory(accounts, defaultAccounts);
   const creditAge = calculateCreditAge(accounts);
   const trend = buildScoreTrend(score, accounts);
+  const hasReportData = accounts.length > 0 || enquiries.length > 0 || Boolean(summary.outstandingBalance || summary.activeAccounts || summary.defaultAccounts || summary.recentEnquiries);
 
   return {
     score,
@@ -2500,6 +2567,7 @@ function buildDashboardData(result: unknown, profile: UserProfile | null): Dashb
     dueMonth: new Intl.DateTimeFormat("en-IN", { month: "short" }).format(new Date()),
     improvement: score ? Math.max(0, targetScore - score) : 0,
     offers: activeAccounts,
+    hasReportData,
     trend,
     factors: [
       { name: "Payment History", value: paymentHistory.value, meta: paymentHistory.meta, tone: paymentHistory.tone },
@@ -2531,6 +2599,7 @@ function buildFreeTierDashboard(result: unknown): DashboardData {
     dueMonth: "--",
     improvement: "-",
     offers: "-",
+    hasReportData: false,
     trend: score ? Array.from({ length: 10 }, () => score) : [],
     factors: [
       { name: "Payment History", value: 0, meta: "-", tone: "warn" },
@@ -2575,6 +2644,7 @@ function createEmptyDashboard(message = "Score data is unavailable right now."):
     dueMonth: "--",
     improvement: 0,
     offers: 0,
+    hasReportData: false,
     trend: [],
     factors: [],
     coach: message,
