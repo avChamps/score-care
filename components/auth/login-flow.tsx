@@ -468,6 +468,7 @@ export function LoginFlow() {
               placeholder="Mobile number"
               inputMode="numeric"
               type="tel"
+              suppressHydrationWarning
             />
           </label>
 

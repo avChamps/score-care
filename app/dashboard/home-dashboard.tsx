@@ -5,6 +5,7 @@ import type { ComponentType } from "react";
 import type { KeyboardEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import dashboardBg from "@/assets/dashboard-bg.jpg";
+
 import {
   ArrowUpRight,
   ArrowLeft,
@@ -25,7 +26,24 @@ import {
   Target,
   TrendingUp,
   X,
+  LucideIcon,
+
+  // FAQ Screen Icons
+  Search,
+  ChevronDown,
+  ChevronLeft,
+  Phone,
+  Mail,
+  MessageCircle,
+  ThumbsUp,
+  ThumbsDown,
+  HelpCircle,
+  House,
+  BadgeIndianRupee,
+  Sparkles,
+  Star,
 } from "lucide-react";
+
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
 import { SupportDrawer } from "@/components/dashboard/topbar-actions";
 import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
@@ -95,11 +113,40 @@ const appTiles = [
   { href: "/dashboard/credit-score", Icon: CreditCard, title: "Credit Score", value: "Up to", meta: "900" },
   { href: "/report", Icon: FileText, title: "Reports", value: "Full", meta: "CIBIL" },
   { href: "/dashboard/score-fix", Icon: ShieldAlert, title: "Score Fix", value: "Dispute", meta: "Help", alert: true },
-  { href: "/dashboard/loans", Icon: ReceiptText, title: "Loans", value: "Smart", meta: "Offers", offer: true },
   { href: "/pricing", Icon: Gift, title: "Premium", value: "Unlock", meta: "Plan", offer: true },
 ];
 const notificationsPageSize = 10;
 const actionPlanAiCache = new Map<string, Promise<string>>();
+const FAQ_DATA = [
+  {
+    id: "general",
+    Icon: House,
+    label: "General",
+    color: "#6C63FF",
+    questions: [
+      {
+        q: "What is Scorecare?",
+        a: "Scorecare is India's most complete credit health app...",
+      },
+      {
+        q: "Is Scorecare free to use?",
+        a: "Yes — the Starter plan is free forever...",
+      },
+    ],
+  },
+  {
+    id: "scores",
+    Icon: BadgeIndianRupee,
+    label: "Credit Score",
+    color: "#FF9D28",
+    questions: [
+      {
+        q: "What is a credit score?",
+        a: "A credit score is a 3-digit number between 300 and 900...",
+      },
+    ],
+  },
+];
 
 export function HomeDashboard() {
   const [isLoading, setIsLoading] = useState(true);
@@ -110,6 +157,7 @@ export function HomeDashboard() {
   const [isFreeTier, setIsFreeTier] = useState(false);
   const [showBenefitsPrompt, setShowBenefitsPrompt] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showAiChat, setShowAiChat] = useState(false);
   const [showActionPlan, setShowActionPlan] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
@@ -176,11 +224,12 @@ export function HomeDashboard() {
     tabIndex: 0,
   } : {};
 
+
   return (
     <div className="page min-h-screen overflow-x-hidden bg-[#050912] pb-32 text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
       <DashboardAuthGuard />
       <section
-        className="hero-header fixed inset-x-0 top-0 z-0 min-h-[360px] bg-cover bg-center px-5 pb-20 pt-6 shadow-[0_26px_58px_rgba(94,99,235,0.34)] sm:min-h-[430px] sm:px-8 sm:pb-28 sm:pt-7"
+        className="hero-header fixed inset-x-0 top-0 z-0 min-h-[340px] bg-cover bg-center px-5 pb-16 pt-6 shadow-[0_26px_58px_rgba(94,99,235,0.34)] sm:min-h-[430px] sm:px-8 sm:pb-28 sm:pt-7"
         style={{ backgroundImage: `linear-gradient(135deg, rgba(104,111,242,0.86), rgba(178,167,255,0.62) 48%, rgba(116,112,255,0.78)), url(${dashboardBg.src})` }}
       >
         <div className="mx-auto max-w-5xl">
@@ -200,55 +249,136 @@ export function HomeDashboard() {
             ) : null}
           </div>
 
-          <div className="mt-14 max-w-sm sm:mt-16">
+          <div className="mt-10 max-w-sm sm:mt-16">
             <div className="min-w-0">
               <p className="text-[18px] font-medium italic leading-5 text-[#10206B] sm:text-[20px] sm:leading-6">Up to</p>
-              <h1 className="mt-1 text-[31px] font-medium italic leading-none text-[#10206B] sm:text-[35px]">750+</h1>
+              <h1 className="mt-1 text-[31px] font-bold italic leading-none text-[#10206B] sm:text-[35px]">800+</h1>
               <p className="mt-1.5 text-[20px] font-medium leading-5 text-white sm:text-[22px] sm:leading-6">Credit Ready</p>
-              <p className="mt-4 inline-flex rounded-full bg-[#112C8F] px-4 py-2 text-[12px] font-normal text-white shadow-[0_12px_26px_rgba(17,44,143,0.22)] sm:mt-5 sm:text-[13px]">Hi, {name}</p>
+
+              <p className="mt-4 inline-flex items-center rounded-full bg-[#112C8F] px-4 py-2 text-white shadow-[0_12px_26px_rgba(17,44,143,0.22)] sm:mt-5">
+                <span className="text-[13px] font-medium sm:text-[14px]">
+                  Hi,
+                </span>
+                <span className="ml-1 text-[12px] font-semibold sm:text-[13px]">
+                  {name}
+                </span>
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      <main className="dashboard-shell relative z-10 mx-auto mt-[300px] max-w-5xl rounded-t-[30px] bg-[#050912] px-4 pb-8 pt-6 sm:mt-[350px] sm:px-6 sm:pt-7 lg:px-8">
+      <main className="dashboard-shell relative z-10 mx-auto mt-[280px] max-w-5xl rounded-t-[30px] bg-[#050912] px-4 pb-8 pt-5 sm:mt-[350px] sm:px-6 sm:pt-7 lg:px-8">
         {isLoading ? (
           <DashboardHomeSkeleton />
         ) : score ? (
           <>
-            <section {...premiumClickProps} className={cn("mt-4 rounded-[26px] bg-[radial-gradient(circle_at_80%_0%,rgba(94,242,194,0.12),transparent_34%),linear-gradient(145deg,#111821,#151E2A)] p-4 shadow-[0_22px_46px_rgba(0,0,0,0.24)] sm:mt-5 sm:rounded-[28px] sm:p-5", isFreeTier && "cursor-pointer")}>
-              <div className="grid gap-4 sm:grid-cols-[15rem_1fr] sm:items-center sm:gap-5">
-                <div className="relative mx-auto grid size-44 place-items-center sm:size-52">
-                  <svg className="absolute inset-0 size-full -rotate-90" viewBox="0 0 220 220" aria-hidden="true">
-                    <circle cx="110" cy="110" r="94" fill="none" stroke="#273241" strokeWidth="14" />
+
+            <section
+              {...premiumClickProps}
+              className={cn(
+                "mt-3 overflow-hidden rounded-[14px] bg-[radial-gradient(circle_at_10%_100%,rgba(24,72,96,0.20),transparent_32%),radial-gradient(circle_at_86%_0%,rgba(28,61,95,0.24),transparent_34%),linear-gradient(145deg,#071522,#0A1725)] shadow-[0_18px_42px_rgba(0,0,0,0.30)]",
+                isFreeTier && "cursor-pointer"
+              )}
+            >
+              <div className="relative h-[235px] sm:h-[255px]">
+                <div className="absolute left-1/2 top-2 grid size-[178px] -translate-x-1/2 place-items-center sm:size-[198px]">
+                  <svg
+                    className="absolute inset-0 size-full"
+                    viewBox="0 0 220 220"
+                    aria-hidden="true"
+                  >
+                    <defs>
+                      <filter id="scoreArcGlow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="4.5" result="blur" />
+                        <feMerge>
+                          <feMergeNode in="blur" />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                    </defs>
+
                     <circle
                       cx="110"
                       cy="110"
-                      r="94"
+                      r="86"
                       fill="none"
-                      stroke={score >= 750 ? "#5EF2C2" : score >= 700 ? "#FFD34D" : "#FF5C8A"}
+                      stroke="#203A62"
                       strokeLinecap="round"
                       strokeWidth="14"
-                      strokeDasharray={`${scorePercent * 5.9} 590`}
-                      className="drop-shadow-[0_0_12px_rgba(94,242,194,0.55)] transition-all duration-500"
+                      pathLength="100"
+                      strokeDasharray="75 25"
+                      transform="rotate(135 110 110)"
+                    />
+
+                    <circle
+                      cx="110"
+                      cy="110"
+                      r="86"
+                      fill="none"
+                      stroke={score >= 700 ? "#08DB69" : "#FF5C8A"}
+                      strokeLinecap="round"
+                      strokeWidth="14"
+                      pathLength="100"
+                      strokeDasharray={`${scorePercent * 0.75} 100`}
+                      transform="rotate(135 110 110)"
+                      filter="url(#scoreArcGlow)"
+                      className="transition-all duration-500"
                     />
                   </svg>
-                  <div className="absolute inset-6 rounded-full bg-[#0B111A] shadow-[inset_0_12px_28px_rgba(0,0,0,0.26)] sm:inset-7" />
-                  <div className="relative text-center">
-                    <p className="text-[37px] font-medium leading-none tracking-normal sm:text-[43px]">{score}</p>
-                    <p className="mt-2 text-[10px] font-medium text-[#5EF2C2]">{visibleDashboard.rating}</p>
-                    <p className="mt-1 text-[10px] font-normal text-[#AAB6C8]">out of 900</p>
-                    <p className="mt-3 inline-flex rounded-full bg-white/8 px-3 py-1 text-[10px] font-medium text-[#FFD34D]">Grade {visibleDashboard.grade}</p>
+
+                  <div className="absolute inset-[42px] rounded-full bg-[#091829] shadow-[inset_0_12px_28px_rgba(0,0,0,0.34)]" />
+
+                  <div className="relative -mt-5 text-center">
+                    <p className="text-[34px] font-black leading-none tracking-[-0.04em] text-white sm:text-[40px]">
+                      {score}
+                    </p>
+
+                    <p className="mt-1 text-[9px] font-black tracking-[0.18em] text-[#08DB69] sm:text-[10px]">
+                      {visibleDashboard.rating}
+                    </p>
+
+                    <p className="mt-1 text-[8px] font-normal text-[#AAB6C8] sm:text-[9px]">
+                      out of 900
+                    </p>
+
+                    <p className="mt-1.5 text-[9px] font-black text-[#08DB69] sm:text-[10px]">
+                      Grade {visibleDashboard.grade}+
+                    </p>
                   </div>
+
+                  <span className="absolute left-[5%] top-[74%] -translate-y-1/2 text-[10px] font-medium text-[#627286]">
+                    300
+                  </span>
+
+                  <span className="absolute right-[5%] top-[74%] -translate-y-1/2 text-[10px] font-medium text-[#627286]">
+                    900
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
-                  <SummaryTile label="Monthly" value={formatSignedValue(visibleDashboard.monthlyChange)} onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
-                  <SummaryTile label="6 Months" value={formatSignedValue(visibleDashboard.sixMonthChange)} onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
-                  <SummaryTile label="Target" value={String(visibleDashboard.targetScore)} target onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
+                <div className="absolute bottom-3 left-0 right-0 mx-3 grid h-[60px] grid-cols-3 overflow-hidden rounded-[13px] bg-[#172638] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                  <SummaryTile
+                    label="This month"
+                    value={formatSignedValue(visibleDashboard.monthlyChange)}
+                    onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined}
+                  />
+
+                  <SummaryTile
+                    label="6 months"
+                    value={formatSignedValue(visibleDashboard.sixMonthChange)}
+                    onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined}
+                  />
+
+                  <SummaryTile
+                    label="Target"
+                    value={String(visibleDashboard.targetScore)}
+                    target
+                    onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined}
+                  />
                 </div>
               </div>
             </section>
+
 
             <section className="mt-5 grid grid-cols-2 gap-4">
               {appTiles.map((tile, index) => (
@@ -287,12 +417,12 @@ export function HomeDashboard() {
             </section>
 
             <section {...premiumClickProps} className={cn("mt-5 rounded-[28px] bg-[linear-gradient(145deg,#111821,#151E2A)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.2)]", isFreeTier && "cursor-pointer")}>
-              <h2 className="text-[15px] font-medium tracking-normal">Score Factors</h2>
+              <h2 className="text-[17px] font-bold tracking-normal">Score Factors</h2>
               <div className="mt-6 space-y-5">
                 {visibleDashboard.factors.map((factor) => (
                   <div key={factor.name}>
                     <div className="flex items-center justify-between gap-3 text-[12px]">
-                      <p className="font-normal text-white">{factor.name}</p>
+                      <p className="font-normal text-[13px] text-white">{factor.name}</p>
                       <p className={cn("font-normal", factor.tone === "good" && "text-[#5EF2C2]", factor.tone === "warn" && "text-[#FFD34D]", factor.tone === "alert" && "text-[#FF5C8A]")}>{factor.meta}</p>
                     </div>
                     <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-white/8">
@@ -361,12 +491,23 @@ export function HomeDashboard() {
 
       {showProfile ? <ProfilePanel profile={profile} name={name} onClose={() => setShowProfile(false)} onHelp={() => setShowHelp(true)} /> : null}
       {showHelp ? (
-        <div className="portal-theme fixed inset-0 z-[80] bg-[rgba(23,32,51,0.42)] backdrop-blur-sm" onClick={() => setShowHelp(false)}>
+        <div className="fixed inset-0 z-[80] grid place-items-center bg-[rgba(7,11,18,0.66)] px-5 backdrop-blur-sm" onClick={() => setShowHelp(false)}>
+          <HelpSupportModal
+            onClose={() => setShowHelp(false)}
+            onLiveChat={() => {
+              setShowHelp(false);
+              setShowAiChat(true);
+            }}
+          />
+        </div>
+      ) : null}
+      {showAiChat ? (
+        <div className="portal-theme fixed inset-0 z-[90] bg-[rgba(23,32,51,0.42)] backdrop-blur-sm" onClick={() => setShowAiChat(false)}>
           <aside
-            className="ml-auto flex h-dvh w-full max-w-md flex-col border-l border-[var(--portal-border)] bg-[var(--portal-bg)] shadow-[0_8px_24px_rgba(23,32,51,0.16)]"
+            className="ml-auto flex h-dvh w-full max-w-md flex-col border-l border-white/[0.08] bg-[#050912] shadow-[0_8px_24px_rgba(0,0,0,0.32)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <SupportDrawer onClose={() => setShowHelp(false)} />
+            <SupportDrawer onClose={() => setShowAiChat(false)} />
           </aside>
         </div>
       ) : null}
@@ -385,13 +526,403 @@ export function HomeDashboard() {
   );
 }
 
-function SummaryTile({ label, onClick, value, target = false }: { label: string; onClick?: () => void; value: string; target?: boolean }) {
+
+function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLiveChat: () => void }) {
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [openItem, setOpenItem] = useState<string | null>(null);
+  const [toast, setToast] = useState({ msg: "", visible: false });
+
+  const showToast = (msg: string) => {
+    setToast({ msg, visible: true });
+    setTimeout(() => setToast((t) => ({ ...t, visible: false })), 2200);
+  };
+
+  const openLiveChat = () => {
+    onClose();
+    onLiveChat();
+  };
+
+  const searchLower = search.toLowerCase();
+
+  const filteredData = FAQ_DATA.map((cat) => ({
+    ...cat,
+    questions: cat.questions.filter(
+      (item) =>
+        (!searchLower ||
+          item.q.toLowerCase().includes(searchLower) ||
+          item.a.toLowerCase().includes(searchLower)) &&
+        (activeCategory === "all" || activeCategory === cat.id)
+    ),
+  })).filter((cat) => cat.questions.length > 0);
+
+  const totalResults = filteredData.reduce((s, c) => s + c.questions.length, 0);
+  const totalQ = FAQ_DATA.reduce((s, c) => s + c.questions.length, 0);
+
+  const toggle = (key: string) => setOpenItem(openItem === key ? null : key);
+
   return (
-    <button className={cn("rounded-[20px] bg-white/[0.06] p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]", onClick && "cursor-pointer")} type="button" onClick={onClick}>
-      <p className="text-[10px] font-normal text-[#AAB6C8]">{label}</p>
-      <p className={cn("mt-2 flex items-center gap-1 text-[14px] font-medium", target ? "text-[#FFD34D]" : "text-[#5EF2C2]")}>
-        {!target ? <ArrowUpRight className="size-4" /> : <Target className="size-4" />}
+    <section
+      className="fixed inset-0 z-[80] overflow-y-auto bg-[#070B12] px-4 pb-28 pt-7 text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="mx-auto max-w-md pb-10">
+        <div
+          className={cn(
+            "fixed left-1/2 top-5 z-[9999] -translate-x-1/2 rounded-full bg-[#5EF2C2] px-5 py-2.5 text-[12px] font-semibold text-[#06221A] shadow-[0_14px_30px_rgba(94,242,194,0.22)] transition-transform",
+            toast.visible ? "translate-y-0" : "-translate-y-24"
+          )}
+        >
+          {toast.msg}
+        </div>
+
+        <div className="relative overflow-hidden rounded-[30px] bg-[linear-gradient(160deg,#ebe7d9,#faf7ed_48%,#d9d0bd)] p-5 text-[#111827] shadow-[0_22px_46px_rgba(58,75,140,0.38)]">
+          <div className="relative">
+            <div className="mb-7 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={onClose}
+                className="grid size-9 place-items-center rounded-full bg-black/15 text-white backdrop-blur"
+                aria-label="Close help"
+              >
+                <ChevronLeft className="size-5" strokeWidth={1.8} />
+              </button>
+
+              <p className="rounded-full bg-white/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#6F7B8E]">Support</p>
+            </div>
+
+            <div className="grid size-14 place-items-center rounded-2xl bg-[#112C8F] text-white shadow-[0_12px_26px_rgba(17,44,143,0.22)]">
+              <HelpCircle className="size-7" strokeWidth={1.8} />
+            </div>
+
+            <h2 className="mt-5 text-[26px] font-bold leading-tight text-[#10206B]">
+              How can we help?
+            </h2>
+
+            <p className="mt-2 text-[12px] font-medium leading-5 text-[#6F7B8E]">
+              {totalQ} answers across {FAQ_DATA.length} topics
+            </p>
+
+            <div className="mt-5 flex items-center gap-2.5 rounded-[18px] border border-white/60 bg-white/50 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
+              <Search className="size-5 text-[#6F7B8E]" strokeWidth={1.8} />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search questions"
+                className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-[#111827] outline-none placeholder:text-[#8A94A6]"
+              />
+              {search ? (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="grid size-6 place-items-center rounded-full bg-[#111827]/10 text-[#6F7B8E]"
+                  aria-label="Clear search"
+                >
+                  <X className="size-3.5" strokeWidth={2} />
+                </button>
+              ) : null}
+            </div>
+
+            <div className="mt-5 grid grid-cols-3 gap-2.5">
+              {[
+                ["24/7", "Support", "#112C8F"],
+                ["2 min", "Response", "#FF9D28"],
+                ["98%", "Resolved", "#07844E"],
+              ].map(([value, label, color]) => (
+                <div
+                  key={label}
+                  className="rounded-[16px] bg-white/45 px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]"
+                >
+                  <p className="text-[15px] font-bold" style={{ color }}>
+                    {value}
+                  </p>
+                  <p className="mt-0.5 text-[9px] font-medium leading-snug text-[#6F7B8E]">
+                    {label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <div className="mb-5 overflow-x-auto pb-1.5">
+            <div className="flex w-max gap-2">
+              <CategoryPill
+                Icon={Sparkles}
+                label="All Topics"
+                color="#6C63FF"
+                active={activeCategory === "all"}
+                onClick={() => setActiveCategory("all")}
+              />
+
+              {FAQ_DATA.map((cat) => (
+                <CategoryPill
+                  key={cat.id}
+                  Icon={cat.Icon}
+                  label={cat.label}
+                  color={cat.color}
+                  active={activeCategory === cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {search ? (
+            <div className="mb-4 rounded-[18px] bg-[#111821] px-4 py-3 text-[12px] font-medium text-[#AAB6C8]">
+              {totalResults > 0 ? (
+                <>
+                  Found{" "}
+                  <strong className="text-[#5EF2C2]">
+                    {totalResults} answer{totalResults > 1 ? "s" : ""}
+                  </strong>{" "}
+                  for "{search}"
+                </>
+              ) : (
+                <>No results for "{search}" — try different words</>
+              )}
+            </div>
+          ) : null}
+
+          {filteredData.length === 0 ? (
+            <div className="rounded-[26px] bg-[#111821] px-5 py-10 text-center">
+              <Search className="mx-auto mb-3 size-9 text-[#6F7B8E]" strokeWidth={1.7} />
+              <p className="mb-2 text-[16px] font-semibold text-white">
+                No results found
+              </p>
+              <p className="text-[12px] leading-6 text-[#AAB6C8]">
+                Try different words or browse a category above.
+              </p>
+            </div>
+          ) : null}
+
+          {filteredData.map((cat) => (
+            <div key={cat.id} className="mb-7">
+              {(activeCategory === "all" || !search) && (
+                <div className="mb-3 flex items-center gap-2.5">
+                  <div
+                    className="grid size-[36px] place-items-center rounded-[14px] border"
+                    style={{
+                      backgroundColor: `${cat.color}22`,
+                      borderColor: `${cat.color}44`,
+                      color: cat.color,
+                    }}
+                  >
+                    <cat.Icon className="size-5" strokeWidth={1.8} />
+                  </div>
+
+                  <div>
+                    <p className="text-[14px] font-semibold text-white">
+                      {cat.label}
+                    </p>
+                    <p className="mt-0.5 text-[10px] font-medium text-[#AAB6C8]">
+                      {cat.questions.length} question
+                      {cat.questions.length > 1 ? "s" : ""}
+                    </p>
+                  </div>
+
+                  <div
+                    className="ml-2 h-px flex-1"
+                    style={{ backgroundColor: `${cat.color}22` }}
+                  />
+                </div>
+              )}
+
+              {cat.questions.map((item, index) => {
+                const key = `${cat.id}-${index}`;
+
+                return (
+                  <AccordionItem
+                    key={key}
+                    q={item.q}
+                    a={item.a}
+                    color={cat.color}
+                    index={index}
+                    isOpen={openItem === key}
+                    onToggle={() => toggle(key)}
+                  />
+                );
+              })}
+            </div>
+          ))}
+
+          <div className="mb-4 rounded-[26px] bg-[#111821] p-5 shadow-[0_18px_36px_rgba(0,0,0,0.22)]">
+            <h3 className="text-[15px] font-semibold text-white">
+              Still need help?
+            </h3>
+            <p className="mt-1 text-[12px] leading-6 text-[#AAB6C8]">
+              Contact SCORECARE support for profile, report, subscription, and score queries.
+            </p>
+
+            <div className="mt-4 flex gap-2.5">
+              <ContactCard
+                Icon={MessageCircle}
+                label="Live Chat"
+                sub="Reply in 2 min"
+                color="#5EF2C2"
+                onClick={openLiveChat}
+              />
+              <ContactCard
+                Icon={Phone}
+                label="Call Us"
+                sub="Mon-Sat"
+                color="#FF9D28"
+                onClick={() => {
+                  window.location.href = "tel:+919999999999";
+                }}
+              />
+              <ContactCard
+                Icon={Mail}
+                label="Email"
+                sub="24 hrs"
+                color="#6C63FF"
+                onClick={() => {
+                  window.location.href =
+                    "mailto:info.socrecareapp.com?subject=Scorecare Support";
+                }}
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="mb-4 flex w-full items-center gap-3.5 rounded-[22px] bg-[linear-gradient(135deg,#5EF2C2,#22D983)] px-4 py-3.5 text-left text-[#06221A] shadow-[0_12px_24px_rgba(94,242,194,0.2)]"
+            onClick={() => {
+              window.open("https://wa.me/918332024182", "_blank");
+            }}
+          >
+            <span className="grid size-11 shrink-0 place-items-center rounded-[16px] bg-white/30">
+              <MessageCircle className="size-6" strokeWidth={1.8} />
+            </span>
+
+            <span className="flex-1">
+              <span className="block text-[13px] font-semibold">
+                Chat on WhatsApp
+              </span>
+              <span className="mt-0.5 block text-[11px] font-medium opacity-75">
+                Get help for disputes, payments and score queries
+              </span>
+            </span>
+
+            <ArrowUpRight className="size-5" strokeWidth={1.8} />
+          </button>
+
+          <div className="rounded-[22px] bg-[#111821] px-4 py-4">
+            <p className="mb-3 text-[13px] font-semibold text-white">
+              Was this page helpful?
+            </p>
+
+            <div className="flex gap-2.5">
+              <button
+                type="button"
+                onClick={() => showToast("Thanks for the feedback!")}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#5EF2C2]/12 p-2.5 text-[12px] font-semibold text-[#5EF2C2]"
+              >
+                <ThumbsUp className="size-4" strokeWidth={1.8} /> Yes
+              </button>
+
+              <button
+                type="button"
+                onClick={() => showToast("We'll improve this page!")}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#FF5C8A]/12 p-2.5 text-[12px] font-semibold text-[#FF5C8A]"
+              >
+                <ThumbsDown className="size-4" strokeWidth={1.8} /> No
+              </button>
+            </div>
+          </div>
+
+          <p className="mt-6 text-center text-[11px] font-medium text-[#6F7B8E]">
+            info.socrecareapp.com
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CategoryPill({ active, color, Icon, label, onClick }: { active: boolean; color: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className={cn("flex items-center gap-2 rounded-full border px-3.5 py-2 text-[12px] font-semibold transition", active ? "text-white" : "text-[#AAB6C8]")}
+      style={{
+        backgroundColor: active ? color : "#111821",
+        borderColor: active ? `${color}66` : "rgba(255,255,255,0.07)",
+      }}
+      onClick={onClick}
+    >
+      <Icon className="size-4" strokeWidth={1.8} />
+      {label}
+    </button>
+  );
+}
+
+function AccordionItem({ a, color, index, isOpen, onToggle, q }: { a: string; color: string; index: number; isOpen: boolean; onToggle: () => void; q: string }) {
+  return (
+    <div className="mb-2.5 overflow-hidden rounded-[20px] bg-[#111821] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+      <button type="button" className="flex w-full items-center gap-3 px-4 py-3.5 text-left" onClick={onToggle}>
+        <span className="grid size-8 shrink-0 place-items-center rounded-[12px] text-[11px] font-semibold" style={{ backgroundColor: `${color}22`, color }}>
+          {index + 1}
+        </span>
+        <span className="flex-1 text-[13px] font-medium leading-5 text-white">{q}</span>
+        <ChevronDown className={cn("size-4 shrink-0 text-[#AAB6C8] transition-transform", isOpen && "rotate-180")} strokeWidth={1.8} />
+      </button>
+      {isOpen ? <p className="border-t border-white/[0.06] px-4 py-3 text-[12px] leading-6 text-[#AAB6C8]">{a}</p> : null}
+    </div>
+  );
+}
+
+function ContactCard({ color, Icon, label, onClick, sub }: { color: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; label: string; onClick: () => void; sub: string }) {
+  return (
+    <button type="button" className="flex-1 rounded-[18px] bg-white/[0.06] px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]" onClick={onClick}>
+      <span className="mx-auto grid size-9 place-items-center rounded-[13px]" style={{ backgroundColor: `${color}22`, color }}>
+        <Icon className="size-5" strokeWidth={1.8} />
+      </span>
+      <span className="mt-2 block text-[11px] font-semibold text-white">{label}</span>
+      <span className="mt-0.5 block text-[9px] font-medium leading-snug text-[#AAB6C8]">{sub}</span>
+    </button>
+  );
+}
+
+
+
+function SummaryTile({
+  label,
+  onClick,
+  value,
+  target = false,
+}: {
+  label: string;
+  onClick?: () => void;
+  value: string;
+  target?: boolean;
+}) {
+  const positive = String(value).startsWith("+");
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex min-w-0 flex-col items-center justify-center border-r border-white/[0.03] px-1 text-center last:border-r-0",
+        onClick && "cursor-pointer"
+      )}
+    >
+      <p
+        className={cn(
+          "flex items-center justify-center gap-1 text-[16px] font-black leading-none tracking-[-0.02em] sm:text-[18px]",
+          target ? "text-[#FFD21F]" : "text-[#00F0C8]"
+        )}
+      >
+        {!target && positive ? (
+          <ArrowUpRight className="size-4" strokeWidth={3} />
+        ) : null}
         {value}
+      </p>
+
+      <p className="mt-2 truncate text-[11px] font-medium text-[#AAB6C8] sm:text-[12px]">
+        {label}
       </p>
     </button>
   );
@@ -400,14 +931,14 @@ function SummaryTile({ label, onClick, value, target = false }: { label: string;
 function DashboardHomeSkeleton() {
   return (
     <div className="mt-5 space-y-5">
-      <section className="rounded-[26px] bg-[linear-gradient(145deg,#111821,#151E2A)] p-4 shadow-[0_22px_46px_rgba(0,0,0,0.24)] sm:rounded-[28px] sm:p-5">
-        <div className="grid gap-4 sm:grid-cols-[15rem_1fr] sm:items-center sm:gap-5">
-          <div className="mx-auto grid size-44 place-items-center rounded-full bg-white/[0.06] sm:size-52">
-            <div className="size-32 animate-pulse rounded-full bg-white/[0.08] sm:size-36" />
+      <section className="rounded-[24px] bg-[linear-gradient(145deg,#111821,#151E2A)] p-3 shadow-[0_22px_46px_rgba(0,0,0,0.24)] sm:rounded-[28px] sm:p-5">
+        <div className="grid gap-4">
+          <div className="mx-auto grid size-36 place-items-center rounded-full bg-white/[0.06] sm:size-52">
+            <div className="size-24 animate-pulse rounded-full bg-white/[0.08] sm:size-36" />
           </div>
-          <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="h-20 animate-pulse rounded-[20px] bg-white/[0.06]" />
+              <div key={index} className="h-14 animate-pulse rounded-[16px] bg-white/[0.06] sm:h-20 sm:rounded-[20px]" />
             ))}
           </div>
         </div>
@@ -738,12 +1269,53 @@ function BenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubsc
   );
 }
 
+function DownloadReportsPopup({ downloads, onClose }: { downloads: Array<{ id: string; downloadedAt: string; title: string }>; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
+      <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[17px] font-bold text-white">Download Reports</h2>
+          <button className="grid size-9 place-items-center rounded-full bg-white/10 text-white" type="button" aria-label="Close download reports" onClick={onClose}>
+            <X className="size-5" />
+          </button>
+        </div>
+
+        {downloads.length ? (
+          <div className="mt-5 space-y-3">
+            {downloads.map((download) => (
+              <div key={download.id} className="rounded-[18px] bg-white/[0.06] px-4 py-3">
+                <p className="text-[13px] font-semibold text-white">{download.title}</p>
+                <p className="mt-1 text-[11px] text-[#AAB6C8]">{formatDownloadDateTime(new Date(download.downloadedAt))}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-10 text-center">
+            <div className="mx-auto grid size-20 place-items-center rounded-full bg-white/[0.06]">
+              <div className="grid size-14 animate-pulse place-items-center rounded-full bg-[#5EF2C2]/12 text-[#5EF2C2]">
+                <FileText className="size-7" strokeWidth={1.8} />
+              </div>
+            </div>
+            <p className="mt-5 text-[15px] font-semibold text-white">No records found</p>
+            <p className="mt-2 text-[12px] leading-5 text-[#AAB6C8]">Downloaded reports will appear here.</p>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClose: () => void; onHelp: () => void; profile: UserProfile | null }) {
   const phone = profile?.mobileNumber || sessionStorage.getItem("scorecare_mobile_number") || "--";
   const completion = calculateProfileCompletion(profile);
   const [notificationError, setNotificationError] = useState("");
   const [notificationLoading, setNotificationLoading] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [ratingComment, setRatingComment] = useState("");
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [showRatingForm, setShowRatingForm] = useState(false);
+  const [showDownloadReports, setShowDownloadReports] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
   async function openNotifications() {
@@ -781,17 +1353,132 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
             <ProfileField label="Full name" value={profile?.fullName || name} />
             <ProfileField label="Phone number" value={formatPhone(phone)} />
             <ProfileField label="PAN" value={profile?.panNumber || "--"} />
+            <ProfileField
+              label="Date of Birth"
+              value={
+                profile?.dateOfBirth
+                  ? new Date(profile.dateOfBirth).toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })
+                  : "--"
+              }
+            />
           </div>
         </div>
 
       </section>
 
       <section className="mx-auto mt-6 max-w-md rounded-[26px] bg-[#111821] p-5 shadow-[0_18px_36px_rgba(0,0,0,0.22)]">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-[#AAB6C8]">Other Options</p>
-        <ProfileOption title="Notification" Icon={Bell} onClick={openNotifications} />
-        <ProfileOption title="Help" Icon={CircleHelp} onClick={onHelp} />
-        <ProfileOption title="Share App" Icon={Share2} />
-        <ProfileOption title="Logout" Icon={LogOut} danger onClick={logoutUser} />
+        <p className="text-[11px] font-medium uppercase tracking-wide text-[#AAB6C8]">
+          Credit Service
+        </p>
+
+        <ProfileOption
+          title="Download Reports"
+          subtitle="View downloaded report history"
+          Icon={FileText}
+          onClick={() => setShowDownloadReports(true)}
+        />
+
+        <ProfileOption
+          title="Loans"
+          subtitle="Smart Offers"
+          Icon={ReceiptText}
+          onClick={() => {
+            window.location.href = "/dashboard/loans";
+          }}
+        />
+      </section>
+
+      <section className="mx-auto mt-6 max-w-md rounded-[26px] bg-[#111821] p-5 shadow-[0_18px_36px_rgba(0,0,0,0.22)]">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-[#AAB6C8]">
+          Other Options
+        </p>
+
+        <ProfileOption
+          title="Notification"
+          subtitle="Alerts, Updates & Reminders"
+          Icon={Bell}
+          onClick={openNotifications}
+        />
+
+        <ProfileOption
+          title="Help & Support"
+          subtitle="Chat, Support & FAQ"
+          Icon={CircleHelp}
+          onClick={onHelp}
+        />
+
+        <ProfileOption
+          title="Share App"
+          subtitle="Invite Friends & Family"
+          Icon={Share2}
+        />
+
+        <ProfileOption
+          title="Rate Score Care"
+          subtitle="Help us improve"
+          Icon={Star}
+          onClick={() => setShowRatingForm((current) => !current)}
+        />
+
+        {showRatingForm ? (
+          <div className="mb-3 rounded-[22px] border border-[#5EF2C2]/15 bg-[#070B12] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <div className="flex items-center gap-2">
+              {Array.from({ length: 5 }, (_, index) => {
+                const value = index + 1;
+
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-label={`Select ${value} star rating`}
+                    className="grid size-9 place-items-center rounded-full bg-white/[0.04] text-[#6F7B8E] transition hover:bg-[#5EF2C2]/10 hover:text-[#5EF2C2]"
+                    onClick={() => {
+                      setSelectedRating(value);
+                      setRatingSubmitted(false);
+                    }}
+                  >
+                    <Star className={cn("size-5", selectedRating >= value && "fill-[#5EF2C2] text-[#5EF2C2]")} strokeWidth={1.8} />
+                  </button>
+                );
+              })}
+            </div>
+
+            <textarea
+              value={ratingComment}
+              onChange={(event) => {
+                setRatingComment(event.target.value);
+                setRatingSubmitted(false);
+              }}
+              placeholder="Share your feedback"
+              className="mt-4 min-h-24 w-full resize-none rounded-[18px] border border-white/[0.08] bg-[#111821] px-4 py-3 text-[13px] font-medium leading-5 text-white outline-none placeholder:text-[#AAB6C8]/60 focus:border-[#5EF2C2]/60 focus:ring-4 focus:ring-[#5EF2C2]/10"
+            />
+
+            {ratingSubmitted ? (
+              <p className="mt-3 text-[12px] font-medium text-[#5EF2C2]">Thanks for your feedback.</p>
+            ) : null}
+
+            <button
+              type="button"
+              className="mt-4 h-11 w-full rounded-[16px] bg-[#2DB094] text-[13px] font-semibold text-white shadow-[0_12px_26px_rgba(45,176,148,0.22)] transition hover:bg-[#249a81] disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={!selectedRating}
+              onClick={() => setRatingSubmitted(true)}
+            >
+              Submit Feedback
+            </button>
+          </div>
+        ) : null}
+
+        <ProfileOption
+          title="Logout"
+          subtitle="Sign Out From Account"
+          Icon={LogOut}
+          danger
+          onClick={logoutUser}
+        />
       </section>
 
       {showNotifications ? (
@@ -803,10 +1490,14 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
         />
       ) : null}
 
+      {showDownloadReports ? <DownloadReportsPopup downloads={[]} onClose={() => setShowDownloadReports(false)} /> : null}
+
       <p className="mt-6 text-center text-[11px] font-normal text-[#6F7B8E]">V 1.0.0</p>
     </div>
   );
 }
+
+
 
 function NotificationsScreen({ error, loading, notifications, onBack }: { error: string; loading: boolean; notifications: NotificationItem[]; onBack: () => void }) {
   return (
@@ -815,7 +1506,7 @@ function NotificationsScreen({ error, loading, notifications, onBack }: { error:
         <button className="grid size-6 place-items-center text-[#1F2937]" type="button" aria-label="Back" onClick={onBack}>
           <ArrowLeft className="size-6" strokeWidth={2.2} />
         </button>
-        <h1 className="text-[13px] font-medium text-[#1F2937]">Notifications</h1>
+        <h1 className="text-[15px] font-medium text-[#1F2937]">Notifications</h1>
       </header>
 
       <main>
@@ -826,8 +1517,8 @@ function NotificationsScreen({ error, loading, notifications, onBack }: { error:
         ) : notifications.length ? (
           notifications.map((notification) => (
             <article key={notification.id} className="border-b border-black/20 px-5 py-5">
-              <h2 className="text-[12px] font-medium leading-5 text-black">{notification.title || "Notification"}</h2>
-              <p className="mt-2 text-[11px] font-normal leading-4 text-black">{notification.message || "--"}</p>
+              <h2 className="text-[16px] font-medium leading-5 text-black">{notification.title || "Notification"}</h2>
+              <p className="mt-2 text-[15px] font-normal leading-4 text-black">{notification.message || "--"}</p>
               {notification.createdAt ? <p className="mt-5 text-right text-[10px] font-normal text-black">{formatNotificationRelativeTime(notification.createdAt)}</p> : null}
             </article>
           ))
@@ -859,37 +1550,60 @@ function NotificationScreenSkeleton() {
 function ProfileField({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-[9px] font-medium uppercase tracking-[2px] text-[#6F7280]">{label}</p>
-      <p className="mt-1 break-words text-[12px] font-medium tracking-[0.3px] text-[#111827]">{value || "--"}</p>
+      <p className="text-[14px] font-medium uppercase tracking-[2px] text-[#6F7280]">{label}</p>
+      <p className="mt-1 break-words text-[15px] font-medium tracking-[0.3px] text-[#111827]">{value || "--"}</p>
     </div>
   );
 }
 
-function ProfileOption({ Icon, danger = false, href, onClick, title }: { Icon?: ComponentType<{ className?: string; strokeWidth?: number }>; danger?: boolean; href?: string; onClick?: () => void; title: string }) {
-  const content = (
-    <>
-      <span className="flex items-center gap-3">
-        {Icon ? <Icon className="size-5" strokeWidth={1.7} /> : null}
-        <span className={cn("text-[13px] font-normal", danger ? "text-[#FF5C8A]" : "text-white")}>{title}</span>
-      </span>
-      <span className={cn("text-[20px] font-light leading-none", danger ? "text-[#FF5C8A]" : "text-white")}>›</span>
-    </>
-  );
 
-  if (href) {
-    return (
-      <Link href={href} className="flex w-full items-center justify-between border-b border-white/8 py-4 text-left last:border-b-0">
-        {content}
-      </Link>
-    );
-  }
-
+function ProfileOption({
+  title,
+  subtitle,
+  Icon,
+  danger,
+  onClick,
+}: {
+  title: string;
+  subtitle?: string;
+  Icon: LucideIcon;
+  danger?: boolean;
+  onClick?: () => void;
+}) {
   return (
-    <button className="flex w-full items-center justify-between border-b border-white/8 py-4 text-left last:border-b-0" type="button" onClick={onClick}>
-      {content}
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-4 py-4"
+    >
+      <Icon
+        className={cn(
+          "size-5",
+          danger ? "text-[#FF5C8A]" : "text-[#AAB6C8]"
+        )}
+      />
+
+      <div className="flex-1 text-left">
+        <p
+          className={cn(
+            "text-[14px] font-medium",
+            danger ? "text-[#FF5C8A]" : "text-white"
+          )}
+        >
+          {title}
+        </p>
+
+        {subtitle && (
+          <p className="mt-0.5 text-[11px] text-[#6F7B8E]">
+            {subtitle}
+          </p>
+        )}
+      </div>
     </button>
   );
 }
+
+
 
 async function loadProfile(token: string) {
   const response = await apiRequest("/users/me/profile", {
@@ -1449,6 +2163,16 @@ function formatNotificationRelativeTime(value: string) {
 
   const days = Math.floor(hours / 24);
   return `${days} days ago`;
+}
+
+function formatDownloadDateTime(value: Date) {
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(value);
 }
 
 function buildCoachText(overdueAccounts: number, utilization: number, enquiries: number) {

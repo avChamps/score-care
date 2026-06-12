@@ -705,8 +705,18 @@ export function SupportDrawer({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <DrawerHeader eyebrow="Assistant" icon={<Bot className="size-5" />} iconTone="orange" onClose={onClose} title="Score Care" />
-      <div className="flex min-h-0 flex-1 flex-col bg-[linear-gradient(180deg,#fff8f2_0%,#f7f8fb_42%,#ffffff_100%)]">
+      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-white/[0.08] bg-[#070B12] px-4 py-4">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-2xl bg-[#5EF2C2]/15 text-[#5EF2C2]">
+            <Bot className="size-5" />
+          </span>
+          <h2 className="text-[0.95rem] font-black tracking-[2px] bg-[linear-gradient(90deg,#5EF2C2,#2DB094)] bg-clip-text text-transparent">Score Care</h2>
+        </div>
+        <button aria-label="Close drawer" className="grid size-8 place-items-center rounded-full border border-white/[0.08] bg-[#111821] text-[#AAB6C8] transition hover:border-[#5EF2C2]/50 hover:text-[#5EF2C2]" type="button" onClick={onClose}>
+          <X className="size-4" />
+        </button>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col bg-[#050912]">
         <div className="drawer-scroll flex-1 overflow-y-auto px-4 py-5">
           <div className="space-y-4">
             {messages.map((message) => (
@@ -715,12 +725,12 @@ export function SupportDrawer({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="border-t border-orange-100 bg-white px-4 py-4 shadow-[0_-12px_28px_rgba(16,24,40,0.06)]">
+        <div className="border-t border-white/[0.08] bg-[#070B12] px-4 py-4 shadow-[0_-12px_28px_rgba(0,0,0,0.22)]">
           <div className="drawer-scroll mb-3 flex gap-2 overflow-x-auto pb-1">
             {quickActions.map(({ Icon, label }) => (
               <button
                 key={label}
-                className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-orange-100 bg-[var(--portal-orange-soft)] px-3 text-[0.72rem] font-semibold text-[var(--portal-orange)] shadow-sm transition hover:border-[var(--portal-orange)] hover:bg-white disabled:cursor-not-allowed disabled:opacity-55"
+                className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[#5EF2C2]/20 bg-[#5EF2C2]/10 px-3 text-[0.72rem] font-semibold text-[#5EF2C2] shadow-sm transition hover:border-[#5EF2C2]/60 hover:bg-[#5EF2C2]/15 disabled:cursor-not-allowed disabled:opacity-55"
                 type="button"
                 disabled={loading}
                 onClick={() => void sendAssistantMessage(label)}
@@ -731,13 +741,13 @@ export function SupportDrawer({ onClose }: { onClose: () => void }) {
           </div>
           <form className="flex items-center gap-3" onSubmit={handleSubmit}>
             <input
-              className="h-11 min-w-0 flex-1 rounded-full border border-orange-100 bg-[#fffaf6] px-4 text-[0.78rem] font-medium text-[var(--portal-ink)] shadow-sm outline-none transition placeholder:text-[var(--portal-muted)]/55 focus:border-[var(--portal-orange)] focus:bg-white focus:ring-4 focus:ring-[rgba(255,109,0,0.14)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-11 min-w-0 flex-1 rounded-full border border-white/[0.08] bg-[#111821] px-4 text-[0.78rem] font-medium text-white shadow-sm outline-none transition placeholder:text-[#AAB6C8]/60 focus:border-[#5EF2C2]/60 focus:ring-4 focus:ring-[#5EF2C2]/10 disabled:cursor-not-allowed disabled:opacity-60"
               placeholder="Type a message..."
               value={input}
               disabled={loading}
               onChange={(event) => setInput(event.target.value)}
             />
-            <button aria-label="Send message" className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--portal-orange)] text-white shadow-[0_12px_26px_rgba(255,109,0,0.28)] transition hover:bg-[var(--portal-orange-deep)] disabled:cursor-not-allowed disabled:opacity-55" type="submit" disabled={loading || !input.trim()}>
+            <button aria-label="Send message" className="grid size-11 shrink-0 place-items-center rounded-full bg-[#2DB094] text-white shadow-[0_12px_26px_rgba(45,176,148,0.24)] transition hover:bg-[#249a81] disabled:cursor-not-allowed disabled:opacity-55" type="submit" disabled={loading || !input.trim()}>
               <Send className="size-5" />
             </button>
           </form>
@@ -754,11 +764,11 @@ function AssistantBubble({ message }: { message: AssistantMessage }) {
   return (
     <div className={cn("flex items-start gap-3", isUser && "justify-end")}>
       {!isUser ? (
-        <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-[var(--portal-orange-soft)] text-[var(--portal-orange)]">
+        <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-[#5EF2C2]/15 text-[#5EF2C2]">
           <Bot className="size-5" />
         </span>
       ) : null}
-      <div className={cn("max-w-[82%] rounded-[1.35rem] border px-4 py-3.5 shadow-sm", isUser ? "border-[var(--portal-orange)] bg-[var(--portal-orange)] text-white" : "border-orange-100 bg-white text-[var(--portal-muted)]")}>
+      <div className={cn("max-w-[82%] rounded-[1.35rem] border px-4 py-3.5 shadow-sm", isUser ? "border-[#5EF2C2]/50 bg-[#2DB094] text-white" : "border-white/[0.08] bg-[#111821] text-[#AAB6C8]")}>
         {waitingForStream ? <AssistantTypingContent /> : <AssistantReplyContent body={message.body} isUser={isUser} />}
       </div>
     </div>
@@ -769,11 +779,11 @@ function AssistantTypingContent() {
   return (
     <div>
       <div className="flex items-center gap-2">
-        <span className="size-2 rounded-full bg-[var(--portal-orange)] animate-bounce" />
-        <span className="size-2 rounded-full bg-[var(--portal-orange)] animate-bounce [animation-delay:120ms]" />
-        <span className="size-2 rounded-full bg-[var(--portal-orange)] animate-bounce [animation-delay:240ms]" />
+        <span className="size-2 rounded-full bg-[#5EF2C2] animate-bounce" />
+        <span className="size-2 rounded-full bg-[#5EF2C2] animate-bounce [animation-delay:120ms]" />
+        <span className="size-2 rounded-full bg-[#5EF2C2] animate-bounce [animation-delay:240ms]" />
       </div>
-      <p className="mt-3 text-[0.74rem] font-medium text-[var(--portal-muted)]">Reading your credit context...</p>
+      <p className="mt-3 text-[0.74rem] font-medium text-[#AAB6C8]">Reading your credit context...</p>
     </div>
   );
 }
@@ -784,7 +794,7 @@ function AssistantReplyContent({ body, isUser }: { body: string; isUser: boolean
   return (
     <div className="space-y-2">
       {lines.map((line, index) => (
-        <p key={`${line}-${index}`} className={cn("text-[0.72rem] font-medium leading-5", isUser ? "text-white" : "text-[#536079]")}>
+        <p key={`${line}-${index}`} className={cn("text-[0.72rem] font-medium leading-5", isUser ? "text-white" : "text-[#AAB6C8]")}>
           {line}
         </p>
       ))}
