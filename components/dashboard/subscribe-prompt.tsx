@@ -22,7 +22,17 @@ export type SubscriptionPlan = {
   skipLabel?: string;
   features: string[];
   moreFeatures?: string;
-  theme: "pro" | "elite";
+  theme: "blue" | "purple" | "green" | "orange" | "pink" | "cyan";
+};
+
+const subscriptionPlanThemes: Array<SubscriptionPlan["theme"]> = ["blue", "purple", "green", "orange", "pink", "cyan"];
+const subscriptionPlanThemeStyles: Record<SubscriptionPlan["theme"], { accent: string; header: string; selectedRing: string }> = {
+  blue: { accent: "#2878FF", header: "bg-[#2673F1]", selectedRing: "ring-[#2878FF]" },
+  purple: { accent: "#A248F5", header: "bg-[#A246F2]", selectedRing: "ring-[#A248F5]" },
+  green: { accent: "#19B879", header: "bg-[#07844E]", selectedRing: "ring-[#19B879]" },
+  orange: { accent: "#FF8A00", header: "bg-[#F97316]", selectedRing: "ring-[#FF8A00]" },
+  pink: { accent: "#F43F8A", header: "bg-[#DB2777]", selectedRing: "ring-[#F43F8A]" },
+  cyan: { accent: "#06B6D4", header: "bg-[#0891B2]", selectedRing: "ring-[#06B6D4]" },
 };
 
 const subscriptionPlans: SubscriptionPlan[] = [
@@ -32,7 +42,7 @@ const subscriptionPlans: SubscriptionPlan[] = [
     amount: 299,
     badge: "Most Popular",
     icon: "🚀",
-    theme: "pro",
+    theme: "blue",
     title: "Unlock premium features",
     subtitle: "Subscribe",
     description: "Choose a plan to continue using reports, health insights, and predictor tools.",
@@ -54,7 +64,7 @@ const subscriptionPlans: SubscriptionPlan[] = [
     amount: 599,
     badge: "Best Value",
     icon: "💎",
-    theme: "elite",
+    theme: "purple",
     title: "Unlock premium features",
     subtitle: "Subscribe",
     description: "Choose a plan to continue using reports, health insights, and predictor tools.",
@@ -235,34 +245,34 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
 }
 
 function SubscriptionPlanCard({ onSelect, plan, selected }: { onSelect: () => void; plan: SubscriptionPlan; selected: boolean }) {
-  const accent = plan.theme === "pro" ? "#2878FF" : "#A248F5";
+  const theme = subscriptionPlanThemeStyles[plan.theme];
 
   return (
     <button
       className={`overflow-hidden rounded-[26px] bg-[#101E2E] text-left shadow-[0_18px_36px_rgba(0,0,0,0.28)] transition ${
-        selected ? "ring-2 ring-[#2878FF]" : "ring-1 ring-white/8"
+        selected ? `ring-2 ${theme.selectedRing}` : "ring-1 ring-white/8"
       }`}
       onClick={onSelect}
       type="button"
     >
-      <div className={`relative px-7 py-7 ${plan.theme === "pro" ? "bg-[#2673F1]" : "bg-[#A246F2]"}`}>
-        <span className="inline-flex rounded-full bg-white/16 px-3 py-1 text-[11px] font-black text-white shadow-[0_8px_16px_rgba(0,0,0,0.12)]">
+      <div className={`relative px-6 py-6 ${theme.header}`}>
+        <span className="inline-flex rounded-full bg-white/16 px-2.5 py-1 text-[10px] font-bold text-white shadow-[0_8px_16px_rgba(0,0,0,0.12)]">
           ⭐ {plan.badge}
         </span>
-        <span className="absolute right-7 top-16 grid size-10 place-items-center rounded-full border-[6px] border-white/90">
-          {selected ? <span className="size-4 rounded-full bg-white" /> : null}
+        <span className="absolute right-6 top-16 grid size-8 place-items-center rounded-full border-[5px] border-white/90">
+          {selected ? <span className="size-3 rounded-full bg-white" /> : null}
         </span>
-        <div className="mt-6 flex items-center gap-3 text-[24px] font-black text-white">
+        <div className="mt-5 flex items-center gap-2.5 text-[21px] font-extrabold text-white">
           <span>{plan.icon}</span>
           <span>{plan.planName}</span>
         </div>
-        <p className="mt-5 text-[42px] font-black leading-none text-white">{formatPlanAmount(plan)}<span className="ml-1 text-[14px] font-bold text-white/76">{formatBillingCycle(plan.billingCycle)}</span></p>
+        <p className="mt-4 text-[34px] font-black leading-none text-white">{formatPlanAmount(plan)}<span className="ml-1 text-[12px] font-bold text-white/76">{formatBillingCycle(plan.billingCycle)}</span></p>
       </div>
 
       <div className="space-y-3 px-7 py-6">
         {plan.features.map((feature) => (
           <div key={feature} className="flex items-center gap-3 text-[15px] font-semibold text-white/90">
-            <span className="grid size-6 shrink-0 place-items-center rounded-full text-[13px] shadow-[0_8px_16px_rgba(0,0,0,0.22)]" style={{ backgroundColor: `${accent}24`, color: accent }}>
+            <span className="grid size-6 shrink-0 place-items-center rounded-full text-[13px] shadow-[0_8px_16px_rgba(0,0,0,0.22)]" style={{ backgroundColor: `${theme.accent}24`, color: theme.accent }}>
               ✓
             </span>
             <span>{feature}</span>
@@ -304,7 +314,7 @@ export function readSubscriptionPlans(result: unknown): SubscriptionPlan[] {
       benefits: Array.isArray(item.benefits) ? item.benefits.map(String) : [],
       buttonLabel: item.buttonLabel ?? "Subscribe",
       skipLabel: item.skipLabel ?? "Skip for later",
-      theme: item.theme ?? (index === 0 ? "pro" : "elite"),
+      theme: item.theme && subscriptionPlanThemes.includes(item.theme) ? item.theme : subscriptionPlanThemes[index % subscriptionPlanThemes.length],
       features: Array.isArray(item.features) ? item.features.map(String) : [],
       moreFeatures: item.moreFeatures,
     });

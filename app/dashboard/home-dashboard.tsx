@@ -93,6 +93,7 @@ type UserProfile = {
   fullName?: string;
   email?: string;
   dateOfBirth?: string;
+  selectedLanguage?: string | null;
   cibilScore?: string | number | null;
 };
 
@@ -185,6 +186,7 @@ const FAQ_DATA: FaqCategory[] = [
 
 export function HomeDashboard() {
   const [isLoading, setIsLoading] = useState(true);
+  const [isLanguageLoading, setIsLanguageLoading] = useState(false);
   const [name, setName] = useState("there");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData>(createEmptyDashboard());
@@ -209,9 +211,12 @@ export function HomeDashboard() {
 
       try {
         setIsLoading(true);
+        setIsLanguageLoading(readStoredLanguage() !== "en");
         setError("");
 
         const profile = await loadProfile(token);
+        const shouldWaitForLanguage = applyProfileLanguage(profile);
+        setIsLanguageLoading(shouldWaitForLanguage);
         const freeTier = isFreeTierProfile(profile);
         const displayData = freeTier ? await loadBasicCibilScoreData(token, profile) : await loadCibilData(token, profile);
 
@@ -219,6 +224,10 @@ export function HomeDashboard() {
         setProfile(profile);
         setIsFreeTier(freeTier);
         setDashboard(freeTier ? buildFreeTierDashboard(displayData) : buildDashboardData(displayData, profile));
+        if (shouldWaitForLanguage) {
+          await waitForLanguageApply();
+        }
+        setIsLanguageLoading(false);
       } catch (loadError) {
         if (loadError instanceof CibilDisplayDataError && (loadError.status === 401 || loadError.status === 403)) {
           clearScorecareSession();
@@ -229,6 +238,7 @@ export function HomeDashboard() {
         setName(sessionStorage.getItem("scorecare_full_name")?.trim() || "there");
         setDashboard(createEmptyDashboard());
         setError("Score data is unavailable right now.");
+        setIsLanguageLoading(false);
       } finally {
         setIsLoading(false);
       }
@@ -259,10 +269,10 @@ export function HomeDashboard() {
     tabIndex: 0,
   } : {};
 
-
   return (
     <div className="page min-h-screen overflow-x-hidden bg-[#050912] pb-32 text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
       <DashboardAuthGuard />
+      <div id="google_translate_element" className="hidden" />
       <section
         className="hero-header fixed inset-x-0 top-0 z-0 min-h-[340px] bg-cover bg-center px-5 pb-16 pt-6 shadow-[0_26px_58px_rgba(94,99,235,0.34)] sm:min-h-[430px] sm:px-8 sm:pb-28 sm:pt-7"
         style={{ backgroundImage: `linear-gradient(135deg, rgba(104,111,242,0.86), rgba(178,167,255,0.62) 48%, rgba(116,112,255,0.78)), url(${dashboardBg.src})` }}
@@ -524,7 +534,8 @@ export function HomeDashboard() {
         </nav>
       </div>
 
-      {showProfile ? <ProfilePanel profile={profile} name={name} onClose={() => setShowProfile(false)} onHelp={() => setShowHelp(true)} /> : null}
+      {isLanguageLoading ? <LanguageApplyLoader /> : null}
+      {showProfile ? <ProfilePanel profile={profile} name={name} onClose={() => setShowProfile(false)} onHelp={() => setShowHelp(true)} onLanguageLoadingChange={setIsLanguageLoading} onProfileUpdate={setProfile} /> : null}
       {showHelp ? (
         <div className="fixed inset-0 z-[80] grid place-items-center bg-[rgba(7,11,18,0.66)] px-5 backdrop-blur-sm" onClick={() => setShowHelp(false)}>
           <HelpSupportModal
@@ -1201,6 +1212,26 @@ function DashboardHomeSkeleton() {
   );
 }
 
+function LanguageApplyLoader() {
+  return (
+    <div className="fixed inset-0 z-[100] overflow-hidden bg-[#050912] px-4 pb-8 pt-8 text-white">
+      <div className="mx-auto max-w-5xl">
+        <div className="flex items-center justify-between">
+          <div className="size-14 animate-pulse rounded-full bg-white/[0.08] sm:size-16" />
+          <div className="size-14 animate-pulse rounded-full bg-white/[0.08] sm:size-16" />
+        </div>
+        <div className="mt-12">
+          <div className="h-4 w-36 animate-pulse rounded-full bg-white/[0.08]" />
+          <div className="mt-3 h-7 w-52 animate-pulse rounded-full bg-white/[0.08]" />
+        </div>
+        <main className="mt-12 rounded-t-[30px] bg-[#050912] pb-8 pt-5">
+          <DashboardHomeSkeleton />
+        </main>
+      </div>
+    </div>
+  );
+}
+
 function QuickCard({ href, Icon, title, value, meta, alert = false, locked = false, offer = false, onLockedClick }: { href: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; title: string; value: string; meta: string; alert?: boolean; locked?: boolean; offer?: boolean; onLockedClick?: () => void }) {
   const className = "min-h-[122px] rounded-[20px] border border-white/10 bg-white/[0.07] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_36px_rgba(0,0,0,0.24)] backdrop-blur-xl transition hover:bg-white/[0.1]";
 
@@ -1678,7 +1709,7 @@ function LanguageSettingsPopup({
   );
 }
 
-function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClose: () => void; onHelp: () => void; profile: UserProfile | null }) {
+function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, onProfileUpdate, profile }: { name: string; onClose: () => void; onHelp: () => void; onLanguageLoadingChange: (loading: boolean) => void; onProfileUpdate: (profile: UserProfile | null) => void; profile: UserProfile | null }) {
   const phone = profile?.mobileNumber || sessionStorage.getItem("scorecare_mobile_number") || "--";
   const completion = calculateProfileCompletion(profile);
   const [notificationError, setNotificationError] = useState("");
@@ -1691,7 +1722,7 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
   const [ratingLoading, setRatingLoading] = useState(false);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
-  const [selectedLanguage, setSelectedLanguage] = useState(readStoredLanguage);
+  const [selectedLanguage, setSelectedLanguage] = useState(() => normalizeLanguageCode(profile?.selectedLanguage) || readStoredLanguage());
   const [showRatingForm, setShowRatingForm] = useState(false);
   const [showDownloadReports, setShowDownloadReports] = useState(false);
   const [showLanguageSettings, setShowLanguageSettings] = useState(false);
@@ -1713,6 +1744,15 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
       loadGoogleTranslate();
     }
   }, [showLanguageSettings]);
+
+  useEffect(() => {
+    const profileLanguage = normalizeLanguageCode(profile?.selectedLanguage);
+
+    if (!profileLanguage) return;
+
+    setSelectedLanguage(profileLanguage);
+    applyProfileLanguage(profile);
+  }, [profile?.selectedLanguage]);
 
   useEffect(() => {
     if (!ratingSubmitted) return;
@@ -1790,6 +1830,36 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
     }
   }
 
+  async function updateSelectedLanguage(language: string) {
+    const token = sessionStorage.getItem("scorecare_token");
+    const selectedLanguageLabel = languageOptions.find((item) => item.code === language)?.label;
+
+    if (!token || isTokenExpired(token) || !selectedLanguageLabel) return;
+
+    onLanguageLoadingChange(language !== "en");
+    setSelectedLanguage(language);
+    applyGoogleLanguageWithRetry(language);
+    setShowLanguageSettings(false);
+
+    try {
+      await updateUserLanguage(token, selectedLanguageLabel);
+      const updatedProfile = await loadProfile(token);
+      const updatedLanguage = normalizeLanguageCode(updatedProfile?.selectedLanguage);
+
+      onProfileUpdate(updatedProfile);
+
+      if (updatedLanguage) {
+        setSelectedLanguage(updatedLanguage);
+        applyGoogleLanguageWithRetry(updatedLanguage);
+      }
+    } finally {
+      if (language !== "en") {
+        await waitForLanguageApply();
+      }
+      onLanguageLoadingChange(false);
+    }
+  }
+
   async function submitRatingFeedback() {
     if (!selectedRating || ratingLoading) return;
 
@@ -1822,8 +1892,6 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#070B12] px-4 pb-28 pt-7 text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
-      <div id="google_translate_element" className="hidden" />
-
       <section className="relative mx-auto max-w-md overflow-hidden rounded-[30px] bg-[linear-gradient(160deg,#ebe7d9,#faf7ed_48%,#d9d0bd)] p-5 text-[#111827] shadow-[0_22px_46px_rgba(58,75,140,0.38)]">
         <button className="absolute left-5 top-5 grid size-8 place-items-center rounded-full bg-black/18 text-white backdrop-blur" type="button" aria-label="Close profile" onClick={onClose}>
           <X className="size-6" strokeWidth={1.6} />
@@ -1959,7 +2027,7 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
 
         <ProfileOption
           title="Language Settings"
-          subtitle={languageOptions.find((language) => language.code === selectedLanguage)?.label || "English"}
+          subtitle={languageOptions.find((language) => language.code === selectedLanguage)?.label || profile?.selectedLanguage || "English"}
           Icon={Languages}
           onClick={() => setShowLanguageSettings(true)}
         />
@@ -1991,11 +2059,7 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
         <LanguageSettingsPopup
           selectedLanguage={selectedLanguage}
           onClose={() => setShowLanguageSettings(false)}
-          onSelect={(language) => {
-            setSelectedLanguage(language);
-            applyGoogleLanguage(language);
-            setShowLanguageSettings(false);
-          }}
+          onSelect={(language) => void updateSelectedLanguage(language)}
         />
       ) : null}
 
@@ -2133,12 +2197,21 @@ function ProfileOption({
   );
 }
 
+function normalizeLanguageCode(language?: string | null) {
+  if (!language) return "";
+
+  const normalizedLanguage = language.trim().toLowerCase();
+  const option = languageOptions.find((item) => item.code.toLowerCase() === normalizedLanguage || item.label.toLowerCase() === normalizedLanguage);
+
+  return option?.code || "";
+}
+
 function readStoredLanguage() {
   if (typeof window === "undefined") {
     return "en";
   }
 
-  return localStorage.getItem("scorecare_language") || "en";
+  return normalizeLanguageCode(localStorage.getItem("scorecare_language")) || "en";
 }
 
 function loadGoogleTranslate() {
@@ -2171,7 +2244,7 @@ function loadGoogleTranslate() {
     const storedLanguage = readStoredLanguage();
 
     if (storedLanguage !== "en") {
-      window.setTimeout(() => applyGoogleLanguage(storedLanguage, false), 300);
+      applyGoogleLanguageWithRetry(storedLanguage);
     }
   };
 
@@ -2185,6 +2258,35 @@ function loadGoogleTranslate() {
   script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
   script.async = true;
   document.body.appendChild(script);
+}
+
+function applyGoogleLanguageWithRetry(language: string) {
+  const delays = [0, 300, 800, 1500];
+
+  delays.forEach((delay) => {
+    window.setTimeout(() => {
+      const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+
+      if (!select && delay !== delays[delays.length - 1]) return;
+      if (select?.value === language) return;
+
+      applyGoogleLanguage(language, false);
+    }, delay);
+  });
+}
+
+function applyProfileLanguage(profile: UserProfile | null) {
+  const profileLanguage = normalizeLanguageCode(profile?.selectedLanguage);
+
+  if (!profileLanguage || profileLanguage === "en") return false;
+
+  loadGoogleTranslate();
+  applyGoogleLanguageWithRetry(profileLanguage);
+  return true;
+}
+
+function waitForLanguageApply() {
+  return new Promise((resolve) => window.setTimeout(resolve, 1700));
 }
 
 function applyGoogleLanguage(language: string, reloadWhenMissing = true) {
@@ -2235,8 +2337,31 @@ async function loadProfile(token: string) {
   if (profile?.panNumber) sessionStorage.setItem("scorecare_pan_number", profile.panNumber);
   if (profile?.email) sessionStorage.setItem("scorecare_email", profile.email);
   if (profile?.dateOfBirth) sessionStorage.setItem("scorecare_date_of_birth", profile.dateOfBirth);
+  if (profile?.selectedLanguage) localStorage.setItem("scorecare_language", normalizeLanguageCode(profile.selectedLanguage) || profile.selectedLanguage);
 
   return profile;
+}
+
+async function updateUserLanguage(token: string, selectedLanguageLabel: string) {
+  const response = await apiRequest("/users/me/language", {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: { selectedLanguage: selectedLanguageLabel },
+  });
+  const result = await response.json();
+
+  if (response.status === 401 || response.status === 403) {
+    clearScorecareSession();
+    window.location.replace("/login");
+    return;
+  }
+
+  if (!response.ok) {
+    throw new Error(result?.message || "Unable to update language");
+  }
 }
 
 function readProfile(result: unknown) {
