@@ -4,25 +4,88 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
-
 import { apiRequest } from "@/lib/api";
 
-type SubscriptionPlan = {
+export type SubscriptionPlan = {
   id: string;
-  publicId?: string | null;
   planName: string;
   amount: number;
-  currency: string;
-  offerTag?: string | null;
-  recommendedFor?: string | null;
+  billingCycle?: string;
+  currency?: string;
+  badge: string;
+  icon: string;
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  benefits: string[];
+  buttonLabel?: string;
+  skipLabel?: string;
+  features: string[];
+  moreFeatures?: string;
+  theme: "pro" | "elite";
 };
 
-type SubscriptionPlansResponse = {
-  status?: string;
-  data?: {
-    plans?: SubscriptionPlan[] | null;
-  } | null;
-};
+const subscriptionPlans: SubscriptionPlan[] = [
+  {
+    id: "pro",
+    planName: "Pro",
+    amount: 299,
+    badge: "Most Popular",
+    icon: "🚀",
+    theme: "pro",
+    title: "Unlock premium features",
+    subtitle: "Subscribe",
+    description: "Choose a plan to continue using reports, health insights, and predictor tools.",
+    benefits: [],
+    features: [
+      "Unlimited score checks",
+      "All 4 bureaus — live",
+      "12-month history",
+      "AI Credit Coach weekly",
+      "Score Simulator",
+      "Dispute filing (3/mo)",
+      "Loan payment tracking",
+      "EMI reminders",
+    ],
+  },
+  {
+    id: "elite",
+    planName: "Elite",
+    amount: 599,
+    badge: "Best Value",
+    icon: "💎",
+    theme: "elite",
+    title: "Unlock premium features",
+    subtitle: "Subscribe",
+    description: "Choose a plan to continue using reports, health insights, and predictor tools.",
+    benefits: [],
+    features: [
+      "Everything in Pro",
+      "All bureaus — daily sync",
+      "Unlimited disputes",
+      "Managed credit repair",
+    ],
+    moreFeatures: "+4 more features...",
+  },
+];
+
+let subscriptionPlansRequest: Promise<SubscriptionPlan[]> | null = null;
+
+export async function getSubscriptionPlans() {
+  if (!subscriptionPlansRequest) {
+    subscriptionPlansRequest = apiRequest("/subscription-plans")
+      .then(async (response) => {
+        if (!response.ok) {
+          return [];
+        }
+
+        return readSubscriptionPlans(await response.json());
+      })
+      .catch(() => []);
+  }
+
+  return subscriptionPlansRequest;
+}
 
 export function useSubscribePrompt() {
   const [showSubscribePrompt, setShowSubscribePrompt] = useState(false);
@@ -39,57 +102,41 @@ export function useSubscribePrompt() {
 }
 
 export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void; show: boolean }) {
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-  const [plansError, setPlansError] = useState("");
-  const [plansLoading, setPlansLoading] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState(subscriptionPlans[0].id);
+  const [showSkipMessage, setShowSkipMessage] = useState(false);
+  const [plans, setPlans] = useState(subscriptionPlans);
+  const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) ?? plans[0];
+  const premiumBenefits = selectedPlan.benefits;
 
   useEffect(() => {
-    if (!show || plans.length) {
+    if (!show) {
       return;
     }
 
-    let active = true;
-
-    async function loadPlans() {
-      setPlansError("");
-      setPlansLoading(true);
-
+    async function loadSubscriptionPlans() {
       try {
-        const response = await apiRequest("/subscription-plans", {
-          method: "GET",
-        });
-        const result = (await response.json()) as SubscriptionPlansResponse;
-        const apiPlans = Array.isArray(result?.data?.plans) ? result.data.plans : [];
+        const apiPlans = await getSubscriptionPlans();
 
-        if (!response.ok || result?.status === "error" || !apiPlans.length) {
-          throw new Error("Unable to load subscription plans.");
-        }
-
-        if (active) {
+        if (apiPlans.length) {
           setPlans(apiPlans);
-          setSelectedPlanId(apiPlans[0]?.publicId || apiPlans[0]?.id || null);
+          setSelectedPlanId(apiPlans[0].id);
         }
       } catch {
-        if (active) {
-          setPlansError("Could not load subscription plans. Please try again.");
-        }
-      } finally {
-        if (active) {
-          setPlansLoading(false);
-        }
+        setPlans(subscriptionPlans);
       }
     }
 
-    void loadPlans();
-
-    return () => {
-      active = false;
-    };
-  }, [plans.length, show]);
+    void loadSubscriptionPlans();
+  }, [show]);
 
   function closePrompt(event: MouseEvent) {
     event.stopPropagation();
+    setShowSkipMessage(true);
+  }
+
+  function closeAll(event: MouseEvent) {
+    event.stopPropagation();
+    setShowSkipMessage(false);
     onClose();
   }
 
@@ -117,9 +164,9 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
               <div className="mx-auto h-1.5 w-12 rounded-full bg-white/16" />
               <div className="relative mx-auto mt-5 flex max-w-md items-start justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#FFD34D]">Subscribe</p>
-                  <h2 className="mt-2 text-[21px] font-semibold leading-7 text-white">Unlock premium features</h2>
-                  <p className="mt-2 text-[12px] font-medium leading-5 text-[#AAB6C8]">Choose a plan to continue using reports, health insights, and predictor tools.</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#FFD34D]">{selectedPlan.subtitle}</p>
+                  <h2 className="mt-2 text-[21px] font-semibold leading-7 text-white">{selectedPlan.title}</h2>
+                  <p className="mt-2 text-[12px] font-medium leading-5 text-[#AAB6C8]">{selectedPlan.description}</p>
                 </div>
                 <button
                   aria-label="Close subscription prompt"
@@ -131,60 +178,53 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
                 </button>
               </div>
 
-              <div className="relative mx-auto mt-6 grid max-w-md grid-cols-2 gap-3 pb-4">
-                {plansLoading ? (
-                  Array.from({ length: 2 }).map((_, index) => (
-                    <div key={index} className="min-h-[5.5rem] animate-pulse rounded-[22px] bg-white/[0.06] px-3 py-3">
-                      <div className="h-3 w-16 rounded-full bg-white/12" />
-                      <div className="mt-4 h-5 w-20 rounded-full bg-white/12" />
-                    </div>
-                  ))
-                ) : null}
-
-                {!plansLoading && plansError ? (
-                  <div className="col-span-2 rounded-2xl bg-[#FF5C8A]/12 px-4 py-3 text-xs font-medium leading-5 text-[#FF8BAA]">
-                    {plansError}
-                  </div>
-                ) : null}
-
-                {!plansLoading && !plansError ? plans.map((plan) => {
-                  const planId = plan.publicId || plan.id;
-                  const selected = selectedPlanId === planId;
-
-                  return (
-                  <button
-                    key={planId}
-                    className={`relative min-h-[5.4rem] rounded-[22px] px-3 py-3 text-left shadow-[0_14px_28px_rgba(0,0,0,0.18)] transition ${
-                      selected
-                        ? "bg-[linear-gradient(145deg,rgba(94,242,194,0.2),rgba(21,30,42,0.96))] text-white ring-1 ring-[#5EF2C2]/70"
-                        : "bg-[#151E2A] text-white hover:bg-[#1A2634]"
-                    }`}
-                    onClick={() => setSelectedPlanId(planId)}
-                    type="button"
-                  >
-                    {plan.offerTag ? (
-                      <span className="absolute right-2 top-2 max-w-[4.5rem] truncate rounded-full bg-[#FF7A00]/16 px-1.5 py-0.5 text-[8px] font-semibold uppercase leading-none text-[#FFD34D]">
-                        {plan.offerTag}
-                      </span>
-                    ) : null}
-                    <span className="block pr-[4.75rem] text-[13px] font-semibold leading-5">{plan.planName}</span>
-                    <span className="mt-1 block text-[18px] font-semibold text-[#FFD34D]">{formatPlanAmount(plan.amount, plan.currency)}</span>
-                    {plan.recommendedFor ? <span className="mt-1 block text-[11px] font-medium leading-4 text-[#AAB6C8]">{plan.recommendedFor}</span> : null}
-                  </button>
-                  );
-                }) : null}
+              <div className="relative mx-auto mt-6 grid max-w-md gap-5 pb-4">
+                {plans.map((plan) => (
+                  <SubscriptionPlanCard
+                    key={plan.id}
+                    plan={plan}
+                    selected={selectedPlanId === plan.id}
+                    onSelect={() => setSelectedPlanId(plan.id)}
+                  />
+                ))}
               </div>
             </div>
 
             <div className="relative border-t border-white/8 bg-[#0D131C] px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6">
-              <button
-                className="mx-auto block h-[3.25rem] w-full max-w-md rounded-2xl bg-[linear-gradient(135deg,#FF7A00,#FFD34D)] text-sm font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)] transition disabled:opacity-60"
-                disabled={!selectedPlanId || plansLoading}
-                type="button"
-              >
-                Subscribe
+              <button className="mx-auto block h-[3.25rem] w-full max-w-md rounded-2xl bg-[linear-gradient(135deg,#FF7A00,#FFD34D)] text-sm font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)] transition disabled:opacity-60" disabled={!selectedPlanId} type="button">
+                {selectedPlan.buttonLabel}
+              </button>
+              <button className="mx-auto mt-3 block text-xs font-semibold text-[#AAB6C8] transition hover:text-white" onClick={closePrompt} type="button">
+                {selectedPlan.skipLabel}
               </button>
             </div>
+            {showSkipMessage ? (
+              <div className="absolute inset-0 z-10 flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm" onClick={closeAll}>
+                <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]" onClick={(event) => event.stopPropagation()}>
+                  <div className="min-h-44 bg-[radial-gradient(circle_at_82%_0%,rgba(94,242,194,0.24),transparent_34%),linear-gradient(180deg,#1D2A3A_0%,#0D131C_100%)] px-5 py-6">
+                    <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close subscription message" onClick={closeAll}>
+                      <X className="size-5" />
+                    </button>
+                    <div className="mt-10 max-w-[18rem]">
+                      <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">{selectedPlan.subtitle}</p>
+                      <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">{selectedPlan.title}</h2>
+                    </div>
+                  </div>
+
+                  <div className="px-5 pb-5 pt-4">
+                    <div className="grid gap-3 text-[13px] font-medium leading-5 text-[#AAB6C8]">
+                      {premiumBenefits.map((benefit) => (
+                        <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
+                      ))}
+                    </div>
+
+                    <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={closeAll}>
+                      {selectedPlan.skipLabel}
+                    </button>
+                  </div>
+                </section>
+              </div>
+            ) : null}
           </motion.div>
         </motion.div>
       ) : null}
@@ -194,14 +234,103 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
   return typeof document === "undefined" ? null : createPortal(sheet, document.body);
 }
 
-function formatPlanAmount(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat("en-IN", {
-      currency: currency || "INR",
-      maximumFractionDigits: 0,
-      style: "currency",
-    }).format(amount);
-  } catch {
-    return `${currency || "INR"} ${amount}`;
+function SubscriptionPlanCard({ onSelect, plan, selected }: { onSelect: () => void; plan: SubscriptionPlan; selected: boolean }) {
+  const accent = plan.theme === "pro" ? "#2878FF" : "#A248F5";
+
+  return (
+    <button
+      className={`overflow-hidden rounded-[26px] bg-[#101E2E] text-left shadow-[0_18px_36px_rgba(0,0,0,0.28)] transition ${
+        selected ? "ring-2 ring-[#2878FF]" : "ring-1 ring-white/8"
+      }`}
+      onClick={onSelect}
+      type="button"
+    >
+      <div className={`relative px-7 py-7 ${plan.theme === "pro" ? "bg-[#2673F1]" : "bg-[#A246F2]"}`}>
+        <span className="inline-flex rounded-full bg-white/16 px-3 py-1 text-[11px] font-black text-white shadow-[0_8px_16px_rgba(0,0,0,0.12)]">
+          ⭐ {plan.badge}
+        </span>
+        <span className="absolute right-7 top-16 grid size-10 place-items-center rounded-full border-[6px] border-white/90">
+          {selected ? <span className="size-4 rounded-full bg-white" /> : null}
+        </span>
+        <div className="mt-6 flex items-center gap-3 text-[24px] font-black text-white">
+          <span>{plan.icon}</span>
+          <span>{plan.planName}</span>
+        </div>
+        <p className="mt-5 text-[42px] font-black leading-none text-white">{formatPlanAmount(plan)}<span className="ml-1 text-[14px] font-bold text-white/76">{formatBillingCycle(plan.billingCycle)}</span></p>
+      </div>
+
+      <div className="space-y-3 px-7 py-6">
+        {plan.features.map((feature) => (
+          <div key={feature} className="flex items-center gap-3 text-[15px] font-semibold text-white/90">
+            <span className="grid size-6 shrink-0 place-items-center rounded-full text-[13px] shadow-[0_8px_16px_rgba(0,0,0,0.22)]" style={{ backgroundColor: `${accent}24`, color: accent }}>
+              ✓
+            </span>
+            <span>{feature}</span>
+          </div>
+        ))}
+        {plan.moreFeatures ? <p className="pt-1 text-[14px] font-semibold text-white/20">{plan.moreFeatures}</p> : null}
+      </div>
+    </button>
+  );
+}
+
+export function readSubscriptionPlans(result: unknown): SubscriptionPlan[] {
+  const value = result as { data?: unknown; plans?: unknown };
+  const data = value?.data as { plans?: unknown } | unknown[];
+  const plans = Array.isArray(data) ? data : Array.isArray(data?.plans) ? data.plans : Array.isArray(value?.plans) ? value.plans : [];
+  const normalizedPlans: SubscriptionPlan[] = [];
+
+  plans.forEach((plan, index) => {
+    const item = plan as Partial<SubscriptionPlan> & { name?: string; offerTag?: string; price?: number; monthlyPrice?: number };
+    const id = String(item.id ?? item.planName ?? item.name ?? index);
+    const planName = String(item.planName ?? item.name ?? "");
+    const amount = Number(item.amount ?? item.price ?? item.monthlyPrice ?? 0);
+
+    if (!planName || !amount) {
+      return;
+    }
+
+    normalizedPlans.push({
+      id,
+      planName,
+      amount,
+      billingCycle: item.billingCycle,
+      currency: item.currency,
+      badge: item.badge ?? item.offerTag ?? (index === 0 ? "Most Popular" : "Best Value"),
+      icon: item.icon ?? (index === 0 ? "🚀" : "💎"),
+      title: item.title ?? "Unlock premium features",
+      subtitle: item.subtitle ?? "Subscribe",
+      description: item.description ?? "Choose a plan to continue using reports, health insights, and predictor tools.",
+      benefits: Array.isArray(item.benefits) ? item.benefits.map(String) : [],
+      buttonLabel: item.buttonLabel ?? "Subscribe",
+      skipLabel: item.skipLabel ?? "Skip for later",
+      theme: item.theme ?? (index === 0 ? "pro" : "elite"),
+      features: Array.isArray(item.features) ? item.features.map(String) : [],
+      moreFeatures: item.moreFeatures,
+    });
+  });
+
+  return normalizedPlans;
+}
+
+function formatPlanAmount(plan: SubscriptionPlan) {
+  if (plan.currency === "INR" || !plan.currency) {
+    return `₹${plan.amount}`;
   }
+
+  return `${plan.currency} ${plan.amount}`;
+}
+
+function formatBillingCycle(billingCycle?: string) {
+  const cycle = billingCycle?.toLowerCase();
+
+  if (cycle === "yearly" || cycle === "annual" || cycle === "annually") {
+    return "/yr";
+  }
+
+  if (cycle === "monthly" || cycle === "month") {
+    return "/mo";
+  }
+
+  return cycle ? `/${cycle}` : "/mo";
 }

@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   Bell,
   Bot,
+  ChartNoAxesCombined,
   CircleHelp,
   CreditCard,
   Crown,
@@ -26,6 +27,7 @@ import {
   Share2,
   Target,
   TrendingUp,
+  Wrench,
   X,
   LucideIcon,
 
@@ -47,7 +49,8 @@ import {
 
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
 import { SupportDrawer } from "@/components/dashboard/topbar-actions";
-import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
+import { SubscribePromptOverlay, getSubscriptionPlans, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
@@ -98,7 +101,23 @@ type NotificationItem = {
   id: string | number;
   isRead?: boolean | null;
   message?: string | null;
+  readAt?: string | null;
   title?: string | null;
+};
+
+type FaqCategory = {
+  id: string;
+  Icon: LucideIcon;
+  label: string;
+  color: string;
+  questions: Array<{ q: string; a: string }>;
+};
+
+type GeneralSettings = {
+  website: string;
+  email: string;
+  mobileNumber: string;
+  whatsappNumber: string;
 };
 
 const months = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun"];
@@ -111,10 +130,10 @@ const bottomNav = [
   { label: "Loans", href: "/dashboard/loans", Icon: ReceiptText },
 ];
 const appTiles = [
-  { href: "/dashboard/credit-score", Icon: CreditCard, title: "Credit Score", value: "Up to", meta: "900" },
-  { href: "/report", Icon: FileText, title: "Reports", value: "Full", meta: "CIBIL" },
-  { href: "/dashboard/score-fix", Icon: ShieldAlert, title: "Score Fix", value: "Dispute", meta: "Help", alert: true },
-  { href: "/pricing", Icon: Gift, title: "Premium", value: "Unlock", meta: "Plan", offer: true },
+  { href: "/dashboard/score-fix", Icon: Wrench, title: "Dispute Centre", value: "1 active", meta: "+25 pts", alert: true },
+  { href: "/dashboard/loans", Icon: BadgeIndianRupee, title: "Pay EMIs", value: "₹29,050", meta: "due Jun" },
+  { href: "/dashboard/credit-score", Icon: ChartNoAxesCombined, title: "Improve Score", value: "+58 pts", meta: "possible" },
+  { href: "/pricing", Icon: CreditCard, title: "Get Offers", value: "3", meta: "pre-approved", offer: true },
 ];
 const notificationsPageSize = 10;
 const actionPlanAiCache = new Map<string, Promise<string>>();
@@ -128,7 +147,12 @@ const languageOptions = [
   { code: "mr", label: "Marathi" },
   { code: "bn", label: "Bengali" },
 ];
-const FAQ_DATA = [
+const faqCategoryStyles = [
+  { Icon: House, color: "#6C63FF" },
+  { Icon: BadgeIndianRupee, color: "#FF9D28" },
+  { Icon: HelpCircle, color: "#07844E" },
+];
+const FAQ_DATA: FaqCategory[] = [
   {
     id: "general",
     Icon: House,
@@ -392,12 +416,12 @@ export function HomeDashboard() {
 
 
             <section className="mt-5 grid grid-cols-2 gap-4">
-              {appTiles.map((tile, index) => (
-                <QuickCard key={tile.title} {...tile} locked={isFreeTier} tall={index < 2} onLockedClick={() => setShowBenefitsPrompt(true)} />
+              {(isFreeTier ? [{ href: "/dashboard/credit-score", Icon: CreditCard, title: "Credit Score", value: "Up to", meta: "900" }, ...appTiles.slice(1)] : appTiles).map((tile) => (
+                <QuickCard key={tile.title} {...tile} locked={isFreeTier} onLockedClick={() => setShowBenefitsPrompt(true)} />
               ))}
-              <button className="min-h-24 rounded-[20px] bg-[#121820] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_18px_36px_rgba(0,0,0,0.24)]" type="button" onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : () => setShowActionPlan(true)}>
+              {/* <button className="min-h-[122px] rounded-[20px] border border-white/10 bg-white/[0.07] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_36px_rgba(0,0,0,0.24)] backdrop-blur-xl" type="button" onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : () => setShowActionPlan(true)}>
                 <QuickCardContent Icon={Bot} meta="AI Agents" title="Your" value="Score Coach" />
-              </button>
+              </button> */}
             </section>
 
             <section {...premiumClickProps} className={cn("mt-5 rounded-[28px] bg-[linear-gradient(145deg,#111821,#151E2A)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.2)]", isFreeTier && "cursor-pointer")}>
@@ -541,8 +565,76 @@ export function HomeDashboard() {
 function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLiveChat: () => void }) {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [faqData, setFaqData] = useState<FaqCategory[]>([]);
+  const [general, setGeneral] = useState<GeneralSettings | null>(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [isFaqLoading, setIsFaqLoading] = useState(true);
   const [openItem, setOpenItem] = useState<string | null>(null);
   const [toast, setToast] = useState({ msg: "", visible: false });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadFaqs() {
+      try {
+        const response = await apiRequest("/faqs");
+
+        if (!response.ok) {
+          return;
+        }
+
+        const apiFaqs = readFaqCategories(await response.json());
+
+        if (isMounted) {
+          setFaqData(apiFaqs);
+        }
+      } catch {
+        if (isMounted) {
+          setFaqData([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsFaqLoading(false);
+        }
+      }
+    }
+
+    void loadFaqs();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadGeneral() {
+      try {
+        const response = await apiRequest("/general");
+
+        if (!response.ok) {
+          return;
+        }
+
+        const apiGeneral = readGeneralSettings(await response.json());
+
+        if (isMounted) {
+          setGeneral(apiGeneral);
+        }
+      } catch {
+        if (isMounted) {
+          setGeneral(null);
+        }
+      }
+    }
+
+    void loadGeneral();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const showToast = (msg: string) => {
     setToast({ msg, visible: true });
@@ -554,9 +646,31 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
     onLiveChat();
   };
 
+  async function submitHelpFeedback(isLiked: boolean) {
+    if (feedbackLoading) return;
+
+    setFeedbackLoading(true);
+
+    try {
+      await submitFeedback({
+        rating: isLiked ? 5 : 1,
+        message: isLiked ? "Help page was helpful" : "Help page was not helpful",
+        isLiked,
+        isDisliked: !isLiked,
+      });
+      window.dispatchEvent(new Event("scorecare:profile-notifications-refresh"));
+      window.dispatchEvent(new Event("scorecare:notifications-updated"));
+      showToast(isLiked ? "Thanks for the feedback!" : "We'll improve this page!");
+    } catch {
+      showToast("Unable to submit feedback.");
+    } finally {
+      setFeedbackLoading(false);
+    }
+  }
+
   const searchLower = search.toLowerCase();
 
-  const filteredData = FAQ_DATA.map((cat) => ({
+  const filteredData = faqData.map((cat) => ({
     ...cat,
     questions: cat.questions.filter(
       (item) =>
@@ -568,7 +682,11 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
   })).filter((cat) => cat.questions.length > 0);
 
   const totalResults = filteredData.reduce((s, c) => s + c.questions.length, 0);
-  const totalQ = FAQ_DATA.reduce((s, c) => s + c.questions.length, 0);
+  const totalQ = faqData.reduce((s, c) => s + c.questions.length, 0);
+  const supportEmail = general?.email.trim() || "";
+  const supportMobile = general?.mobileNumber.trim() || "";
+  const whatsappNumber = general?.whatsappNumber.trim() || "";
+  const website = general?.website.trim() || "";
 
   const toggle = (key: string) => setOpenItem(openItem === key ? null : key);
 
@@ -611,7 +729,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
             </h2>
 
             <p className="mt-2 text-[12px] font-medium leading-5 text-[#6F7B8E]">
-              {totalQ} answers across {FAQ_DATA.length} topics
+              {totalQ} answers across {faqData.length} topics
             </p>
 
             <div className="mt-5 flex items-center gap-2.5 rounded-[18px] border border-white/60 bg-white/50 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
@@ -637,7 +755,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
             <div className="mt-5 grid grid-cols-3 gap-2.5">
               {[
                 ["24/7", "Support", "#112C8F"],
-                ["2 min", "Response", "#FF9D28"],
+                ["10 sec", "Response", "#FF9D28"],
                 ["98%", "Resolved", "#07844E"],
               ].map(([value, label, color]) => (
                 <div
@@ -667,7 +785,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
                 onClick={() => setActiveCategory("all")}
               />
 
-              {FAQ_DATA.map((cat) => (
+              {faqData.map((cat) => (
                 <CategoryPill
                   key={cat.id}
                   Icon={cat.Icon}
@@ -696,7 +814,9 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
             </div>
           ) : null}
 
-          {filteredData.length === 0 ? (
+          {isFaqLoading ? (
+            <FaqSkeleton />
+          ) : filteredData.length === 0 ? (
             <div className="rounded-[26px] bg-[#111821] px-5 py-10 text-center">
               <Search className="mx-auto mb-3 size-9 text-[#6F7B8E]" strokeWidth={1.7} />
               <p className="mb-2 text-[16px] font-semibold text-white">
@@ -780,7 +900,9 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
                 sub="Mon-Sat"
                 color="#FF9D28"
                 onClick={() => {
-                  window.location.href = "tel:+919999999999";
+                  if (supportMobile) {
+                    window.location.href = `tel:${supportMobile}`;
+                  }
                 }}
               />
               <ContactCard
@@ -789,8 +911,9 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
                 sub="24 hrs"
                 color="#6C63FF"
                 onClick={() => {
-                  window.location.href =
-                    "mailto:info.socrecareapp.com?subject=Scorecare Support";
+                  if (supportEmail) {
+                    window.location.href = `mailto:${supportEmail}?subject=Scorecare Support`;
+                  }
                 }}
               />
             </div>
@@ -800,7 +923,9 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
             type="button"
             className="mb-4 flex w-full items-center gap-3.5 rounded-[22px] bg-[linear-gradient(135deg,#5EF2C2,#22D983)] px-4 py-3.5 text-left text-[#06221A] shadow-[0_12px_24px_rgba(94,242,194,0.2)]"
             onClick={() => {
-              window.open("https://wa.me/918332024182", "_blank");
+              if (whatsappNumber) {
+                window.open(`https://wa.me/${toDialNumber(whatsappNumber)}`, "_blank");
+              }
             }}
           >
             <span className="grid size-11 shrink-0 place-items-center rounded-[16px] bg-white/30">
@@ -827,7 +952,8 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
             <div className="flex gap-2.5">
               <button
                 type="button"
-                onClick={() => showToast("Thanks for the feedback!")}
+                disabled={feedbackLoading}
+                onClick={() => submitHelpFeedback(true)}
                 className="flex flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#5EF2C2]/12 p-2.5 text-[12px] font-semibold text-[#5EF2C2]"
               >
                 <ThumbsUp className="size-4" strokeWidth={1.8} /> Yes
@@ -835,7 +961,8 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
 
               <button
                 type="button"
-                onClick={() => showToast("We'll improve this page!")}
+                disabled={feedbackLoading}
+                onClick={() => submitHelpFeedback(false)}
                 className="flex flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#FF5C8A]/12 p-2.5 text-[12px] font-semibold text-[#FF5C8A]"
               >
                 <ThumbsDown className="size-4" strokeWidth={1.8} /> No
@@ -844,7 +971,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
           </div>
 
           <p className="mt-6 text-center text-[11px] font-medium text-[#6F7B8E]">
-            info.socrecareapp.com
+            {website ? "SCORECARE support" : ""}
           </p>
         </div>
       </div>
@@ -869,6 +996,17 @@ function CategoryPill({ active, color, Icon, label, onClick }: { active: boolean
   );
 }
 
+function FaqSkeleton() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-12 bg-white/[0.06]" />
+      <Skeleton className="h-12 bg-white/[0.06]" />
+      <Skeleton className="h-12 bg-white/[0.06]" />
+      <Skeleton className="h-12 bg-white/[0.06]" />
+    </div>
+  );
+}
+
 function AccordionItem({ a, color, index, isOpen, onToggle, q }: { a: string; color: string; index: number; isOpen: boolean; onToggle: () => void; q: string }) {
   return (
     <div className="mb-2.5 overflow-hidden rounded-[20px] bg-[#111821] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
@@ -882,6 +1020,100 @@ function AccordionItem({ a, color, index, isOpen, onToggle, q }: { a: string; co
       {isOpen ? <p className="border-t border-white/[0.06] px-4 py-3 text-[12px] leading-6 text-[#AAB6C8]">{a}</p> : null}
     </div>
   );
+}
+
+function readFaqCategories(result: unknown): FaqCategory[] {
+  const value = result as { data?: unknown; faqs?: unknown };
+  const data = value?.data as { categories?: unknown; faqs?: unknown; items?: unknown } | unknown[];
+  const source = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.categories)
+      ? data.categories
+      : Array.isArray(data?.faqs)
+        ? data.faqs
+        : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(value?.faqs)
+            ? value.faqs
+            : [];
+
+  if (source.some((item) => Array.isArray((item as { questions?: unknown })?.questions))) {
+    return source.map((category, index) => normalizeFaqCategory(category, index)).filter((category) => category.questions.length);
+  }
+
+  return groupFlatFaqs(source);
+}
+
+function normalizeFaqCategory(category: unknown, index: number): FaqCategory {
+  const item = category as { category?: unknown; categoryLabel?: unknown; id?: unknown; label?: unknown; name?: unknown; questions?: unknown; title?: unknown };
+  const style = faqCategoryStyles[index % faqCategoryStyles.length];
+  const label = String(item.categoryLabel ?? item.label ?? item.name ?? item.title ?? item.category ?? "General");
+  const id = String(item.id ?? label.toLowerCase().replace(/\s+/g, "-"));
+  const questions = Array.isArray(item.questions) ? item.questions.map(normalizeFaqItem).filter(isFaqItem) : [];
+
+  return {
+    id,
+    Icon: style.Icon,
+    label,
+    color: style.color,
+    questions,
+  };
+}
+
+function groupFlatFaqs(faqs: unknown[]): FaqCategory[] {
+  const categories = new Map<string, Array<{ q: string; a: string }>>();
+
+  faqs.forEach((faq) => {
+    const item = faq as { answer?: unknown; category?: unknown; categoryLabel?: unknown; question?: unknown; title?: unknown };
+    const question = String(item.question ?? item.title ?? "").trim();
+    const answer = String(item.answer ?? "").trim();
+
+    if (!question || !answer) {
+      return;
+    }
+
+    const category = String(item.categoryLabel ?? item.category ?? "General");
+    categories.set(category, [...(categories.get(category) ?? []), { q: question, a: answer }]);
+  });
+
+  return Array.from(categories.entries()).map(([label, questions], index) => {
+    const style = faqCategoryStyles[index % faqCategoryStyles.length];
+
+    return {
+      id: label.toLowerCase().replace(/\s+/g, "-"),
+      Icon: style.Icon,
+      label,
+      color: style.color,
+      questions,
+    };
+  });
+}
+
+function normalizeFaqItem(faq: unknown) {
+  const item = faq as { a?: unknown; answer?: unknown; q?: unknown; question?: unknown; title?: unknown };
+  const question = String(item.q ?? item.question ?? item.title ?? "").trim();
+  const answer = String(item.a ?? item.answer ?? "").trim();
+
+  return question && answer ? { q: question, a: answer } : null;
+}
+
+function isFaqItem(faq: { q: string; a: string } | null): faq is { q: string; a: string } {
+  return Boolean(faq);
+}
+
+function readGeneralSettings(result: unknown): GeneralSettings {
+  const value = result as { data?: Partial<GeneralSettings> };
+
+  return {
+    website: String(value.data?.website ?? ""),
+    email: String(value.data?.email ?? ""),
+    mobileNumber: String(value.data?.mobileNumber ?? ""),
+    whatsappNumber: String(value.data?.whatsappNumber ?? ""),
+  };
+}
+
+function toDialNumber(value: string) {
+  return value.replace(/\D/g, "");
 }
 
 function ContactCard({ color, Icon, label, onClick, sub }: { color: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; label: string; onClick: () => void; sub: string }) {
@@ -969,32 +1201,45 @@ function DashboardHomeSkeleton() {
   );
 }
 
-function QuickCard({ Icon, title, value, meta, alert = false, locked = false, offer = false, onLockedClick, tall = false }: { href: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; title: string; value: string; meta: string; alert?: boolean; locked?: boolean; offer?: boolean; onLockedClick?: () => void; tall?: boolean }) {
+function QuickCard({ href, Icon, title, value, meta, alert = false, locked = false, offer = false, onLockedClick }: { href: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; title: string; value: string; meta: string; alert?: boolean; locked?: boolean; offer?: boolean; onLockedClick?: () => void }) {
+  const className = "min-h-[122px] rounded-[20px] border border-white/10 bg-white/[0.07] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_36px_rgba(0,0,0,0.24)] backdrop-blur-xl transition hover:bg-white/[0.1]";
+
   if (locked) {
     return (
-      <button className={cn("rounded-[20px] bg-[#121820] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_18px_36px_rgba(0,0,0,0.24)]", tall ? "min-h-36" : "min-h-24")} type="button" onClick={onLockedClick}>
+      <button className={className} type="button" onClick={onLockedClick}>
         <QuickCardContent Icon={Icon} alert={alert} meta={meta} offer={offer} title={title} value={value} />
       </button>
     );
   }
 
   return (
-    <button className={cn("rounded-[20px] bg-[#121820] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_18px_36px_rgba(0,0,0,0.24)]", tall ? "min-h-36" : "min-h-24")} type="button">
+    <Link className={className} href={href}>
       <QuickCardContent Icon={Icon} alert={alert} meta={meta} offer={offer} title={title} value={value} />
-    </button>
+    </Link>
   );
 }
 
 function QuickCardContent({ Icon, alert, meta, offer, title, value }: { Icon: ComponentType<{ className?: string; strokeWidth?: number }>; alert?: boolean; meta: string; offer?: boolean; title: string; value: string }) {
   return (
     <>
-      <span className={cn("grid size-12 place-items-center rounded-full bg-[#173B66] text-[#DFEBFF] shadow-[0_0_0_7px_rgba(13,69,126,0.2),0_0_20px_rgba(21,101,192,0.32)]", alert && "text-[#FF8AAB]", offer && "text-[#FFD34D]")}>
-        <Icon className="size-4" strokeWidth={1.6} />
+      <span className={cn("grid size-10 place-items-center rounded-[13px] border border-white/10 bg-[#173B66]/80 text-[#DFEBFF] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(21,101,192,0.3)]", alert && "bg-[#4B1E43]/70 text-[#FF8AAB]", offer && "bg-[#4A431C]/70 text-[#FFD34D]")}>
+        <Icon className="size-5" strokeWidth={1.7} />
       </span>
-      <p className="mt-4 text-[14px] font-normal leading-5 text-white">{title}</p>
-      <p className="mt-1 text-[10px] font-normal tracking-normal text-white/82">{value}</p>
-      <p className={cn("mt-0.5 text-[11px] font-medium", alert ? "text-[#FF8AAB]" : offer ? "text-[#FFD34D]" : "text-[#59DFAE]")}>{meta}</p>
-    </>
+      <p className="mt-4 text-[13px] font-black leading-5 text-white">{title}</p>
+     <p
+  className={cn(
+    "mt-1 text-[11px] font-lighter tracking-normal",
+    alert
+      ? "text-[#FF5C8A]"
+      : offer
+      ? "text-[#FFD34D]"
+      : "text-[#21E6C1]"
+  )}
+>
+  {value} {meta}
+</p>
+     
+     </>
   );
 }
 
@@ -1244,7 +1489,50 @@ function buildActionPlanPoints(dashboard: DashboardData) {
   ];
 }
 
+function BenefitsSkeleton() {
+  return (
+    <>
+      <Skeleton className="h-11 bg-white/[0.06]" />
+      <Skeleton className="h-11 bg-white/[0.06]" />
+      <Skeleton className="h-11 bg-white/[0.06]" />
+    </>
+  );
+}
+
 function BenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubscribe: () => void }) {
+  const [showLeavingMessage, setShowLeavingMessage] = useState(false);
+  const [benefits, setBenefits] = useState<string[]>([]);
+  const [isLoadingBenefits, setIsLoadingBenefits] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBenefits() {
+      try {
+        const plans = await getSubscriptionPlans();
+        const apiBenefits = Array.from(new Set(plans.flatMap((plan) => plan.benefits).filter(Boolean)));
+
+        if (isMounted) {
+          setBenefits(apiBenefits);
+        }
+      } catch {
+        if (isMounted) {
+          setBenefits([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingBenefits(false);
+        }
+      }
+    }
+
+    void loadBenefits();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
       <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
@@ -1252,7 +1540,7 @@ function BenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubsc
           className="min-h-44 bg-cover bg-center px-5 py-6"
           style={{ backgroundImage: `linear-gradient(180deg, rgba(9,14,22,0.1), rgba(9,14,22,0.9)), url(${dashboardBg.src})` }}
         >
-          <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close benefits" onClick={onClose}>
+          <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close benefits" onClick={() => setShowLeavingMessage(true)}>
             <X className="size-5" />
           </button>
           <div className="mt-10 max-w-[18rem]">
@@ -1263,19 +1551,52 @@ function BenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubsc
 
         <div className="px-5 pb-5 pt-4">
           <div className="grid gap-3 text-[13px] font-medium leading-5 text-[#AAB6C8]">
-            <p className="rounded-2xl bg-white/[0.06] px-4 py-3">Complete CIBIL report insights and score factors.</p>
-            <p className="rounded-2xl bg-white/[0.06] px-4 py-3">Dispute tracking, EMI visibility, offers, and AI action plan.</p>
-            <p className="rounded-2xl bg-white/[0.06] px-4 py-3">Personalized score improvement recommendations.</p>
+            {isLoadingBenefits ? <BenefitsSkeleton /> : benefits.map((benefit) => (
+              <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
+            ))}
           </div>
 
           <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
             Subscription
           </button>
-          <button className="mx-auto mt-3 block text-[11px] font-medium text-[#6F7B8E]" type="button" onClick={onClose}>
+          <button className="mx-auto mt-3 block text-[11px] font-medium text-[#6F7B8E]" type="button" onClick={() => setShowLeavingMessage(true)}>
             skip for later
           </button>
         </div>
       </section>
+      {showLeavingMessage ? (
+        <div className="absolute inset-0 z-10 flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm" onClick={onClose}>
+          <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]" onClick={(event) => event.stopPropagation()}>
+            <div
+              className="min-h-44 bg-cover bg-center px-5 py-6"
+              style={{ backgroundImage: `linear-gradient(180deg, rgba(9,14,22,0.1), rgba(9,14,22,0.9)), url(${dashboardBg.src})` }}
+            >
+              <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close benefits message" onClick={onClose}>
+                <X className="size-5" />
+              </button>
+              <div className="mt-10 max-w-[18rem]">
+                <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Before you leave</p>
+                <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Enjoy more benefits with premium</h2>
+              </div>
+            </div>
+
+            <div className="px-5 pb-5 pt-4">
+              <div className="grid gap-3 text-[13px] font-medium leading-5 text-[#AAB6C8]">
+                {isLoadingBenefits ? <BenefitsSkeleton /> : benefits.map((benefit) => (
+                  <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
+                ))}
+              </div>
+
+              <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
+                View subscription
+              </button>
+              <button className="mx-auto mt-3 block text-[11px] font-medium text-[#6F7B8E]" type="button" onClick={onClose}>
+                Continue free
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1352,7 +1673,6 @@ function LanguageSettingsPopup({
           ))}
         </div>
 
-        <div id="google_translate_element" className="hidden" />
       </section>
     </div>
   );
@@ -1363,8 +1683,12 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
   const completion = calculateProfileCompletion(profile);
   const [notificationError, setNotificationError] = useState("");
   const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notificationsMarkingAll, setNotificationsMarkingAll] = useState(false);
   const [ratingComment, setRatingComment] = useState("");
+  const [ratingError, setRatingError] = useState("");
+  const [ratingLoading, setRatingLoading] = useState(false);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
   const [selectedLanguage, setSelectedLanguage] = useState(readStoredLanguage);
@@ -1375,6 +1699,13 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
 
   useEffect(() => {
     loadGoogleTranslate();
+    void refreshProfileNotifications();
+
+    window.addEventListener("scorecare:profile-notifications-refresh", refreshProfileNotifications);
+
+    return () => {
+      window.removeEventListener("scorecare:profile-notifications-refresh", refreshProfileNotifications);
+    };
   }, []);
 
   useEffect(() => {
@@ -1382,6 +1713,19 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
       loadGoogleTranslate();
     }
   }, [showLanguageSettings]);
+
+  useEffect(() => {
+    if (!ratingSubmitted) return;
+
+    const timer = window.setTimeout(() => {
+      setShowRatingForm(false);
+      setRatingSubmitted(false);
+      setSelectedRating(0);
+      setRatingComment("");
+    }, 4000);
+
+    return () => window.clearTimeout(timer);
+  }, [ratingSubmitted]);
 
   async function openNotifications() {
     const token = sessionStorage.getItem("scorecare_token");
@@ -1397,7 +1741,9 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
     setNotificationLoading(true);
 
     try {
-      setNotifications(await loadNotifications(token));
+      const result = await loadNotifications(token);
+      setNotifications(result.notifications);
+      setNotificationUnreadCount(result.unreadCount);
     } catch {
       setNotificationError("Unable to load notifications.");
     } finally {
@@ -1405,8 +1751,79 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
     }
   }
 
+  async function refreshProfileNotifications() {
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) return;
+
+    try {
+      const result = await loadNotifications(token);
+      setNotifications(result.notifications);
+      setNotificationUnreadCount(result.unreadCount);
+    } catch {
+      setNotificationUnreadCount(0);
+    }
+  }
+
+  async function markAllNotificationsRead() {
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      setNotificationError("Please login again to update notifications.");
+      return;
+    }
+
+    setNotificationsMarkingAll(true);
+    setNotificationError("");
+
+    try {
+      await markNotificationsReadAll(token);
+      const readAt = new Date().toISOString();
+
+      setNotifications((current) => current.map((notification) => ({ ...notification, isRead: true, readAt })));
+      setNotificationUnreadCount(0);
+      window.dispatchEvent(new Event("scorecare:notifications-updated"));
+    } catch {
+      setNotificationError("Unable to mark all notifications read.");
+    } finally {
+      setNotificationsMarkingAll(false);
+    }
+  }
+
+  async function submitRatingFeedback() {
+    if (!selectedRating || ratingLoading) return;
+
+    setRatingLoading(true);
+    setRatingError("");
+
+    try {
+      await submitFeedback({
+        rating: selectedRating,
+        message: ratingComment.trim() || "Score Care rating",
+        isLiked: selectedRating >= 4,
+        isDisliked: selectedRating <= 2,
+      });
+
+      const token = sessionStorage.getItem("scorecare_token");
+
+      if (token && !isTokenExpired(token)) {
+        const result = await loadNotifications(token);
+        setNotifications(result.notifications);
+        setNotificationUnreadCount(result.unreadCount);
+      }
+
+      setRatingSubmitted(true);
+    } catch {
+      setRatingError("Unable to submit feedback.");
+    } finally {
+      setRatingLoading(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#070B12] px-4 pb-28 pt-7 text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
+      <div id="google_translate_element" className="hidden" />
+
       <section className="relative mx-auto max-w-md overflow-hidden rounded-[30px] bg-[linear-gradient(160deg,#ebe7d9,#faf7ed_48%,#d9d0bd)] p-5 text-[#111827] shadow-[0_22px_46px_rgba(58,75,140,0.38)]">
         <button className="absolute left-5 top-5 grid size-8 place-items-center rounded-full bg-black/18 text-white backdrop-blur" type="button" aria-label="Close profile" onClick={onClose}>
           <X className="size-6" strokeWidth={1.6} />
@@ -1451,9 +1868,7 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
           title="Loans"
           subtitle="Smart Offers"
           Icon={ReceiptText}
-          onClick={() => {
-            window.location.href = "/dashboard/loans";
-          }}
+          disabled
         />
       </section>
 
@@ -1466,6 +1881,7 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
           title="Notification"
           subtitle="Alerts, Updates & Reminders"
           Icon={Bell}
+          badgeCount={notificationUnreadCount}
           onClick={openNotifications}
         />
 
@@ -1526,13 +1942,17 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
               <p className="mt-3 text-[12px] font-medium text-[#5EF2C2]">Thanks for your feedback.</p>
             ) : null}
 
+            {ratingError ? (
+              <p className="mt-3 text-[12px] font-medium text-[#FF5C8A]">{ratingError}</p>
+            ) : null}
+
             <button
               type="button"
               className="mt-4 h-11 w-full rounded-[16px] bg-[#2DB094] text-[13px] font-semibold text-white shadow-[0_12px_26px_rgba(45,176,148,0.22)] transition hover:bg-[#249a81] disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!selectedRating}
-              onClick={() => setRatingSubmitted(true)}
+              disabled={!selectedRating || ratingLoading}
+              onClick={submitRatingFeedback}
             >
-              Submit Feedback
+              {ratingLoading ? "Submitting..." : "Submit Feedback"}
             </button>
           </div>
         ) : null}
@@ -1557,8 +1977,11 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
         <NotificationsScreen
           error={notificationError}
           loading={notificationLoading}
+          markingAll={notificationsMarkingAll}
           notifications={notifications}
           onBack={() => setShowNotifications(false)}
+          onReadAll={markAllNotificationsRead}
+          unreadCount={notificationUnreadCount}
         />
       ) : null}
 
@@ -1583,14 +2006,25 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
 
 
 
-function NotificationsScreen({ error, loading, notifications, onBack }: { error: string; loading: boolean; notifications: NotificationItem[]; onBack: () => void }) {
+function NotificationsScreen({ error, loading, markingAll, notifications, onBack, onReadAll, unreadCount }: { error: string; loading: boolean; markingAll: boolean; notifications: NotificationItem[]; onBack: () => void; onReadAll: () => void; unreadCount: number }) {
   return (
     <div className="fixed inset-0 z-[60] bg-white text-[#1F2937] [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
       <header className="flex h-[72px] items-center gap-2 border-b border-black/10 bg-white px-5 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
         <button className="grid size-6 place-items-center text-[#1F2937]" type="button" aria-label="Back" onClick={onBack}>
           <ArrowLeft className="size-6" strokeWidth={2.2} />
         </button>
-        <h1 className="text-[15px] font-medium text-[#1F2937]">Notifications</h1>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-[15px] font-medium text-[#1F2937]">Notifications</h1>
+          <p className="mt-0.5 text-[10px] font-medium text-[#6F7B8E]">{unreadCount} unread</p>
+        </div>
+        <button
+          className="rounded-full border border-black/10 px-3 py-1.5 text-[11px] font-semibold text-[#1F2937] disabled:cursor-not-allowed disabled:opacity-50"
+          type="button"
+          disabled={!unreadCount || markingAll}
+          onClick={onReadAll}
+        >
+          {markingAll ? "Updating..." : "Read all"}
+        </button>
       </header>
 
       <main>
@@ -1600,7 +2034,7 @@ function NotificationsScreen({ error, loading, notifications, onBack }: { error:
           <p className="px-5 py-5 text-[11px] font-normal text-[#FF5C8A]">{error}</p>
         ) : notifications.length ? (
           notifications.map((notification) => (
-            <article key={notification.id} className="border-b border-black/20 px-5 py-5">
+            <article key={notification.id} className={cn("border-b border-black/20 px-5 py-5", !notification.isRead && "bg-[#F2FFFA]")}>
               <h2 className="text-[16px] font-medium leading-5 text-black">{notification.title || "Notification"}</h2>
               <p className="mt-2 text-[15px] font-normal leading-4 text-black">{notification.message || "--"}</p>
               {notification.createdAt ? <p className="mt-5 text-right text-[10px] font-normal text-black">{formatNotificationRelativeTime(notification.createdAt)}</p> : null}
@@ -1645,27 +2079,39 @@ function ProfileOption({
   title,
   subtitle,
   Icon,
+  badgeCount,
   danger,
+  disabled,
   onClick,
 }: {
   title: string;
   subtitle?: string;
   Icon: LucideIcon;
+  badgeCount?: number;
   danger?: boolean;
+  disabled?: boolean;
   onClick?: () => void;
 }) {
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
-      className="flex w-full items-center gap-4 py-4"
+      className="flex w-full items-center gap-4 py-4 disabled:cursor-not-allowed disabled:opacity-50"
     >
-      <Icon
-        className={cn(
-          "size-5",
-          danger ? "text-[#FF5C8A]" : "text-[#AAB6C8]"
-        )}
-      />
+      <span className="relative">
+        <Icon
+          className={cn(
+            "size-5",
+            danger ? "text-[#FF5C8A]" : "text-[#AAB6C8]"
+          )}
+        />
+        {badgeCount ? (
+          <span className="absolute -right-2.5 -top-2.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#FF5C8A] px-1 text-[9px] font-bold leading-none text-white">
+            {badgeCount > 99 ? "99+" : badgeCount}
+          </span>
+        ) : null}
+      </span>
 
       <div className="flex-1 text-left">
         <p
@@ -1721,6 +2167,12 @@ function loadGoogleTranslate() {
       },
       "google_translate_element"
     );
+
+    const storedLanguage = readStoredLanguage();
+
+    if (storedLanguage !== "en") {
+      window.setTimeout(() => applyGoogleLanguage(storedLanguage, false), 300);
+    }
   };
 
   if (document.getElementById("scorecare-google-translate-script")) {
@@ -1735,7 +2187,7 @@ function loadGoogleTranslate() {
   document.body.appendChild(script);
 }
 
-function applyGoogleLanguage(language: string) {
+function applyGoogleLanguage(language: string, reloadWhenMissing = true) {
   localStorage.setItem("scorecare_language", language);
   document.cookie = `googtrans=/en/${language};path=/`;
   document.cookie = `googtrans=/en/${language};domain=${window.location.hostname};path=/`;
@@ -1743,8 +2195,12 @@ function applyGoogleLanguage(language: string) {
 
   const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
 
-  if (!select) {
+  if (!select && reloadWhenMissing) {
     window.location.reload();
+    return;
+  }
+
+  if (!select) {
     return;
   }
 
@@ -1865,11 +2321,28 @@ async function loadNotifications(token: string) {
   const result = (await response.json()) as {
     data?: {
       notifications?: NotificationItem[] | null;
+      unreadCount?: number | null;
     };
     status?: string;
   };
 
-  return result.status === "success" ? result.data?.notifications ?? [] : [];
+  return {
+    notifications: result.status === "success" ? result.data?.notifications ?? [] : [],
+    unreadCount: result.status === "success" ? result.data?.unreadCount ?? 0 : 0,
+  };
+}
+
+async function markNotificationsReadAll(token: string) {
+  const response = await apiRequest("/notifications/read-all", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to mark all notifications read.");
+  }
 }
 
 function buildDashboardData(result: unknown, profile: UserProfile | null): DashboardData {
@@ -2338,6 +2811,26 @@ function formatPhone(value: string) {
   if (!digits) return "--";
 
   return digits.startsWith("91") && digits.length > 10 ? `+${digits.slice(0, 2)} ${digits.slice(2)}` : `+91 ${digits}`;
+}
+
+async function submitFeedback(payload: { rating: number; message: string; isLiked: boolean; isDisliked: boolean }) {
+  const token = sessionStorage.getItem("scorecare_token");
+
+  if (!token || isTokenExpired(token)) {
+    throw new Error("Please login again to submit feedback.");
+  }
+
+  const response = await apiRequest("/feedback", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: payload,
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to submit feedback.");
+  }
 }
 
 function calculateProfileCompletion(profile: UserProfile | null) {

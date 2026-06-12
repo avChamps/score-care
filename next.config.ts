@@ -4,6 +4,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  devIndicators: false,
   allowedDevOrigins: ['192.168.1.7'],
 }
 
