@@ -18,6 +18,7 @@ import {
   Gift,
   Home,
   Lightbulb,
+  Languages,
   Menu,
   ReceiptText,
   LogOut,
@@ -117,6 +118,16 @@ const appTiles = [
 ];
 const notificationsPageSize = 10;
 const actionPlanAiCache = new Map<string, Promise<string>>();
+const languageOptions = [
+  { code: "en", label: "English" },
+  { code: "hi", label: "Hindi" },
+  { code: "ta", label: "Tamil" },
+  { code: "te", label: "Telugu" },
+  { code: "kn", label: "Kannada" },
+  { code: "ml", label: "Malayalam" },
+  { code: "mr", label: "Marathi" },
+  { code: "bn", label: "Bengali" },
+];
 const FAQ_DATA = [
   {
     id: "general",
@@ -677,10 +688,10 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
                   <strong className="text-[#5EF2C2]">
                     {totalResults} answer{totalResults > 1 ? "s" : ""}
                   </strong>{" "}
-                  for "{search}"
+                  for &quot;{search}&quot;
                 </>
               ) : (
-                <>No results for "{search}" — try different words</>
+                <>No results for &quot;{search}&quot; - try different words</>
               )}
             </div>
           ) : null}
@@ -1305,6 +1316,48 @@ function DownloadReportsPopup({ downloads, onClose }: { downloads: Array<{ id: s
   );
 }
 
+function LanguageSettingsPopup({
+  onClose,
+  onSelect,
+  selectedLanguage,
+}: {
+  onClose: () => void;
+  onSelect: (language: string) => void;
+  selectedLanguage: string;
+}) {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
+      <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[17px] font-bold text-white">Language Settings</h2>
+          <button className="grid size-9 place-items-center rounded-full bg-white/10 text-white" type="button" aria-label="Close language settings" onClick={onClose}>
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-2">
+          {languageOptions.map((language) => (
+            <button
+              key={language.code}
+              type="button"
+              className={cn(
+                "flex h-12 items-center justify-between rounded-[16px] px-4 text-left text-[13px] font-semibold transition",
+                selectedLanguage === language.code ? "bg-[#5EF2C2] text-[#06221a]" : "bg-white/[0.06] text-white hover:bg-white/[0.1]"
+              )}
+              onClick={() => onSelect(language.code)}
+            >
+              {language.label}
+              {selectedLanguage === language.code ? <span className="text-[11px] font-bold">Selected</span> : null}
+            </button>
+          ))}
+        </div>
+
+        <div id="google_translate_element" className="hidden" />
+      </section>
+    </div>
+  );
+}
+
 function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClose: () => void; onHelp: () => void; profile: UserProfile | null }) {
   const phone = profile?.mobileNumber || sessionStorage.getItem("scorecare_mobile_number") || "--";
   const completion = calculateProfileCompletion(profile);
@@ -1314,9 +1367,21 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
   const [ratingComment, setRatingComment] = useState("");
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
+  const [selectedLanguage, setSelectedLanguage] = useState(readStoredLanguage);
   const [showRatingForm, setShowRatingForm] = useState(false);
   const [showDownloadReports, setShowDownloadReports] = useState(false);
+  const [showLanguageSettings, setShowLanguageSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+
+  useEffect(() => {
+    loadGoogleTranslate();
+  }, []);
+
+  useEffect(() => {
+    if (showLanguageSettings) {
+      loadGoogleTranslate();
+    }
+  }, [showLanguageSettings]);
 
   async function openNotifications() {
     const token = sessionStorage.getItem("scorecare_token");
@@ -1473,6 +1538,13 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
         ) : null}
 
         <ProfileOption
+          title="Language Settings"
+          subtitle={languageOptions.find((language) => language.code === selectedLanguage)?.label || "English"}
+          Icon={Languages}
+          onClick={() => setShowLanguageSettings(true)}
+        />
+
+        <ProfileOption
           title="Logout"
           subtitle="Sign Out From Account"
           Icon={LogOut}
@@ -1491,6 +1563,18 @@ function ProfilePanel({ name, onClose, onHelp, profile }: { name: string; onClos
       ) : null}
 
       {showDownloadReports ? <DownloadReportsPopup downloads={[]} onClose={() => setShowDownloadReports(false)} /> : null}
+
+      {showLanguageSettings ? (
+        <LanguageSettingsPopup
+          selectedLanguage={selectedLanguage}
+          onClose={() => setShowLanguageSettings(false)}
+          onSelect={(language) => {
+            setSelectedLanguage(language);
+            applyGoogleLanguage(language);
+            setShowLanguageSettings(false);
+          }}
+        />
+      ) : null}
 
       <p className="mt-6 text-center text-[11px] font-normal text-[#6F7B8E]">V 1.0.0</p>
     </div>
@@ -1601,6 +1685,71 @@ function ProfileOption({
       </div>
     </button>
   );
+}
+
+function readStoredLanguage() {
+  if (typeof window === "undefined") {
+    return "en";
+  }
+
+  return localStorage.getItem("scorecare_language") || "en";
+}
+
+function loadGoogleTranslate() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const googleWindow = window as typeof window & {
+    google?: {
+      translate?: {
+        TranslateElement?: new (options: { includedLanguages: string; pageLanguage: string }, elementId: string) => void;
+      };
+    };
+    googleTranslateElementInit?: () => void;
+  };
+
+  googleWindow.googleTranslateElementInit = () => {
+    if (!googleWindow.google?.translate?.TranslateElement || !document.getElementById("google_translate_element")) {
+      return;
+    }
+
+    new googleWindow.google.translate.TranslateElement(
+      {
+        includedLanguages: languageOptions.map((language) => language.code).join(","),
+        pageLanguage: "en",
+      },
+      "google_translate_element"
+    );
+  };
+
+  if (document.getElementById("scorecare-google-translate-script")) {
+    googleWindow.googleTranslateElementInit();
+    return;
+  }
+
+  const script = document.createElement("script");
+  script.id = "scorecare-google-translate-script";
+  script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+  script.async = true;
+  document.body.appendChild(script);
+}
+
+function applyGoogleLanguage(language: string) {
+  localStorage.setItem("scorecare_language", language);
+  document.cookie = `googtrans=/en/${language};path=/`;
+  document.cookie = `googtrans=/en/${language};domain=${window.location.hostname};path=/`;
+  document.body.style.top = "0";
+
+  const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+
+  if (!select) {
+    window.location.reload();
+    return;
+  }
+
+  select.value = language;
+  select.dispatchEvent(new Event("change"));
 }
 
 
