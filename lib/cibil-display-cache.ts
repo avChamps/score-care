@@ -292,16 +292,20 @@ type ExperianAccount = {
   Amount_Past_Due?: unknown;
   Credit_Limit_Amount?: unknown;
   Current_Balance?: unknown;
+  Date_of_Last_Payment?: unknown;
   Date_Closed?: unknown;
   Date_Reported?: unknown;
   Highest_Credit_or_Original_Loan_Amount?: unknown;
   Open_Date?: unknown;
+  Payment_History_Profile?: unknown;
+  Portfolio_Type?: unknown;
   Rate_of_Interest?: unknown;
   Repayment_Tenure?: unknown;
   Scheduled_Monthly_Payment_Amount?: unknown;
   Subscriber_Name?: unknown;
   Terms_Frequency?: unknown;
   Terms_Duration?: unknown;
+  CAIS_Account_History?: unknown;
 };
 
 type ExperianEnquiry = {
@@ -317,14 +321,19 @@ function normalizeExperianAccount(account: ExperianAccount) {
 
   return {
     account_closed: closedDate,
+    account_status: account.Account_Status ?? null,
     amount_overdue: account.Amount_Past_Due ?? 0,
     current_balance: account.Current_Balance ?? 0,
     emi: account.Scheduled_Monthly_Payment_Amount || "",
     high_credit_amount: account.Credit_Limit_Amount || account.Highest_Credit_or_Original_Loan_Amount || 0,
-    last_payment: normalizeExperianDate(account.Date_Reported),
+    last_payment: normalizeExperianDate(account.Date_of_Last_Payment) ?? normalizeExperianDate(account.Date_Reported),
     member_name: typeof account.Subscriber_Name === "string" ? account.Subscriber_Name : null,
     opened: normalizeExperianDate(account.Open_Date),
+    payment_history: account.Payment_History_Profile ? [stringifyValue(account.Payment_History_Profile)] : [],
+    payment_history_details: Array.isArray(account.CAIS_Account_History) ? account.CAIS_Account_History : [],
     payment_frequency: stringifyValue(account.Terms_Frequency),
+    portfolio_type: stringifyValue(account.Portfolio_Type),
+    rate_of_interest: account.Rate_of_Interest || null,
     repayment_tenure: account.Repayment_Tenure || account.Terms_Duration || null,
     reported_and_certified: normalizeExperianDate(account.Date_Reported),
     type: stringifyValue(account.Account_Type),
@@ -335,6 +344,7 @@ function normalizeExperianEnquiry(enquiry: ExperianEnquiry) {
   return {
     enquiry_amount: enquiry.Amount_Financed ?? 0,
     enquiry_date: normalizeExperianDate(enquiry.Date_of_Request),
+    enquiry_kind: "Hard",
     enquiry_purpose: stringifyValue(enquiry.Finance_Purpose ?? enquiry.Enquiry_Reason),
     member: typeof enquiry.Subscriber_Name === "string" ? enquiry.Subscriber_Name : null,
   };

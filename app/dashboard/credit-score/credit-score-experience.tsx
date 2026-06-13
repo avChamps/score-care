@@ -11,7 +11,6 @@ import {
   Gift,
   Gauge,
   Home,
-  Info,
   Menu,
   ReceiptText,
   RotateCcw,
@@ -39,8 +38,12 @@ import { useSubscriptionAccess } from "@/lib/subscription-access";
 import { cn } from "@/lib/utils";
 
 type Tab = "accounts" | "enquiries" | "repair";
+type AccountFilter = "accounts" | "loans" | "cards";
 
 type CreditAccount = {
+  Account_Type?: string | number | null;
+  Portfolio_Type?: string | null;
+  account_status?: string | number | null;
   member_name?: string | null;
   type?: string | null;
   current_balance?: string | number | null;
@@ -49,10 +52,19 @@ type CreditAccount = {
   emi?: string | number | null;
   opened?: string | null;
   account_closed?: string | null;
+  last_payment?: string | null;
   payment_history?: string[] | null;
+  payment_frequency?: string | null;
+  payment_history_details?: Array<Record<string, unknown>> | null;
+  portfolio_type?: string | null;
+  rate_of_interest?: string | number | null;
+  repayment_tenure?: string | number | null;
+  reported_and_certified?: string | null;
 };
 
 type CreditEnquiry = {
+  enquiry_kind?: string | null;
+  enquiry_type?: string | null;
   member?: string | null;
   enquiry_date?: string | null;
   enquiry_purpose?: string | null;
@@ -93,23 +105,26 @@ type BehaviourItem = {
 };
 
 type ReportAccountItem = {
+  details: { label: string; value: string }[];
   id: string;
   impact: "High impact" | "Medium impact";
   impactTone: string;
   lender: string;
   loanType: string;
   opened: string;
-  status: "On Time" | "Inactive" | "Closed";
+  status: "On Time" | "Overdue" | "Closed";
   statusTone: string;
 };
 
 type ReportEnquiryItem = {
+  amount?: string;
   date: string;
   id: string;
   kind: "Hard" | "Soft";
   lender: string;
   loanType: string;
-  pointsImpact?: string;
+  message: string;
+  sortTime: number;
 };
 
 type AiAnswerBlock = {
@@ -135,6 +150,34 @@ type CibilRepairContent = {
     displayOrder: number;
     isActive: boolean;
   }[];
+};
+
+type CibilRepairRequest = {
+  createdDate?: string | null;
+  disputeId?: string | null;
+  id?: string;
+  lenderName?: string | null;
+  publicId?: string;
+  planId?: string;
+  planName?: string;
+  amount?: number;
+  currency?: string;
+  paymentStatus?: string | null;
+  repairStatus?: string | null;
+  activeDisputes?: number;
+  resolvedDisputes?: number;
+  pointsGained?: number;
+  progress?: number | string | null;
+  remarks?: string | null;
+  createdAt?: string | null;
+  submittedAt?: string | null;
+  updatedAt?: string | null;
+};
+
+type CibilRepairStatus = {
+  activeDisputes?: number;
+  resolvedDisputes?: number;
+  pointsGained?: number;
 };
 
 const predictorActions = [
@@ -182,8 +225,64 @@ const predictorActions = [
   },
 ] as const;
 
+const accountTypeLabels: Record<string, string> = {
+  "1": "Auto Loan",
+  "2": "Home Loan",
+  "3": "Loan Against Property",
+  "4": "Loan Against Shares",
+  "5": "Personal Loan",
+  "6": "Consumer Loan",
+  "7": "Gold Loan",
+  "8": "Education Loan",
+  "9": "Business Loan",
+  "10": "Credit Card",
+  "13": "Auto Loan",
+  "17": "Auto Loan",
+  "31": "Credit Card",
+  "35": "Credit Card",
+  "36": "Credit Card",
+  "37": "Business Loan",
+  "51": "Business Loan",
+  "52": "Business Loan",
+  "53": "Business Loan",
+  "54": "Business Loan",
+  "55": "Business Loan",
+  "56": "Business Loan",
+  "57": "Business Loan",
+  "58": "Business Loan",
+  "59": "Business Loan",
+  "61": "Business Loan",
+};
+
+const enquiryPurposeLabels: Record<string, string> = {
+  "1": "Auto Loan",
+  "2": "Home Loan",
+  "5": "Personal Loan",
+  "6": "Consumer Loan",
+  "7": "Gold Loan",
+  "9": "Business Loan",
+  "10": "Credit Card",
+  "13": "Auto Loan",
+  "17": "Auto Loan",
+  "31": "Credit Card",
+  "35": "Credit Card",
+  "36": "Credit Card",
+  "37": "Business Loan",
+  "51": "Business Loan",
+  "52": "Business Loan",
+  "53": "Business Loan",
+  "54": "Business Loan",
+  "55": "Business Loan",
+  "56": "Business Loan",
+  "57": "Business Loan",
+  "58": "Business Loan",
+  "59": "Business Loan",
+  "61": "Business Loan",
+};
+
 const fallbackReportAccounts: ReportAccountItem[] = [
   {
+    details: [],
     id: "fallback-hdfc",
     impact: "High impact",
     impactTone: "bg-[#4EE6D2]/12 text-[#4EE6D2]",
@@ -194,16 +293,18 @@ const fallbackReportAccounts: ReportAccountItem[] = [
     statusTone: "bg-[#4EE6D2]/12 text-[#4EE6D2]",
   },
   {
+    details: [],
     id: "fallback-sbi",
     impact: "Medium impact",
     impactTone: "bg-[#ffd166]/14 text-[#ffd166]",
     lender: "SBI",
     loanType: "Home Loan",
     opened: "11 May 2025",
-    status: "Inactive",
+    status: "Overdue",
     statusTone: "bg-white/[0.08] text-[#9fb2c6]",
   },
   {
+    details: [],
     id: "fallback-axis",
     impact: "High impact",
     impactTone: "bg-[#4EE6D2]/12 text-[#4EE6D2]",
@@ -214,6 +315,7 @@ const fallbackReportAccounts: ReportAccountItem[] = [
     statusTone: "bg-[#4EE6D2]/12 text-[#4EE6D2]",
   },
   {
+    details: [],
     id: "fallback-icici",
     impact: "Medium impact",
     impactTone: "bg-[#ffd166]/14 text-[#ffd166]",
@@ -226,9 +328,9 @@ const fallbackReportAccounts: ReportAccountItem[] = [
 ];
 
 const fallbackReportEnquiries: ReportEnquiryItem[] = [
-  { date: "13 Jun 2026", id: "fallback-enquiry-hdfc", kind: "Hard", lender: "HDFC Bank", loanType: "Personal Loan", pointsImpact: "-5 pts impact" },
-  { date: "28 May 2026", id: "fallback-enquiry-sbi", kind: "Soft", lender: "SBI", loanType: "Home Loan" },
-  { date: "09 Apr 2026", id: "fallback-enquiry-axis", kind: "Hard", lender: "Axis Bank", loanType: "Credit Card", pointsImpact: "-3 pts impact" },
+  { amount: "Rs. 50,000", date: "13 Jun 2026", id: "fallback-enquiry-hdfc", kind: "Hard", lender: "HDFC Bank", loanType: "Personal Loan", message: "May impact approval chances", sortTime: 0 },
+  { date: "28 May 2026", id: "fallback-enquiry-sbi", kind: "Soft", lender: "SBI", loanType: "Home Loan", message: "Does not affect credit score", sortTime: 0 },
+  { amount: "Rs. 1,00,000", date: "09 Apr 2026", id: "fallback-enquiry-axis", kind: "Hard", lender: "Axis Bank", loanType: "Credit Card", message: "May impact approval chances", sortTime: 0 },
 ];
 
 const fallbackRepairContent: CibilRepairContent = {
@@ -274,6 +376,11 @@ export function CreditScoreExperience() {
   const [scoreHelpError, setScoreHelpError] = useState("");
   const [scoreHelpLoading, setScoreHelpLoading] = useState(false);
   const [repairContent, setRepairContent] = useState<CibilRepairContent>(fallbackRepairContent);
+  const [repairRequests, setRepairRequests] = useState<CibilRepairRequest[]>([]);
+  const [repairStatus, setRepairStatus] = useState<CibilRepairStatus | null>(null);
+  const [repairRequestsLoading, setRepairRequestsLoading] = useState(false);
+  const [repairSubmitting, setRepairSubmitting] = useState(false);
+  const [toast, setToast] = useState("");
   const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
@@ -351,6 +458,62 @@ export function CreditScoreExperience() {
     }
   }, []);
 
+  const loadRepairRequests = useCallback(async () => {
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
+    setRepairRequestsLoading(true);
+
+    try {
+      const [statusResponse, requestsResponse] = await Promise.all([
+        apiRequest("/cibil-repair-content/requests/me/status", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        apiRequest("/cibil-repair-content/requests/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (statusResponse.status === 401 || statusResponse.status === 403 || requestsResponse.status === 401 || requestsResponse.status === 403) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
+      }
+
+      if (!statusResponse.ok || !requestsResponse.ok) {
+        throw new Error("Unable to load repair requests");
+      }
+
+      const [statusResult, requestsResult] = await Promise.all([
+        statusResponse.json(),
+        requestsResponse.json(),
+      ]);
+
+      setRepairStatus(statusResult?.data && typeof statusResult.data === "object" ? statusResult.data : null);
+      setRepairRequests(Array.isArray(requestsResult?.data?.requests) ? requestsResult.data.requests : []);
+    } catch {
+      setRepairStatus(null);
+      setRepairRequests([]);
+    } finally {
+      setRepairRequestsLoading(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (!toast) return;
+
+    const toastTimer = window.setTimeout(() => setToast(""), 3000);
+
+    return () => {
+      window.clearTimeout(toastTimer);
+    };
+  }, [toast]);
+
   useEffect(() => {
     function handleDisplayUpdate(event: Event) {
       if (isFreeTier) {
@@ -376,6 +539,14 @@ export function CreditScoreExperience() {
     };
   }, [isFreeTier, loadDisplayData, loadRepairContent]);
 
+  useEffect(() => {
+    if (activeTab !== "repair") {
+      return;
+    }
+
+    void loadRepairRequests();
+  }, [activeTab, loadRepairRequests]);
+
   async function downloadReport() {
     if (downloading) return;
 
@@ -396,8 +567,7 @@ export function CreditScoreExperience() {
     setError("");
 
     try {
-      const downloadPath = displayData?.data?.report?.download_url || "/credit-reports/cibil/download-report";
-      const response = await fetch(apiUrl(downloadPath), {
+      const response = await fetch(apiUrl("/credit-reports/cibil/download-report"), {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -499,6 +669,56 @@ export function CreditScoreExperience() {
     }
   }
 
+  async function submitRepairRequest(plan: CibilRepairContent["plans"][number]) {
+    if (repairSubmitting) return;
+
+    const token = sessionStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
+    setRepairSubmitting(true);
+    setError("");
+
+    try {
+      const response = await apiRequest("/cibil-repair-content/requests", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: {
+          planPublicId: plan.id,
+          planName: plan.planName,
+          amount: plan.amount,
+          currency: plan.currency,
+          paymentStatus: "pending",
+          repairStatus: "submitted",
+          remarks: "User selected CIBIL report repair",
+        },
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Unable to submit repair request");
+      }
+
+      setToast("CIBIL repair request submitted successfully.");
+      void loadRepairRequests();
+    } catch {
+      setError("Could not submit repair request. Please try again.");
+    } finally {
+      setRepairSubmitting(false);
+    }
+  }
+
   return (
     <PortalShell active="score">
       <div className="min-h-screen bg-[#050912] pb-28 text-white">
@@ -535,7 +755,7 @@ export function CreditScoreExperience() {
                 className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#ff4d7d] px-3 text-[0.7rem] font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)] disabled:opacity-55"
                 type="button"
                 onClick={downloadReport}
-                disabled={downloading || (!isFreeTier && !displayData?.data?.report?.has_pdf)}
+                disabled={downloading}
               >
                 <Download className="size-3.5" />
                 {downloading ? "Loading" : "PDF"}
@@ -559,7 +779,15 @@ export function CreditScoreExperience() {
             ) : activeTab === "enquiries" ? (
               <ReportEnquiriesTab enquiries={enquiries} loading={loading} />
             ) : (
-              <ReportRepairTab accounts={accounts} repairContent={repairContent} />
+              <ReportRepairTab
+                accounts={accounts}
+                onStartRepair={submitRepairRequest}
+                repairContent={repairContent}
+                repairRequests={repairRequests}
+                repairRequestsLoading={repairRequestsLoading}
+                repairStatus={repairStatus}
+                repairSubmitting={repairSubmitting}
+              />
             )}
           </div>
         </div>
@@ -569,6 +797,24 @@ export function CreditScoreExperience() {
           <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-full border border-white/12 bg-[#171F29]/88 px-2 py-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.42)] backdrop-blur-2xl">
             {reportBottomNav.map(({ label, href, Icon }) => {
               const active = label === "Report";
+              const disabled = label !== "Home" && label !== "Report";
+
+              if (disabled) {
+                return (
+                  <button
+                    key={label}
+                    aria-disabled="true"
+                    className="flex cursor-not-allowed flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-1 text-[11px] font-normal text-[#6F7B8E] opacity-55"
+                    disabled
+                    type="button"
+                  >
+                    <span className="grid size-8 place-items-center rounded-full">
+                      <Icon className="size-4" strokeWidth={1.65} />
+                    </span>
+                    <span>{label}</span>
+                  </button>
+                );
+              }
 
               return (
                 <Link
@@ -587,6 +833,11 @@ export function CreditScoreExperience() {
           </nav>
         </div>
       </div>
+      {toast ? (
+        <div className="fixed left-4 right-4 top-4 z-[10000] mx-auto max-w-sm rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700 shadow-[0_14px_34px_rgba(16,185,129,0.22)]">
+          {toast}
+        </div>
+      ) : null}
       <SubscribePromptOverlay onClose={closeSubscribePrompt} show={showSubscribePrompt} />
       {showScoreInfo ? (
         <ScoreInfoDialog
@@ -740,14 +991,41 @@ function TabButton({
 }
 
 function ReportAccountsTab({ accounts, loading }: { accounts: CreditAccount[]; loading: boolean }) {
-  const items = buildReportAccounts(accounts);
+  const [activeFilter, setActiveFilter] = useState<AccountFilter>("accounts");
+  const accountSummary = buildAccountSummary(accounts);
+  const filteredAccounts = filterAccountsByType(accounts, activeFilter);
+  const openAccounts = filteredAccounts.filter((account) => !isClosedAccount(account));
+  const closedAccounts = filteredAccounts.filter(isClosedAccount);
+  const openItems = buildReportAccounts(openAccounts, false);
+  const closedItems = buildReportAccounts(closedAccounts, false);
 
   return (
     <div className="space-y-3">
       {loading ? (
-        <ReportLoadingCard label="Loading accounts..." />
+        <ReportAccountsSkeleton />
       ) : (
-        items.map((account) => <ReportAccountCard key={account.id} account={account} />)
+        <>
+          <div className="grid grid-cols-3 gap-2">
+            {accountSummary.map((item) => (
+              <button
+                key={item.filter}
+                className={cn(
+                  "rounded-2xl px-3 py-2 text-left text-white transition",
+                  activeFilter === item.filter
+                    ? "bg-[#4EE6D2] text-[#06111f] shadow-[0_10px_22px_rgba(78,230,210,0.22)]"
+                    : "bg-[#081625]",
+                )}
+                type="button"
+                onClick={() => setActiveFilter(item.filter)}
+              >
+                <p className="text-sm font-semibold">{item.value}</p>
+                <p className={cn("mt-1 text-[0.62rem] leading-3", activeFilter === item.filter ? "text-[#06111f]/70" : "text-[#9fb2c6]")}>{item.label}</p>
+              </button>
+            ))}
+          </div>
+          <ReportAccountSection items={openItems} title="Active Accounts" />
+          <ReportAccountSection items={closedItems} title="Closed Accounts" />
+        </>
       )}
     </div>
   );
@@ -755,31 +1033,87 @@ function ReportAccountsTab({ accounts, loading }: { accounts: CreditAccount[]; l
 
 function ReportEnquiriesTab({ enquiries, loading }: { enquiries: CreditEnquiry[]; loading: boolean }) {
   const items = buildReportEnquiries(enquiries);
+  const hardEnquiries = items.filter((enquiry) => enquiry.kind === "Hard");
+  const softEnquiries = items.filter((enquiry) => enquiry.kind === "Soft");
+  const last90HardCount = hardEnquiries.filter(isWithinLast90Days).length;
 
   return (
     <div className="space-y-3">
-      <div className="rounded-[1.5rem] border border-[#ffd166]/25 bg-[#fff7df] px-4 py-3 shadow-sm">
-        <div className="flex gap-3">
-          <Info className="mt-0.5 size-4 shrink-0 text-[#d97706]" />
-          <div>
-            <p className="text-xs font-semibold text-[#111827]">Hard enquiries may affect approval chances</p>
-            <p className="mt-1 text-[0.7rem] leading-4 text-[#7c6a45]">Multiple hard checks in a short period can reduce your score temporarily.</p>
-          </div>
-        </div>
-      </div>
-
       {loading ? (
         <ReportLoadingCard label="Loading enquiries..." />
+      ) : items.length ? (
+        <>
+          <div className="grid grid-cols-3 gap-2">
+            <EnquirySummaryCard label="Hard Enquiries" value={hardEnquiries.length} />
+            <EnquirySummaryCard label="Soft Enquiries" value={softEnquiries.length} />
+            <EnquirySummaryCard label="Last 90 Days" value={last90HardCount} />
+          </div>
+          <ReportEnquirySection enquiries={hardEnquiries} title="Hard Enquiries" />
+          <ReportEnquirySection enquiries={softEnquiries} title="Soft Enquiries" />
+        </>
       ) : (
-        items.map((enquiry) => <ReportEnquiryCard key={enquiry.id} enquiry={enquiry} />)
+        <div className="rounded-[1.65rem] bg-[#081625] p-4 text-white shadow-[0_18px_40px_rgba(8,22,37,0.18)]">
+          <p className="text-sm font-semibold">No recent enquiries found</p>
+          <p className="mt-2 text-[0.72rem] leading-5 text-[#9fb2c6]">Your recent credit report does not contain any enquiry records.</p>
+        </div>
       )}
     </div>
   );
 }
 
-function ReportRepairTab({ accounts, repairContent }: { accounts: CreditAccount[]; repairContent: CibilRepairContent }) {
-  const disputeStats = buildDisputeStats(accounts);
-  const disputes = buildDisputeCards(accounts);
+function EnquirySummaryCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl bg-[#081625] px-3 py-2 text-white">
+      <p className="text-sm font-semibold">{value}</p>
+      <p className="mt-1 text-[0.62rem] leading-3 text-[#9fb2c6]">{label}</p>
+    </div>
+  );
+}
+
+function ReportEnquirySection({ enquiries, title }: { enquiries: ReportEnquiryItem[]; title: string }) {
+  if (!enquiries.length) {
+    return null;
+  }
+
+  return (
+    <section className="space-y-3">
+      <h2 className="px-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#9fb2c6]">{title}</h2>
+      {enquiries.map((enquiry) => <ReportEnquiryCard key={enquiry.id} enquiry={enquiry} />)}
+    </section>
+  );
+}
+
+function ReportAccountSection({ items, title }: { items: ReportAccountItem[]; title: string }) {
+  if (!items.length) {
+    return null;
+  }
+
+  return (
+    <section className="space-y-3">
+      <h2 className="px-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#9fb2c6]">{title}</h2>
+      {items.map((account) => <ReportAccountCard key={account.id} account={account} />)}
+    </section>
+  );
+}
+
+function ReportRepairTab({
+  accounts,
+  onStartRepair,
+  repairContent,
+  repairRequests,
+  repairRequestsLoading,
+  repairStatus,
+  repairSubmitting,
+}: {
+  accounts: CreditAccount[];
+  onStartRepair: (plan: CibilRepairContent["plans"][number]) => void;
+  repairContent: CibilRepairContent;
+  repairRequests: CibilRepairRequest[];
+  repairRequestsLoading: boolean;
+  repairStatus: CibilRepairStatus | null;
+  repairSubmitting: boolean;
+}) {
+  const disputeStats = buildDisputeStats(repairStatus);
   const plan = [...repairContent.plans].sort((a, b) => a.displayOrder - b.displayOrder)[0] ?? fallbackRepairContent.plans[0];
   const timelines = repairContent.timelines.length ? [...repairContent.timelines].sort((a, b) => a.displayOrder - b.displayOrder) : fallbackRepairContent.timelines;
   const amountLabel = new Intl.NumberFormat("en-IN", {
@@ -796,8 +1130,8 @@ function ReportRepairTab({ accounts, repairContent }: { accounts: CreditAccount[
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#4EE6D2]">Credit Repair Service</p>
           <h2 className="mt-2 text-base font-semibold">{plan.planName}</h2>
           <p className="mt-2 text-[0.72rem] leading-5 text-[#9fb2c6]">Expert review, disputes, lender follow-up, and score verification in one guided flow.</p>
-          <button className="mt-4 h-11 w-full rounded-2xl bg-[#ff4d7d] text-xs font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)]" type="button">
-            {plan.buttonLabel} — {amountLabel}/{billingCycleLabel}
+          <button className="mt-4 h-11 w-full rounded-2xl bg-[#ff4d7d] text-xs font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)] disabled:opacity-60" disabled={repairSubmitting} type="button" onClick={() => onStartRepair(plan)}>
+            {repairSubmitting ? "Submitting..." : `${plan.buttonLabel} — ${amountLabel}/${billingCycleLabel}`}
           </button>
         </div>
       </section>
@@ -835,23 +1169,73 @@ function ReportRepairTab({ accounts, repairContent }: { accounts: CreditAccount[
           ))}
         </div>
 
-        <div className="mt-4 space-y-3">
-          {disputes.map((dispute) => (
-            <div key={dispute.title} className="rounded-2xl border border-white/10 bg-white/[0.05] p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold">{dispute.title}</p>
-                  <p className="mt-1 text-[0.68rem] text-[#9fb2c6]">{dispute.stage}</p>
-                </div>
-                <span className="rounded-full bg-[#4EE6D2]/12 px-2.5 py-1 text-[0.62rem] font-semibold text-[#4EE6D2]">{dispute.progress}%</span>
-              </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-[#4EE6D2]" style={{ width: `${dispute.progress}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
+        <RepairRequestsTable loading={repairRequestsLoading} requests={repairRequests} />
+
+        <RepairDisputeCards loading={repairRequestsLoading} requests={repairRequests} />
       </section>
+    </div>
+  );
+}
+
+function RepairDisputeCards({ loading, requests }: { loading: boolean; requests: CibilRepairRequest[] }) {
+  const disputes = requests.filter(hasDisputeData);
+
+  if (loading) {
+    return <ReportLoadingCard label="Loading disputes..." />;
+  }
+
+  if (!disputes.length) {
+    return (
+      <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.05] p-3">
+        <p className="text-xs font-semibold">No active disputes found</p>
+        <p className="mt-1 text-[0.68rem] leading-5 text-[#9fb2c6]">You currently have no dispute cases associated with this credit report.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 space-y-3">
+      {disputes.map((dispute) => (
+        <div key={getDisputeId(dispute)} className="rounded-2xl border border-white/10 bg-white/[0.05] p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold">{getDisputeId(dispute)}</p>
+              <p className="mt-1 text-[0.68rem] text-[#9fb2c6]">{dispute.lenderName || "--"}</p>
+              <p className="mt-1 text-[0.68rem] text-[#9fb2c6]">Created {formatDisputeCreatedDate(dispute)}</p>
+            </div>
+            <span className="rounded-full bg-[#4EE6D2]/12 px-2.5 py-1 text-[0.62rem] font-semibold capitalize text-[#4EE6D2]">{dispute.repairStatus || dispute.paymentStatus || "--"}</span>
+          </div>
+          {readDisputeProgress(dispute) ? <p className="mt-3 text-[0.68rem] font-semibold text-[#4EE6D2]">Progress {readDisputeProgress(dispute)}</p> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RepairRequestsTable({ loading, requests }: { loading: boolean; requests: CibilRepairRequest[] }) {
+  return (
+    <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+      <div className="grid grid-cols-[1.1fr_0.8fr_1fr] border-b border-white/10 px-3 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#9fb2c6]">
+        <span>Date/Time</span>
+        <span>Status</span>
+        <span>Remarks</span>
+      </div>
+      {loading ? (
+        <div className="grid gap-2 px-3 py-3">
+          <div className="h-3 animate-pulse rounded-full bg-white/10" />
+          <div className="h-3 w-10/12 animate-pulse rounded-full bg-white/10" />
+        </div>
+      ) : requests.length ? (
+        requests.map((request) => (
+          <div key={request.publicId ?? request.id} className="grid grid-cols-[1.1fr_0.8fr_1fr] gap-2 border-b border-white/8 px-3 py-2 text-[0.68rem] text-white last:border-b-0">
+            <span className="text-[#c8d3e2]">{formatRepairRequestDate(request)}</span>
+            <span className="font-semibold capitalize text-[#5EF2C2]">{request.repairStatus || request.paymentStatus || "--"}</span>
+            <span className="text-[#9fb2c6]">{request.remarks || "--"}</span>
+          </div>
+        ))
+      ) : (
+        <p className="px-3 py-3 text-[0.68rem] text-[#9fb2c6]">No repair requests found.</p>
+      )}
     </div>
   );
 }
@@ -872,6 +1256,16 @@ function ReportAccountCard({ account }: { account: ReportAccountItem }) {
         <span className={cn("rounded-full px-3 py-1.5 text-[0.66rem] font-semibold", account.impactTone)}>{account.impact}</span>
         <span className="rounded-full bg-white/[0.06] px-3 py-1.5 text-[0.66rem] font-medium text-[#9fb2c6]">Opened {account.opened}</span>
       </div>
+      {account.details.length ? (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {account.details.map((detail) => (
+            <div key={detail.label} className="rounded-2xl bg-white/[0.06] px-3 py-2">
+              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#6f8399]">{detail.label}</p>
+              <p className="mt-1 truncate text-[0.72rem] font-semibold text-[#dbe7f4]">{detail.value}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -882,14 +1276,41 @@ function ReportEnquiryCard({ enquiry }: { enquiry: ReportEnquiryItem }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold">{enquiry.lender}</h2>
-          <p className="mt-1 text-[0.72rem] text-[#9fb2c6]">{enquiry.loanType} • {enquiry.date}</p>
+          <p className="mt-1 text-[0.72rem] text-[#9fb2c6]">{enquiry.loanType}</p>
         </div>
         <span className={cn("shrink-0 rounded-full px-3 py-1 text-[0.64rem] font-semibold", enquiry.kind === "Hard" ? "bg-[#ff4d7d]/14 text-[#ff8cab]" : "bg-[#4EE6D2]/12 text-[#4EE6D2]")}>
           {enquiry.kind}
         </span>
       </div>
-      {enquiry.pointsImpact ? <p className="mt-3 text-[0.72rem] font-medium text-[#ff8cab]">{enquiry.pointsImpact}</p> : null}
+      <div className="mt-3 space-y-1 text-[0.72rem] font-medium text-[#9fb2c6]">
+        <p>Enquiry Date {enquiry.date}</p>
+        {enquiry.amount ? <p>Requested Amount {enquiry.amount}</p> : null}
+      </div>
+      <p className={cn("mt-3 text-[0.72rem] font-medium", enquiry.kind === "Hard" ? "text-[#ff8cab]" : "text-[#4EE6D2]")}>{enquiry.message}</p>
     </article>
+  );
+}
+
+function ReportAccountsSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div key={index} className="rounded-[1.65rem] bg-[#081625] p-4 shadow-[0_18px_40px_rgba(8,22,37,0.18)]">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="h-4 w-7/12 animate-pulse rounded-full bg-white/10" />
+              <div className="mt-2 h-3 w-5/12 animate-pulse rounded-full bg-white/10" />
+            </div>
+            <div className="h-6 w-20 animate-pulse rounded-full bg-white/10" />
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="h-12 animate-pulse rounded-2xl bg-white/[0.06]" />
+            <div className="h-12 animate-pulse rounded-2xl bg-white/[0.06]" />
+            <div className="h-12 animate-pulse rounded-2xl bg-white/[0.06]" />
+          </div>
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -1481,19 +1902,21 @@ function buildBehaviourItems(result: DisplayDataResponse | null): BehaviourItem[
   ];
 }
 
-function buildReportAccounts(accounts: CreditAccount[]): ReportAccountItem[] {
-  const mappedAccounts = accounts.slice(0, 8).map((account, index) => {
+function buildReportAccounts(accounts: CreditAccount[], useFallback = true): ReportAccountItem[] {
+  const mappedAccounts = accounts.map((account, index) => {
     const overdue = readNumericValue(account.amount_overdue);
     const closed = Boolean(account.account_closed);
-    const status: ReportAccountItem["status"] = closed ? "Closed" : overdue > 0 ? "Inactive" : "On Time";
+    const status: ReportAccountItem["status"] = closed ? "Closed" : overdue > 0 ? "Overdue" : "On Time";
     const highImpact = readNumericValue(account.high_credit_amount) >= 100000 || overdue > 0;
+    const impact: ReportAccountItem["impact"] = highImpact ? "High impact" : "Medium impact";
 
     return {
-      id: `${account.member_name || "account"}-${account.type || index}`,
-      impact: highImpact ? "High impact" : "Medium impact",
+      details: buildReportAccountDetails(account),
+      id: `${account.member_name || "account"}-${readAccountType(account) || "account"}-${index}`,
+      impact,
       impactTone: highImpact ? "bg-[#4EE6D2]/12 text-[#4EE6D2]" : "bg-[#ffd166]/14 text-[#ffd166]",
       lender: account.member_name || fallbackReportAccounts[index % fallbackReportAccounts.length].lender,
-      loanType: toTitleCase(account.type || fallbackReportAccounts[index % fallbackReportAccounts.length].loanType),
+      loanType: getAccountTypeLabel(account),
       opened: formatCompactDate(account.opened),
       status,
       statusTone:
@@ -1505,51 +1928,185 @@ function buildReportAccounts(accounts: CreditAccount[]): ReportAccountItem[] {
     };
   });
 
-  return mappedAccounts.length ? mappedAccounts : fallbackReportAccounts;
+  return mappedAccounts.length || !useFallback ? mappedAccounts : fallbackReportAccounts;
 }
 
-function buildReportEnquiries(enquiries: CreditEnquiry[]): ReportEnquiryItem[] {
-  const mappedEnquiries = enquiries.slice(0, 8).map((enquiry, index) => {
-    const amount = readNumericValue(enquiry.enquiry_amount);
-    const kind: ReportEnquiryItem["kind"] = amount > 0 ? "Hard" : "Soft";
-
-    return {
-      date: formatCompactDate(enquiry.enquiry_date),
-      id: `${enquiry.member || "enquiry"}-${enquiry.enquiry_date || index}`,
-      kind,
-      lender: enquiry.member || fallbackReportEnquiries[index % fallbackReportEnquiries.length].lender,
-      loanType: toTitleCase(enquiry.enquiry_purpose || fallbackReportEnquiries[index % fallbackReportEnquiries.length].loanType),
-      pointsImpact: kind === "Hard" ? `-${Math.min(8, Math.max(2, Math.round(amount / 100000) || 4))} pts impact` : undefined,
-    };
-  });
-
-  return mappedEnquiries.length ? mappedEnquiries : fallbackReportEnquiries;
-}
-
-function buildDisputeStats(accounts: CreditAccount[]) {
-  const activeDisputes = Math.max(1, accounts.filter((account) => readNumericValue(account.amount_overdue) > 0 || !account.account_closed).length);
-
+function buildAccountSummary(accounts: CreditAccount[]) {
   return [
-    { label: "Active disputes", value: String(activeDisputes) },
-    { label: "Resolved disputes", value: "3" },
-    { label: "Points gained", value: "+42" },
+    { filter: "accounts" as const, label: "Accounts", value: String(accounts.length) },
+    { filter: "loans" as const, label: "Loans", value: String(accounts.filter(isLoanAccount).length) },
+    { filter: "cards" as const, label: "Cards", value: String(accounts.filter(isCardAccount).length) },
   ];
 }
 
-function buildDisputeCards(accounts: CreditAccount[]) {
-  const candidates = accounts.filter((account) => readNumericValue(account.amount_overdue) > 0 || !account.account_closed).slice(0, 2);
-  const mappedDisputes = candidates.map((account, index) => ({
-    progress: index === 0 ? 72 : 48,
-    stage: index === 0 ? "Lender response pending" : "Documents under review",
-    title: `${account.member_name || "Lender"} ${account.type ? toTitleCase(account.type) : "account"} dispute`,
-  }));
+function filterAccountsByType(accounts: CreditAccount[], filter: AccountFilter) {
+  if (filter === "loans") {
+    return accounts.filter(isLoanAccount);
+  }
 
-  return mappedDisputes.length
-    ? mappedDisputes
-    : [
-        { progress: 72, stage: "Lender response pending", title: "Incorrect active loan status" },
-        { progress: 48, stage: "Documents under review", title: "Duplicate enquiry removal" },
-      ];
+  if (filter === "cards") {
+    return accounts.filter(isCardAccount);
+  }
+
+  return accounts;
+}
+
+function isLoanAccount(account: CreditAccount) {
+  const portfolioType = readPortfolioType(account);
+
+  return portfolioType === "I" || (!portfolioType && !isCreditCardAccountType(account));
+}
+
+function isCardAccount(account: CreditAccount) {
+  return readPortfolioType(account) === "R" || isCreditCardAccountType(account);
+}
+
+function isClosedAccount(account: CreditAccount) {
+  const status = String(account.account_status ?? "").trim().toLowerCase();
+
+  return Boolean(account.account_closed) || status.includes("closed") || status.includes("settled") || status.includes("written off");
+}
+
+function getAccountTypeLabel(account: CreditAccount) {
+  const portfolioType = readPortfolioType(account);
+  const accountType = readAccountType(account);
+
+  if (portfolioType === "R") {
+    return "Credit Card";
+  }
+
+  if (portfolioType === "I") {
+    return accountTypeLabels[accountType] ?? "Loan";
+  }
+
+  return accountTypeLabels[accountType] ?? (accountType ? toTitleCase(accountType) : "Other Account");
+}
+
+function readPortfolioType(account: CreditAccount) {
+  return String(account.portfolio_type ?? account.Portfolio_Type ?? "").trim().toUpperCase();
+}
+
+function readAccountType(account: CreditAccount) {
+  return String(account.type ?? account.Account_Type ?? "").trim();
+}
+
+function isCreditCardAccountType(account: CreditAccount) {
+  return ["10", "31", "35", "36"].includes(readAccountType(account));
+}
+
+function buildReportEnquiries(enquiries: CreditEnquiry[]): ReportEnquiryItem[] {
+  return enquiries.map((enquiry, index) => {
+    const amount = readNumericValue(enquiry.enquiry_amount);
+    const kind = getEnquiryKind(enquiry);
+    const sortTime = readEnquiryTime(enquiry.enquiry_date);
+
+    return {
+      amount: amount > 0 ? formatRupees(enquiry.enquiry_amount) : undefined,
+      date: formatCompactDate(enquiry.enquiry_date),
+      id: `${enquiry.member || "enquiry"}-${enquiry.enquiry_date || index}`,
+      kind,
+      lender: enquiry.member || "Credit Bureau",
+      loanType: getEnquiryPurposeLabel(enquiry.enquiry_purpose),
+      message: kind === "Hard" ? "May impact approval chances" : "Does not affect credit score",
+      sortTime,
+    };
+  }).sort((a, b) => b.sortTime - a.sortTime);
+}
+
+function getEnquiryKind(enquiry: CreditEnquiry): ReportEnquiryItem["kind"] {
+  const value = String(enquiry.enquiry_kind ?? enquiry.enquiry_type ?? "").trim().toLowerCase();
+
+  if (value.includes("soft") || value.includes("noncredit") || value.includes("non-credit")) {
+    return "Soft";
+  }
+
+  return "Hard";
+}
+
+function getEnquiryPurposeLabel(value: unknown) {
+  const purpose = String(value ?? "").trim();
+
+  return enquiryPurposeLabels[purpose] ?? (purpose && !/^\d+$/.test(purpose) ? toTitleCase(purpose) : "Credit Enquiry");
+}
+
+function isWithinLast90Days(enquiry: ReportEnquiryItem) {
+  if (!enquiry.sortTime) {
+    return false;
+  }
+
+  return Date.now() - enquiry.sortTime <= 90 * 24 * 60 * 60 * 1000;
+}
+
+function readEnquiryTime(value?: string | null) {
+  if (!value) {
+    return 0;
+  }
+
+  if (/^\d{8}$/.test(value)) {
+    const parsed = new Date(Number(value.slice(4)), Number(value.slice(2, 4)) - 1, Number(value.slice(0, 2)));
+
+    return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+  }
+
+  const parsed = new Date(value);
+
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+function buildReportAccountDetails(account: CreditAccount) {
+  const latestHistory = account.payment_history_details?.[0];
+  const latestDpd = latestHistory ? readNumericValue(latestHistory.Days_Past_Due) : null;
+
+  return [
+    { label: "Balance", value: formatRupees(account.current_balance) },
+    { label: "High credit", value: formatRupees(account.high_credit_amount) },
+    { label: "Overdue", value: formatRupees(account.amount_overdue) },
+    { label: "EMI", value: formatRupees(account.emi) },
+    { label: "Last payment", value: formatCompactDate(account.last_payment) },
+    { label: "Reported", value: formatCompactDate(account.reported_and_certified) },
+    { label: "Tenure", value: formatTenure(account.repayment_tenure) },
+    { label: "Frequency", value: account.payment_frequency || "--" },
+    { label: "Interest", value: formatInterest(account.rate_of_interest) },
+    { label: "Latest DPD", value: latestDpd === null ? "--" : String(latestDpd) },
+  ].filter((detail) => detail.value && detail.value !== "Rs. 0" && detail.value !== "--");
+}
+
+function buildDisputeStats(status: CibilRepairStatus | null) {
+  return [
+    { label: "Active disputes", value: String(status?.activeDisputes ?? 0) },
+    { label: "Resolved disputes", value: String(status?.resolvedDisputes ?? 0) },
+    { label: "Points gained", value: `+${status?.pointsGained ?? 0}` },
+  ];
+}
+
+function formatRepairRequestDate(request: CibilRepairRequest) {
+  const value = request.submittedAt || request.createdAt || request.updatedAt;
+
+  if (!value) return "--";
+
+  return formatDateTime(value);
+}
+
+function hasDisputeData(request: CibilRepairRequest) {
+  return Boolean(request.disputeId || request.lenderName || readDisputeProgress(request));
+}
+
+function getDisputeId(request: CibilRepairRequest) {
+  return request.disputeId || request.publicId || request.id || "--";
+}
+
+function formatDisputeCreatedDate(request: CibilRepairRequest) {
+  const value = request.createdDate || request.createdAt || request.submittedAt;
+
+  return value ? formatDateTime(value) : "--";
+}
+
+function readDisputeProgress(request: CibilRepairRequest) {
+  if (request.progress === null || request.progress === undefined || request.progress === "") {
+    return "";
+  }
+
+  return typeof request.progress === "number" ? `${request.progress}%` : String(request.progress);
 }
 
 function readScore(result: DisplayDataResponse | null) {
@@ -1651,6 +2208,18 @@ function formatRupees(value: unknown) {
     style: "currency",
     currency: "INR",
   }).format(amount).replace("₹", "Rs. ");
+}
+
+function formatTenure(value: unknown) {
+  const tenure = readNumericValue(value);
+
+  return tenure ? `${tenure} months` : "--";
+}
+
+function formatInterest(value: unknown) {
+  const rate = readNumericValue(value);
+
+  return rate ? `${rate}%` : "--";
 }
 
 function getReportFileName(contentDisposition: string | null) {

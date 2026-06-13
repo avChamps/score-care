@@ -107,6 +107,10 @@ type NotificationItem = {
   title?: string | null;
 };
 
+type CibilRepairStatus = {
+  activeDisputes?: number;
+};
+
 type FaqCategory = {
   id: string;
   Icon: LucideIcon;
@@ -132,10 +136,10 @@ const bottomNav = [
   { label: "Loans", href: "/dashboard/loans", Icon: ReceiptText },
 ];
 const appTiles = [
-  { href: "/dashboard/score-fix", Icon: Wrench, title: "Dispute Centre", value: "1 active", meta: "+25 pts", alert: true },
-  { href: "/dashboard/loans", Icon: BadgeIndianRupee, title: "Pay EMIs", value: "₹29,050", meta: "due Jun" },
-  { href: "/dashboard/credit-score", Icon: ChartNoAxesCombined, title: "Improve Score", value: "+58 pts", meta: "possible" },
-  { href: "/pricing", Icon: CreditCard, title: "Get Offers", value: "3", meta: "pre-approved", offer: true },
+  { href: "/dashboard/score-fix", Icon: Wrench, title: "Dispute Centre", value: "0", meta: "active", alert: true },
+  { href: "/dashboard/loans", Icon: BadgeIndianRupee, title: "Pay EMIs", value: "-", meta: "-" },
+  { href: "/dashboard/credit-score", Icon: ChartNoAxesCombined, title: "Improve Score", value: "-", meta: "-" },
+  { href: "/pricing", Icon: CreditCard, title: "Get Offers", value: "0", meta: "pre-approved", offer: true },
 ];
 const freeTierAppTiles = [
   { href: "/dashboard/credit-score", Icon: CreditCard, title: "Credit Score", value: "-", meta: "-" },
@@ -226,11 +230,12 @@ export function HomeDashboard() {
         setIsLanguageLoading(shouldWaitForLanguage);
         const freeTier = isFreeTierProfile(profile);
         const displayData = freeTier ? await loadBasicCibilScoreData(token, profile) : await loadCibilData(token, profile);
+        const activeDisputes = freeTier ? 0 : await loadActiveDisputes(token);
 
         setName(profile?.fullName?.trim() || readDisplayName(displayData) || "there");
         setProfile(profile);
         setIsFreeTier(freeTier);
-        setDashboard(freeTier ? buildFreeTierDashboard(displayData) : buildDashboardData(displayData, profile));
+        setDashboard(freeTier ? buildFreeTierDashboard(displayData) : buildDashboardData(displayData, profile, activeDisputes));
         if (shouldWaitForLanguage) {
           await waitForLanguageApply();
         }
@@ -1250,18 +1255,18 @@ function buildAppTiles(dashboard: DashboardData, unavailable: boolean) {
   return [
     {
       ...appTiles[0],
-      value: dashboard.activeDisputes === "-" ? "-" : `${dashboard.activeDisputes} active`,
-      meta: dashboard.scoreGain === "-" ? "-" : `${formatSignedValue(dashboard.scoreGain)} pts`,
+      value: String(dashboard.activeDisputes ?? "-"),
+      meta: dashboard.activeDisputes === "-" ? "-" : "active",
     },
     {
       ...appTiles[1],
       value: dashboard.emiDue || "-",
-      meta: dashboard.dueMonth && dashboard.dueMonth !== "--" ? `due ${dashboard.dueMonth}` : "-",
+      meta: dashboard.dueMonth && dashboard.dueMonth !== "--" ? dashboard.dueMonth : "-",
     },
     {
       ...appTiles[2],
-      value: dashboard.improvement === "-" ? "-" : `${formatSignedValue(dashboard.improvement)} pts`,
-      meta: dashboard.improvement === "-" ? "-" : "possible",
+      value: dashboard.improvement === "-" ? "-" : typeof dashboard.improvement === "number" ? `${formatSignedValue(dashboard.improvement)} pts` : dashboard.improvement,
+      meta: dashboard.improvement === "-" ? "-" : typeof dashboard.improvement === "number" ? "possible" : "",
     },
     {
       ...appTiles[3],
@@ -2526,6 +2531,24 @@ async function loadNotifications(token: string) {
   };
 }
 
+async function loadActiveDisputes(token: string) {
+  try {
+    const response = await apiRequest("/cibil-repair-content/requests/me/status", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) return 0;
+
+    const result = (await response.json()) as { data?: CibilRepairStatus | null };
+
+    return readNumber(result.data?.activeDisputes);
+  } catch {
+    return 0;
+  }
+}
+
 async function markNotificationsReadAll(token: string) {
   const response = await apiRequest("/notifications/read-all", {
     method: "POST",
@@ -2539,22 +2562,21 @@ async function markNotificationsReadAll(token: string) {
   }
 }
 
-function buildDashboardData(result: unknown, profile: UserProfile | null): DashboardData {
+function buildDashboardData(result: unknown, profile: UserProfile | null, activeDisputes = 0): DashboardData {
   const score = readScore(result) ?? readScore(profile);
   const accounts = readAccounts(result);
   const enquiries = readEnquiries(result);
   const summary = readReportSummary(result);
-  const overdueAccounts = accounts.filter((account) => readNumber(account.amount_overdue ?? account.Amount_Past_Due) > 0).length;
-  const defaultAccounts = summary.defaultAccounts || overdueAccounts;
-  const emiDue = accounts.reduce((total, account) => total + readNumber(account.emi ?? account.Scheduled_Monthly_Payment_Amount), 0);
+  const disputeCount = activeDisputes;
   const activeAccounts = summary.activeAccounts || accounts.filter(isActiveAccount).length;
-  const utilization = calculateUtilization(accounts, summary.outstandingBalance);
+  const utilization = calculateUtilization(accounts);
   const targetScore = getTargetScore(score);
-  const recentEnquiries = summary.recentEnquiries || enquiries.length;
-  const paymentHistory = calculatePaymentHistory(accounts, defaultAccounts);
+  const recentEnquiries = summary.recentEnquiries;
+  const paymentHistory = calculatePaymentHistory(accounts);
   const creditAge = calculateCreditAge(accounts);
   const trend = buildScoreTrend(score, accounts);
   const hasReportData = accounts.length > 0 || enquiries.length > 0 || Boolean(summary.outstandingBalance || summary.activeAccounts || summary.defaultAccounts || summary.recentEnquiries);
+  const improvement = calculateImprovement(score);
 
   return {
     score,
@@ -2564,12 +2586,12 @@ function buildDashboardData(result: unknown, profile: UserProfile | null): Dashb
     sixMonthChange: 0,
     targetScore,
     targetMonth: getTargetMonth(),
-    activeDisputes: defaultAccounts,
-    scoreGain: defaultAccounts ? defaultAccounts * 12 : 0,
-    emiDue: emiDue ? formatCurrency(emiDue) : summary.outstandingBalance ? formatCurrency(summary.outstandingBalance) : "--",
-    dueMonth: new Intl.DateTimeFormat("en-IN", { month: "short" }).format(new Date()),
-    improvement: score ? Math.max(0, targetScore - score) : 0,
-    offers: activeAccounts,
+    activeDisputes: disputeCount,
+    scoreGain: 0,
+    emiDue: summary.outstandingBalance ? formatCurrency(summary.outstandingBalance) : "--",
+    dueMonth: summary.outstandingBalance ? "due" : "--",
+    improvement,
+    offers: 0,
     hasReportData,
     trend,
     factors: [
@@ -2577,10 +2599,10 @@ function buildDashboardData(result: unknown, profile: UserProfile | null): Dashb
       { name: "Credit Utilization", value: utilization.strength, meta: utilization.label, tone: utilization.tone },
       { name: "Credit Age", value: creditAge.value, meta: creditAge.meta, tone: creditAge.tone },
       { name: "Credit Mix", value: Math.min(90, activeAccounts * 18), meta: `${activeAccounts} active`, tone: activeAccounts > 1 ? "good" : "warn" },
-      { name: "New Inquiries", value: recentEnquiries > 2 ? 45 : 78, meta: `${recentEnquiries} recent`, tone: recentEnquiries > 2 ? "alert" : "good" },
+      { name: "New Enquiries", value: recentEnquiries > 2 ? 45 : 78, meta: `${recentEnquiries} recent`, tone: recentEnquiries > 2 ? "alert" : "good" },
     ],
-    coach: buildCoachText(defaultAccounts, utilization.percent, recentEnquiries),
-    coachGain: defaultAccounts ? defaultAccounts * 12 : utilization.percent > 30 ? 24 : 0,
+    coach: buildCoachText(disputeCount, utilization.percent, recentEnquiries),
+    coachGain: disputeCount ? disputeCount * 12 : utilization.percent > 30 ? 24 : 0,
     coachTime: "30-60 days",
   };
 }
@@ -2609,7 +2631,7 @@ function buildFreeTierDashboard(result: unknown): DashboardData {
       { name: "Credit Utilization", value: 0, meta: "-", tone: "warn" },
       { name: "Credit Age", value: 0, meta: "-", tone: "warn" },
       { name: "Credit Mix", value: 0, meta: "-", tone: "warn" },
-      { name: "New Inquiries", value: 0, meta: "-", tone: "warn" },
+      { name: "New Enquiries", value: 0, meta: "-", tone: "warn" },
     ],
     coach: "Subscribe to unlock credit factors, disputes, EMIs, offers, and action plan.",
     coachGain: 0,
@@ -2706,11 +2728,11 @@ function readAccounts(result: unknown) {
     };
   } | null;
 
-  if (Array.isArray(data?.data?.display?.accounts)) return data.data.display.accounts;
+  if (Array.isArray(data?.data?.credit_report?.CAIS_Account?.CAIS_Account_DETAILS)) {
+    return data.data.credit_report.CAIS_Account.CAIS_Account_DETAILS;
+  }
 
-  return Array.isArray(data?.data?.credit_report?.CAIS_Account?.CAIS_Account_DETAILS)
-    ? data.data.credit_report.CAIS_Account.CAIS_Account_DETAILS
-    : [];
+  return Array.isArray(data?.data?.display?.accounts) ? data.data.display.accounts : [];
 }
 
 function readEnquiries(result: unknown) {
@@ -2728,22 +2750,21 @@ function readEnquiries(result: unknown) {
     : [];
 }
 
-function calculateUtilization(accounts: Array<Record<string, unknown>>, outstandingBalance: number) {
-  const activeAccounts = accounts.filter(isActiveAccount);
-  const totals = activeAccounts.reduce<{ balance: number; limit: number }>(
+function calculateUtilization(accounts: Array<Record<string, unknown>>) {
+  const cardAccounts = accounts.filter((account) => String(account.Portfolio_Type ?? account.portfolio_type ?? "").trim().toUpperCase() === "R");
+  const totals = cardAccounts.reduce<{ balance: number; limit: number }>(
     (sum, account) => ({
       balance: sum.balance + readNumber(account.current_balance ?? account.Current_Balance),
-      limit: sum.limit + readNumber(account.high_credit_amount ?? account.Credit_Limit_Amount ?? account.Highest_Credit_or_Original_Loan_Amount),
+      limit: sum.limit + readNumber(account.Credit_Limit_Amount ?? account.high_credit_amount),
     }),
     { balance: 0, limit: 0 },
   );
-  const balance = totals.balance || outstandingBalance;
-  const percent = totals.limit ? Math.round((balance / totals.limit) * 100) : 0;
+  const percent = totals.limit ? Math.round((totals.balance / totals.limit) * 100) : 0;
 
   if (percent > 50) return { percent, strength: 45, label: `${percent}% - Reduce`, tone: "alert" as const };
   if (percent > 30) return { percent, strength: 62, label: `${percent}% - Reduce`, tone: "warn" as const };
 
-  return { percent, strength: 86, label: percent ? `${percent}%` : "Healthy", tone: "good" as const };
+  return { percent, strength: percent, label: `${percent}% - Good`, tone: "good" as const };
 }
 
 function isActiveAccount(account: Record<string, unknown>) {
@@ -2762,6 +2783,7 @@ function readReportSummary(result: unknown) {
       credit_report?: {
         CAPS?: {
           CAPS_Summary?: {
+            CAPSLast90Days?: unknown;
             CAPSLast180Days?: unknown;
           };
         };
@@ -2790,25 +2812,21 @@ function readReportSummary(result: unknown) {
     closedAccounts: readNumber(creditAccount?.CreditAccountClosed),
     defaultAccounts: readNumber(creditAccount?.CreditAccountDefault),
     outstandingBalance: readNumber(outstanding?.Outstanding_Balance_All),
-    recentEnquiries: readNumber(data?.data?.credit_report?.CAPS?.CAPS_Summary?.CAPSLast180Days),
+    recentEnquiries: readNumber(data?.data?.credit_report?.CAPS?.CAPS_Summary?.CAPSLast90Days),
   };
 }
 
-function calculatePaymentHistory(accounts: Array<Record<string, unknown>>, defaultAccounts: number) {
-  const latePayments = accounts.reduce((total, account) => {
+function calculatePaymentHistory(accounts: Array<Record<string, unknown>>) {
+  const hasLatePayment = accounts.some((account) => {
     const history = account.CAIS_Account_History;
 
-    if (!Array.isArray(history)) return total;
+    if (!Array.isArray(history)) return false;
 
-    return total + history.filter((item) => readNumber((item as Record<string, unknown>).Days_Past_Due) > 0).length;
-  }, 0);
+    return history.some((item) => readNumber((item as Record<string, unknown>).Days_Past_Due) > 0);
+  });
 
-  if (defaultAccounts || latePayments > 2) {
-    return { value: 58, meta: defaultAccounts ? `${defaultAccounts} default` : `${latePayments} late`, tone: "alert" as const };
-  }
-
-  if (latePayments) {
-    return { value: 72, meta: `${latePayments} late`, tone: "warn" as const };
+  if (hasLatePayment) {
+    return { value: 58, meta: "Needs attention", tone: "alert" as const };
   }
 
   return { value: 94, meta: "Excellent", tone: "good" as const };
@@ -2947,6 +2965,15 @@ function getTargetScore(score: number | null) {
   if (score < 850) return 850;
 
   return Math.min(900, score + 25);
+}
+
+function calculateImprovement(score: number | null) {
+  if (!score) return 0;
+  if (score < 650) return 80;
+  if (score < 750) return 50;
+  if (score < 800) return 25;
+
+  return "Maintain score";
 }
 
 function getTargetMonth() {
