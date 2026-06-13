@@ -126,7 +126,7 @@ const months = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "
 
 const bottomNav = [
   { label: "Home", href: "/dashboard", Icon: Home },
-  { label: "Report", href: "/report", Icon: FileText },
+  { label: "Report", href: "/dashboard/credit-score", Icon: FileText },
   { label: "Improve", href: "/dashboard/score-fix", Icon: TrendingUp },
   { label: "Offers", href: "/pricing", Icon: Gift },
   { label: "Loans", href: "/dashboard/loans", Icon: ReceiptText },
@@ -518,17 +518,18 @@ export function HomeDashboard() {
         <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-full border border-white/12 bg-[#171F29]/88 px-2 py-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.42)] backdrop-blur-2xl">
           {bottomNav.map(({ label, href, Icon }) => {
             const active = label === "Home";
+            const enabled = active || label === "Report";
 
             return (
               <Link
                 key={label}
                 href={href}
                 data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
-                aria-disabled={!active}
-                tabIndex={active ? 0 : -1}
-                className={cn("flex flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-1 text-[11px] font-normal text-[#B9C0CC]", active ? "text-[#FF9D28]" : "pointer-events-none opacity-72")}
+                aria-disabled={!enabled}
+                tabIndex={enabled ? 0 : -1}
+                className={cn("flex flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-1 text-[11px] font-normal text-[#B9C0CC]", active ? "text-[#FF9D28]" : !enabled && "pointer-events-none opacity-72")}
                 onClick={(event) => {
-                  if (!active) {
+                  if (!enabled) {
                     event.preventDefault();
                   }
                 }}
@@ -1981,7 +1982,9 @@ function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, onProfil
           title="Loans"
           subtitle="Smart Offers"
           Icon={ReceiptText}
-          disabled
+          onClick={() => {
+            window.location.href = "/dashboard/loans";
+          }}
         />
       </section>
 

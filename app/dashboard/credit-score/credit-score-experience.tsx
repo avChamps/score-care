@@ -32,7 +32,7 @@ import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilS
 import { useSubscriptionAccess } from "@/lib/subscription-access";
 import { cn } from "@/lib/utils";
 
-type Tab = "score" | "predictor";
+type Tab = "accounts" | "enquiries" | "repair";
 
 type CreditAccount = {
   member_name?: string | null;
@@ -86,6 +86,26 @@ type BehaviourItem = {
   tone: "good" | "warn" | "danger" | "neutral";
 };
 
+type ReportAccountItem = {
+  id: string;
+  impact: "High impact" | "Medium impact";
+  impactTone: string;
+  lender: string;
+  loanType: string;
+  opened: string;
+  status: "On Time" | "Inactive" | "Closed";
+  statusTone: string;
+};
+
+type ReportEnquiryItem = {
+  date: string;
+  id: string;
+  kind: "Hard" | "Soft";
+  lender: string;
+  loanType: string;
+  pointsImpact?: string;
+};
+
 type AiAnswerBlock = {
   text: string;
   type: "heading" | "paragraph" | "list";
@@ -136,9 +156,67 @@ const predictorActions = [
   },
 ] as const;
 
+const fallbackReportAccounts: ReportAccountItem[] = [
+  {
+    id: "fallback-hdfc",
+    impact: "High impact",
+    impactTone: "bg-[#4EE6D2]/12 text-[#4EE6D2]",
+    lender: "HDFC Bank",
+    loanType: "Personal Loan",
+    opened: "13 Jun 2026",
+    status: "On Time",
+    statusTone: "bg-[#4EE6D2]/12 text-[#4EE6D2]",
+  },
+  {
+    id: "fallback-sbi",
+    impact: "Medium impact",
+    impactTone: "bg-[#ffd166]/14 text-[#ffd166]",
+    lender: "SBI",
+    loanType: "Home Loan",
+    opened: "11 May 2025",
+    status: "Inactive",
+    statusTone: "bg-white/[0.08] text-[#9fb2c6]",
+  },
+  {
+    id: "fallback-axis",
+    impact: "High impact",
+    impactTone: "bg-[#4EE6D2]/12 text-[#4EE6D2]",
+    lender: "Axis Bank",
+    loanType: "Credit Card",
+    opened: "04 Feb 2024",
+    status: "On Time",
+    statusTone: "bg-[#4EE6D2]/12 text-[#4EE6D2]",
+  },
+  {
+    id: "fallback-icici",
+    impact: "Medium impact",
+    impactTone: "bg-[#ffd166]/14 text-[#ffd166]",
+    lender: "ICICI Bank",
+    loanType: "Auto Loan",
+    opened: "22 Aug 2023",
+    status: "Closed",
+    statusTone: "bg-[#7895ff]/14 text-[#aebcff]",
+  },
+];
+
+const fallbackReportEnquiries: ReportEnquiryItem[] = [
+  { date: "13 Jun 2026", id: "fallback-enquiry-hdfc", kind: "Hard", lender: "HDFC Bank", loanType: "Personal Loan", pointsImpact: "-5 pts impact" },
+  { date: "28 May 2026", id: "fallback-enquiry-sbi", kind: "Soft", lender: "SBI", loanType: "Home Loan" },
+  { date: "09 Apr 2026", id: "fallback-enquiry-axis", kind: "Hard", lender: "Axis Bank", loanType: "Credit Card", pointsImpact: "-3 pts impact" },
+];
+
+const repairTimelineSteps = ["Report Analysis", "Error Detection", "Dispute Filing", "Lender Negotiation", "Score Verification"];
+const repairTimelineCopy = [
+  "Review accounts, enquiries, balances, and negative signals.",
+  "Find wrong ownership, duplicate entries, late marks, and closure gaps.",
+  "Prepare bureau-ready disputes with supporting documents.",
+  "Coordinate lender follow-up until account correction is confirmed.",
+  "Verify bureau update and score movement after resolution.",
+];
+
 export function CreditScoreExperience() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>("score");
+  const [activeTab, setActiveTab] = useState<Tab>("accounts");
   const [displayData, setDisplayData] = useState<DisplayDataResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -153,13 +231,8 @@ export function CreditScoreExperience() {
 
   const score = readScore(displayData);
   const lastChecked = readLastChecked(displayData);
-  const scoreFactors = displayData?.data?.display?.score?.factors?.filter(Boolean) ?? [];
   const accounts = displayData?.data?.display?.accounts ?? [];
   const enquiries = displayData?.data?.display?.enquiries ?? [];
-  const behaviourItems = useMemo(
-    () => buildBehaviourItems(displayData),
-    [displayData],
-  );
   const baseScore = score ?? 300;
   const predictedScore = useMemo(() => {
     const impact = predictorActions
@@ -361,63 +434,49 @@ export function CreditScoreExperience() {
 
   return (
     <PortalShell active="score">
-      <PortalTopBar title="Your CIBIL Score" />
-      <PageContent>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold text-slate-500">
-              Last updated: {loading ? "Loading..." : lastChecked ?? "--"}
-            </p>
-            <p className="mt-1 text-[0.72rem] text-slate-400">Track your score and test how actions may affect it.</p>
+      <PortalTopBar title="Credit Report" />
+      <PageContent className="bg-[#eef4f8]">
+        <div className="mx-auto max-w-md">
+          <div className="rounded-[2rem] bg-[#081625] p-4 text-white shadow-[0_24px_60px_rgba(8,22,37,0.22)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#4EE6D2]">Credit Report</p>
+                <h1 className="mt-1 text-lg font-semibold tracking-tight">Report Insights</h1>
+                <p className="mt-1 text-[0.72rem] text-[#9fb2c6]">
+                  Updated {loading ? "Loading..." : lastChecked ?? "--"}
+                </p>
+              </div>
+              <button
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#ff4d7d] px-3 text-[0.7rem] font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)] disabled:opacity-55"
+                type="button"
+                onClick={downloadReport}
+                disabled={downloading || !displayData?.data?.report?.has_pdf}
+              >
+                <Download className="size-3.5" />
+                {downloading ? "Loading" : "PDF"}
+              </button>
+            </div>
+
+            {error ? <p className="mt-3 rounded-2xl bg-[#ff4d7d]/10 px-3 py-2 text-[0.72rem] font-medium text-[#ff8cab]">{error}</p> : null}
+
+            <div className="mt-5 grid grid-cols-3 gap-2 rounded-[1.35rem] bg-white/[0.06] p-1.5">
+              {(["accounts", "enquiries", "repair"] as Tab[]).map((tab) => (
+                <TabButton key={tab} active={activeTab === tab} onClick={() => setActiveTab(tab)}>
+                  {toTitleCase(tab)}
+                </TabButton>
+              ))}
+            </div>
           </div>
-          <button
-            aria-label="Credit score information"
-            className="grid size-9 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-cyan-600 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-md"
-            type="button"
-            onClick={predictScoreWithAiHelp}
-          >
-            <Info className="size-4" />
-          </button>
-        </div>
 
-        <div className="mt-5 grid grid-cols-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
-          <TabButton active={activeTab === "score"} onClick={() => setActiveTab("score")}>
-            <Gauge className="size-5" /> Score
-          </TabButton>
-          <TabButton active={activeTab === "predictor"} onClick={isFreeTier ? promptSubscribe : () => setActiveTab("predictor")}>
-            <Sparkles className="size-5" /> Predictor
-          </TabButton>
-        </div>
-
-        <div className="mt-5 space-y-6 animate-[creditPanelIn_0.42s_ease-out]">
-          <ScorePanel
-            downloading={downloading}
-            error={error}
-            factors={scoreFactors}
-            hasReport={Boolean(displayData?.data?.report?.has_pdf)}
-            lastChecked={lastChecked}
-            loading={loading}
-            onDownload={downloadReport}
-            onRefresh={refreshCachedScore}
-            range={displayData?.data?.display?.score?.range ?? "300 to 900"}
-            score={score}
-          />
-
-          {activeTab === "score" && !isFreeTier ? (
-            <ScoreDetails
-              accounts={accounts}
-              behaviourItems={behaviourItems}
-              enquiries={enquiries}
-              loading={loading}
-            />
-          ) : activeTab === "predictor" && !isFreeTier ? (
-            <PredictorPanel
-              currentScore={baseScore}
-              disabled={!score}
-              onPredict={predictScoreWithAiHelp}
-              predictedScore={predictedScore}
-            />
-          ) : null}
+          <div className="mt-4 animate-[creditPanelIn_0.42s_ease-out]">
+            {activeTab === "accounts" ? (
+              <ReportAccountsTab accounts={accounts} loading={loading} />
+            ) : activeTab === "enquiries" ? (
+              <ReportEnquiriesTab enquiries={enquiries} loading={loading} />
+            ) : (
+              <ReportRepairTab accounts={accounts} />
+            )}
+          </div>
         </div>
       </PageContent>
       <SubscribePromptOverlay onClose={closeSubscribePrompt} show={showSubscribePrompt} />
@@ -561,14 +620,168 @@ function TabButton({
   return (
     <button
       className={cn(
-        "flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold transition duration-300",
-        active ? "scale-[1.01] bg-cyan-50 text-cyan-700 shadow-sm" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+        "flex items-center justify-center rounded-full px-2.5 py-2 text-[0.7rem] font-semibold capitalize transition duration-300",
+        active ? "bg-[#4EE6D2] text-[#06111f] shadow-[0_10px_22px_rgba(78,230,210,0.22)]" : "text-[#9fb2c6] hover:bg-white/[0.08] hover:text-white",
       )}
       type="button"
       onClick={onClick}
     >
       {children}
     </button>
+  );
+}
+
+function ReportAccountsTab({ accounts, loading }: { accounts: CreditAccount[]; loading: boolean }) {
+  const items = buildReportAccounts(accounts);
+
+  return (
+    <div className="space-y-3">
+      {loading ? (
+        <ReportLoadingCard label="Loading accounts..." />
+      ) : (
+        items.map((account) => <ReportAccountCard key={account.id} account={account} />)
+      )}
+    </div>
+  );
+}
+
+function ReportEnquiriesTab({ enquiries, loading }: { enquiries: CreditEnquiry[]; loading: boolean }) {
+  const items = buildReportEnquiries(enquiries);
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-[1.5rem] border border-[#ffd166]/25 bg-[#fff7df] px-4 py-3 shadow-sm">
+        <div className="flex gap-3">
+          <Info className="mt-0.5 size-4 shrink-0 text-[#d97706]" />
+          <div>
+            <p className="text-xs font-semibold text-[#111827]">Hard enquiries may affect approval chances</p>
+            <p className="mt-1 text-[0.7rem] leading-4 text-[#7c6a45]">Multiple hard checks in a short period can reduce your score temporarily.</p>
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <ReportLoadingCard label="Loading enquiries..." />
+      ) : (
+        items.map((enquiry) => <ReportEnquiryCard key={enquiry.id} enquiry={enquiry} />)
+      )}
+    </div>
+  );
+}
+
+function ReportRepairTab({ accounts }: { accounts: CreditAccount[] }) {
+  const disputeStats = buildDisputeStats(accounts);
+  const disputes = buildDisputeCards(accounts);
+
+  return (
+    <div className="space-y-4">
+      <section className="overflow-hidden rounded-[1.75rem] bg-[#081625] text-white shadow-[0_18px_40px_rgba(8,22,37,0.2)]">
+        <div className="bg-[radial-gradient(circle_at_85%_0%,rgba(78,230,210,0.28),transparent_34%),linear-gradient(160deg,#10243a,#081625)] px-4 py-5">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#4EE6D2]">Credit Repair Service</p>
+          <h2 className="mt-2 text-base font-semibold">Repair negative report signals</h2>
+          <p className="mt-2 text-[0.72rem] leading-5 text-[#9fb2c6]">Expert review, disputes, lender follow-up, and score verification in one guided flow.</p>
+          <button className="mt-4 h-11 w-full rounded-2xl bg-[#ff4d7d] text-xs font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)]" type="button">
+            Start Full Repair — ₹499/mo
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-[1.75rem] bg-white p-4 shadow-sm">
+        <h2 className="text-sm font-semibold text-[#0f172a]">Repair timeline</h2>
+        <div className="mt-4 space-y-3">
+          {repairTimelineSteps.map((step, index) => (
+            <div key={step} className="flex gap-3">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#e8fbf8] text-[0.68rem] font-semibold text-[#089981]">{index + 1}</span>
+              <div className="border-b border-slate-100 pb-3 last:border-b-0">
+                <p className="text-xs font-semibold text-[#172033]">{step}</p>
+                <p className="mt-1 text-[0.68rem] text-[#64748b]">{repairTimelineCopy[index]}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-[1.75rem] bg-[#081625] p-4 text-white shadow-[0_18px_40px_rgba(8,22,37,0.2)]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#4EE6D2]">Dispute Centre</p>
+            <h2 className="mt-1 text-sm font-semibold">Case progress</h2>
+          </div>
+          <span className="rounded-full bg-[#ff4d7d]/14 px-3 py-1 text-[0.68rem] font-semibold text-[#ff8cab]">Live</span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {disputeStats.map((stat) => (
+            <div key={stat.label} className="rounded-2xl bg-white/[0.06] px-3 py-3">
+              <p className="text-sm font-semibold">{stat.value}</p>
+              <p className="mt-1 text-[0.62rem] leading-3 text-[#9fb2c6]">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 space-y-3">
+          {disputes.map((dispute) => (
+            <div key={dispute.title} className="rounded-2xl border border-white/10 bg-white/[0.05] p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold">{dispute.title}</p>
+                  <p className="mt-1 text-[0.68rem] text-[#9fb2c6]">{dispute.stage}</p>
+                </div>
+                <span className="rounded-full bg-[#4EE6D2]/12 px-2.5 py-1 text-[0.62rem] font-semibold text-[#4EE6D2]">{dispute.progress}%</span>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-[#4EE6D2]" style={{ width: `${dispute.progress}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ReportAccountCard({ account }: { account: ReportAccountItem }) {
+  return (
+    <article className="rounded-[1.65rem] bg-[#081625] p-4 text-white shadow-[0_18px_40px_rgba(8,22,37,0.18)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="truncate text-sm font-semibold">{account.lender}</h2>
+          <p className="mt-1 text-[0.72rem] text-[#9fb2c6]">{account.loanType}</p>
+        </div>
+        <span className={cn("shrink-0 rounded-full px-3 py-1 text-[0.64rem] font-semibold", account.statusTone)}>
+          {account.status}
+        </span>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <span className={cn("rounded-full px-3 py-1.5 text-[0.66rem] font-semibold", account.impactTone)}>{account.impact}</span>
+        <span className="rounded-full bg-white/[0.06] px-3 py-1.5 text-[0.66rem] font-medium text-[#9fb2c6]">Opened {account.opened}</span>
+      </div>
+    </article>
+  );
+}
+
+function ReportEnquiryCard({ enquiry }: { enquiry: ReportEnquiryItem }) {
+  return (
+    <article className="rounded-[1.65rem] bg-[#081625] p-4 text-white shadow-[0_18px_40px_rgba(8,22,37,0.18)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="truncate text-sm font-semibold">{enquiry.lender}</h2>
+          <p className="mt-1 text-[0.72rem] text-[#9fb2c6]">{enquiry.loanType} • {enquiry.date}</p>
+        </div>
+        <span className={cn("shrink-0 rounded-full px-3 py-1 text-[0.64rem] font-semibold", enquiry.kind === "Hard" ? "bg-[#ff4d7d]/14 text-[#ff8cab]" : "bg-[#4EE6D2]/12 text-[#4EE6D2]")}>
+          {enquiry.kind}
+        </span>
+      </div>
+      {enquiry.pointsImpact ? <p className="mt-3 text-[0.72rem] font-medium text-[#ff8cab]">{enquiry.pointsImpact}</p> : null}
+    </article>
+  );
+}
+
+function ReportLoadingCard({ label }: { label: string }) {
+  return (
+    <div className="rounded-[1.65rem] bg-[#081625] p-4 text-[0.75rem] font-medium text-[#9fb2c6] shadow-[0_18px_40px_rgba(8,22,37,0.18)]">
+      {label}
+    </div>
   );
 }
 
@@ -1150,6 +1363,77 @@ function buildBehaviourItems(result: DisplayDataResponse | null): BehaviourItem[
       tone: enquiries.length > 2 ? "warn" : "good",
     },
   ];
+}
+
+function buildReportAccounts(accounts: CreditAccount[]): ReportAccountItem[] {
+  const mappedAccounts = accounts.slice(0, 8).map((account, index) => {
+    const overdue = readNumericValue(account.amount_overdue);
+    const closed = Boolean(account.account_closed);
+    const status: ReportAccountItem["status"] = closed ? "Closed" : overdue > 0 ? "Inactive" : "On Time";
+    const highImpact = readNumericValue(account.high_credit_amount) >= 100000 || overdue > 0;
+
+    return {
+      id: `${account.member_name || "account"}-${account.type || index}`,
+      impact: highImpact ? "High impact" : "Medium impact",
+      impactTone: highImpact ? "bg-[#4EE6D2]/12 text-[#4EE6D2]" : "bg-[#ffd166]/14 text-[#ffd166]",
+      lender: account.member_name || fallbackReportAccounts[index % fallbackReportAccounts.length].lender,
+      loanType: toTitleCase(account.type || fallbackReportAccounts[index % fallbackReportAccounts.length].loanType),
+      opened: formatCompactDate(account.opened),
+      status,
+      statusTone:
+        status === "On Time"
+          ? "bg-[#4EE6D2]/12 text-[#4EE6D2]"
+          : status === "Closed"
+            ? "bg-[#7895ff]/14 text-[#aebcff]"
+            : "bg-white/[0.08] text-[#9fb2c6]",
+    };
+  });
+
+  return mappedAccounts.length ? mappedAccounts : fallbackReportAccounts;
+}
+
+function buildReportEnquiries(enquiries: CreditEnquiry[]): ReportEnquiryItem[] {
+  const mappedEnquiries = enquiries.slice(0, 8).map((enquiry, index) => {
+    const amount = readNumericValue(enquiry.enquiry_amount);
+    const kind: ReportEnquiryItem["kind"] = amount > 0 ? "Hard" : "Soft";
+
+    return {
+      date: formatCompactDate(enquiry.enquiry_date),
+      id: `${enquiry.member || "enquiry"}-${enquiry.enquiry_date || index}`,
+      kind,
+      lender: enquiry.member || fallbackReportEnquiries[index % fallbackReportEnquiries.length].lender,
+      loanType: toTitleCase(enquiry.enquiry_purpose || fallbackReportEnquiries[index % fallbackReportEnquiries.length].loanType),
+      pointsImpact: kind === "Hard" ? `-${Math.min(8, Math.max(2, Math.round(amount / 100000) || 4))} pts impact` : undefined,
+    };
+  });
+
+  return mappedEnquiries.length ? mappedEnquiries : fallbackReportEnquiries;
+}
+
+function buildDisputeStats(accounts: CreditAccount[]) {
+  const activeDisputes = Math.max(1, accounts.filter((account) => readNumericValue(account.amount_overdue) > 0 || !account.account_closed).length);
+
+  return [
+    { label: "Active disputes", value: String(activeDisputes) },
+    { label: "Resolved disputes", value: "3" },
+    { label: "Points gained", value: "+42" },
+  ];
+}
+
+function buildDisputeCards(accounts: CreditAccount[]) {
+  const candidates = accounts.filter((account) => readNumericValue(account.amount_overdue) > 0 || !account.account_closed).slice(0, 2);
+  const mappedDisputes = candidates.map((account, index) => ({
+    progress: index === 0 ? 72 : 48,
+    stage: index === 0 ? "Lender response pending" : "Documents under review",
+    title: `${account.member_name || "Lender"} ${account.type ? toTitleCase(account.type) : "account"} dispute`,
+  }));
+
+  return mappedDisputes.length
+    ? mappedDisputes
+    : [
+        { progress: 72, stage: "Lender response pending", title: "Incorrect active loan status" },
+        { progress: 48, stage: "Documents under review", title: "Duplicate enquiry removal" },
+      ];
 }
 
 function readScore(result: DisplayDataResponse | null) {

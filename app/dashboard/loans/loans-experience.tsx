@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowLeft,
   BadgeIndianRupee,
   Check,
   CheckCircle2,
@@ -23,7 +24,7 @@ import {
   PortalTopBar,
   PrimaryPortalButton,
 } from "@/components/dashboard/portal-ui";
-import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
+import { SubscribePromptOverlay, getSubscriptionPlans, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
@@ -97,8 +98,20 @@ type LoanApplication = {
   submittedAt?: string | null;
   updatedAt?: string | null;
 };
+type LoanOption = {
+  displayOrder?: number | null;
+  isActive?: boolean | null;
+  label: string;
+  value: string;
+};
+type LoanOptionsResponse = {
+  data?: {
+    employmentTypes?: LoanOption[] | null;
+    loanTypes?: LoanOption[] | null;
+  };
+};
 
-const loanTypes = [
+const fallbackLoanTypes = [
   { label: "Personal Loan", value: "personal" },
   { label: "Overdraft Loan", value: "overdraft" },
   { label: "Home Loan", value: "home" },
@@ -106,7 +119,7 @@ const loanTypes = [
   { label: "MSME Loan", value: "msme" },
   { label: "Loan Against Property", value: "loan_against_property" },
 ];
-const employmentTypes = [
+const fallbackEmploymentTypes = [
   { label: "Salaried", value: "salaried" },
   { label: "Self Employed", value: "self_employed" },
   { label: "Business Owner", value: "business_owner" },
@@ -141,6 +154,7 @@ export function LoansExperience() {
   const [applicationError, setApplicationError] = useState("");
   const [applicationLoading, setApplicationLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showBenefitsPrompt, setShowBenefitsPrompt] = useState(false);
   const [toast, setToast] = useState<LoanToast | null>(null);
   const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
@@ -157,6 +171,10 @@ export function LoansExperience() {
 
     return loans;
   }, [filter, isFreeTier, loans]);
+
+  const openBenefitsPrompt = useCallback(() => {
+    setShowBenefitsPrompt(true);
+  }, []);
 
   const loadLoans = useCallback(async () => {
     if (accessLoading) {
@@ -277,38 +295,50 @@ export function LoansExperience() {
 
   return (
     <PortalShell active="loans">
-      <PortalTopBar title="Loan Repayments" />
-      <PageContent>
-        <RepaymentsView
-          error={error}
-          application={application}
-          applicationError={applicationError}
-          applicationLoading={applicationLoading}
-          filter={filter}
-          lastChecked={lastChecked}
-          loading={loading}
-          loans={visibleLoans}
-          onApply={() => setApplyOpen(true)}
-          onApplicationsRefresh={loadApplicationStatus}
-          onFilterChange={(nextFilter) => {
-            if (isFreeTier && nextFilter === "All Loans") {
-              promptSubscribe();
-              return;
-            }
+      <div className="min-h-screen bg-[#050B15]">
+        <PortalTopBar title="Loan Repayments" />
+        <PageContent className="max-w-md px-4 py-6 text-white">
+          <RepaymentsView
+            error={error}
+            application={application}
+            applicationError={applicationError}
+            applicationLoading={applicationLoading}
+            filter={filter}
+            lastChecked={lastChecked}
+            loading={loading}
+            loans={visibleLoans}
+            onApply={() => setApplyOpen(true)}
+            onBack={() => router.back()}
+            onApplicationsRefresh={loadApplicationStatus}
+            onFilterChange={(nextFilter) => {
+              if (isFreeTier && nextFilter === "All Loans") {
+                openBenefitsPrompt();
+                return;
+              }
 
-            setFilter(nextFilter);
+              setFilter(nextFilter);
 
-            if (nextFilter === "Your Applications") {
-              void loadApplicationStatus();
-            }
+              if (nextFilter === "Your Applications") {
+                void loadApplicationStatus();
+              }
+            }}
+            onRefresh={loadLoans}
+            onSubscribePrompt={openBenefitsPrompt}
+            score={score}
+            summary={summary}
+            subscriptionLocked={isFreeTier}
+          />
+        </PageContent>
+      </div>
+      {showBenefitsPrompt ? (
+        <LoanBenefitsPrompt
+          onClose={() => setShowBenefitsPrompt(false)}
+          onSubscribe={() => {
+            setShowBenefitsPrompt(false);
+            promptSubscribe();
           }}
-          onRefresh={loadLoans}
-          onSubscribePrompt={promptSubscribe}
-          score={score}
-          summary={summary}
-          subscriptionLocked={isFreeTier}
         />
-      </PageContent>
+      ) : null}
       <SubscribePromptOverlay onClose={closeSubscribePrompt} show={showSubscribePrompt} />
       {applyOpen ? (
         <ApplyLoanDialog
@@ -349,6 +379,7 @@ function RepaymentsView({
   loans,
   onApplicationsRefresh,
   onApply,
+  onBack,
   onFilterChange,
   onRefresh,
   onSubscribePrompt,
@@ -366,6 +397,7 @@ function RepaymentsView({
   loans: Loan[];
   onApplicationsRefresh: () => void;
   onApply: () => void;
+  onBack: () => void;
   onFilterChange: (filter: LoanFilter) => void;
   onRefresh: () => void;
   onSubscribePrompt: () => void;
@@ -374,76 +406,84 @@ function RepaymentsView({
   subscriptionLocked: boolean;
 }) {
   return (
-    <div className="space-y-5 animate-[creditPanelIn_0.42s_ease-out]">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-[var(--portal-orange)]">Loans</p>
-          <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">Repayments</h2>
-          <p className="mt-1 text-xs text-slate-500">{loading ? "Loading CIBIL accounts..." : lastChecked ? `Report updated ${lastChecked}` : "Report data not available"}</p>
+    <div className="space-y-4 animate-[creditPanelIn_0.42s_ease-out]">
+      <div className="flex items-start gap-3">
+        <button
+          aria-label="Go back"
+          className="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.08] text-white transition hover:bg-white/[0.12]"
+          type="button"
+          onClick={onBack}
+        >
+          <ArrowLeft className="size-4" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[#FFD34D]">Loans</p>
+          <h2 className="mt-1 text-lg font-semibold tracking-tight text-white">Repayments</h2>
+          <p className="mt-1 text-xs text-[#94A3B8]">{loading ? "Loading CIBIL accounts..." : lastChecked ? `Report updated ${lastChecked}` : "Report data not available"}</p>
         </div>
         <button
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--portal-orange)] px-3.5 text-xs font-bold text-white shadow-[0_2px_6px_rgba(255,109,0,0.22)] transition hover:bg-[var(--portal-orange-deep)]"
+          className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] px-3.5 text-xs font-semibold text-[#07111F] shadow-[0_12px_24px_rgba(255,122,0,0.22)] transition hover:brightness-105"
           type="button"
           onClick={onApply}
         >
-          <Plus className="size-4" /> Apply
+          <Plus className="size-3.5" /> Apply
         </button>
       </div>
 
       <button
-        className="group relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-[var(--portal-shadow-soft)] transition hover:border-slate-300"
+        className="group relative w-full overflow-hidden rounded-[28px] border border-white/10 bg-[#0C1626] p-4 text-left shadow-[0_18px_42px_rgba(0,0,0,0.32)] transition hover:border-white/[0.15]"
         type="button"
         onClick={onApply}
       >
-        <div className="absolute inset-y-0 left-0 w-1 bg-[var(--portal-blue)]" />
+        <div className="absolute inset-y-0 left-0 w-1 bg-[#6F6AFF]" />
         <div className="relative flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600">
-              <FileCheck2 className="size-5" />
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.08] text-[#6F6AFF]">
+              <FileCheck2 className="size-[1.125rem]" />
             </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-bold text-slate-950">Need a new loan?</span>
-              <span className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                <CheckCircle2 className="size-3.5 text-emerald-600" /> CIBIL score {score ?? "--"} and report details are ready
+            <span className="min-w-0 flex-1">
+              <span className="block text-[0.82rem] font-semibold text-white">Need a new loan?</span>
+              <span className="mt-1 flex items-center gap-1.5 text-xs font-medium text-[#94A3B8]">
+                <CheckCircle2 className="size-3.5 text-[#22F2C2]" /> CIBIL score {score ?? "--"} and report details are ready
               </span>
             </span>
           </div>
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-slate-50 text-xl text-slate-500 transition group-hover:text-[var(--portal-blue)]">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white/[0.08] text-lg text-[#94A3B8] transition group-hover:text-[#6F6AFF]">
             &rsaquo;
           </span>
         </div>
-        <div className="relative mt-4 flex flex-wrap gap-2">
+        <div className="relative mt-3 flex flex-wrap gap-2">
           {["CIBIL", "KYC", "Plan"].map((item) => (
-            <span key={item} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[0.68rem] font-bold text-slate-600">
-              <Check className="size-3.5 text-emerald-600" /> {item}
+            <span key={item} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-[0.65rem] font-semibold text-[#94A3B8]">
+              <Check className="size-3 text-[#22F2C2]" /> {item}
             </span>
           ))}
         </div>
       </button>
 
-      <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[var(--portal-shadow-soft)]">
+      <div className="grid grid-cols-2 overflow-hidden rounded-[24px] border border-white/10 bg-[#0C1626] shadow-[0_18px_42px_rgba(0,0,0,0.28)]">
         <SummaryCard tone="green" title="Active Loans" value={loading ? "..." : String(summary.activeCount)} amount={loading ? "..." : summary.activeAmount} caption={summary.lastChecked} onClick={subscriptionLocked ? onSubscribePrompt : undefined} />
         <SummaryCard tone="red" title="Overdue" value={loading ? "..." : String(summary.overdueCount)} amount={loading ? "..." : summary.overdueAmount} caption={summary.overdueCount ? "Affects CIBIL" : "No overdue amount"} onClick={subscriptionLocked ? onSubscribePrompt : undefined} />
       </div>
 
       {error ? (
-        <AppCard className="border-rose-200 bg-rose-50">
+        <AppCard className="!border-[#FF5C8A]/25 !bg-[#FF5C8A]/10">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-bold leading-5 text-rose-700">{error}</p>
-            <button className="shrink-0 rounded-full bg-white px-3 py-1.5 text-[0.68rem] font-bold text-rose-700" type="button" onClick={onRefresh}>
+            <p className="text-xs font-medium leading-5 text-[#FF8AAB]">{error}</p>
+            <button className="shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[0.68rem] font-semibold text-[#FF8AAB]" type="button" onClick={onRefresh}>
               Retry
             </button>
           </div>
         </AppCard>
       ) : null}
 
-      <div className="flex gap-2 overflow-x-auto border-b border-slate-200 pb-2">
+      <div className="flex gap-2 overflow-x-auto border-b border-white/10 pb-3">
         {(["All Loans", "Your Applications"] as LoanFilter[]).map((tab) => (
           <button
             key={tab}
             className={cn(
-              "shrink-0 rounded-full border px-4 py-2 text-xs font-bold transition",
-              filter === tab ? "border-[var(--portal-blue)] bg-white text-[var(--portal-blue)]" : "border-slate-200 bg-white text-slate-600",
+              "shrink-0 rounded-full border px-3.5 py-2 text-xs font-semibold transition",
+              filter === tab ? "border-[#6F6AFF] bg-[#6F6AFF]/10 text-[#8EA2FF]" : "border-white/10 bg-white/[0.06] text-[#94A3B8]",
             )}
             type="button"
             onClick={() => onFilterChange(tab)}
@@ -461,9 +501,9 @@ function RepaymentsView({
         ) : loans.length ? (
           loans.map((loan, index) => <ProfessionalLoanCard key={loan.id} index={index} loan={loan} />)
         ) : (
-          <AppCard className="xl:col-span-2">
-            <p className="text-sm font-bold text-slate-800">No loan accounts found</p>
-            <p className="mt-1 text-xs text-slate-500">Loan accounts from your latest CIBIL report will appear here.</p>
+          <AppCard className="!border-white/10 !bg-[#0C1626] xl:col-span-2">
+            <p className="text-sm font-semibold text-white">No loan accounts found</p>
+            <p className="mt-1 text-xs text-[#94A3B8]">Loan accounts from your latest CIBIL report will appear here.</p>
           </AppCard>
         )}
       </div>
@@ -475,25 +515,132 @@ function LoanSuccessToast({ message, onClose, title }: { message: string; onClos
   return (
     <div className="fixed inset-x-4 top-4 z-[90] flex justify-center sm:inset-x-auto sm:right-5 sm:top-5">
       <div
-        className="flex w-full max-w-md items-start gap-3 rounded-2xl border border-emerald-100 bg-white p-4 shadow-[0_22px_60px_rgba(15,23,42,0.18)] ring-1 ring-emerald-50 animate-[creditPanelIn_0.22s_ease-out]"
+        className="flex w-full max-w-md items-start gap-3 rounded-2xl border border-white/10 bg-[#0C1626] p-4 text-white shadow-[0_22px_60px_rgba(0,0,0,0.42)] animate-[creditPanelIn_0.22s_ease-out]"
         role="status"
       >
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-600">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#22F2C2]/10 text-[#22F2C2]">
           <CheckCircle2 className="size-5" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-black text-slate-950">{title}</span>
-          <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{message}</span>
+          <span className="block text-sm font-semibold text-white">{title}</span>
+          <span className="mt-1 block text-xs font-medium leading-5 text-[#94A3B8]">{message}</span>
         </span>
         <button
           aria-label="Close success notification"
-          className="grid size-8 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-slate-50 hover:text-slate-700"
+          className="grid size-8 shrink-0 place-items-center rounded-full text-[#94A3B8] transition hover:bg-white/[0.08] hover:text-white"
           type="button"
           onClick={onClose}
         >
           <X className="size-4" />
         </button>
       </div>
+    </div>
+  );
+}
+
+function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubscribe: () => void }) {
+  const [showLeavingMessage, setShowLeavingMessage] = useState(false);
+  const [benefits, setBenefits] = useState<string[]>([]);
+  const [isLoadingBenefits, setIsLoadingBenefits] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBenefits() {
+      try {
+        const plans = await getSubscriptionPlans();
+        const apiBenefits = Array.from(new Set(plans.flatMap((plan) => plan.benefits).filter(Boolean)));
+
+        if (isMounted) {
+          setBenefits(apiBenefits);
+        }
+      } catch {
+        if (isMounted) {
+          setBenefits([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingBenefits(false);
+        }
+      }
+    }
+
+    void loadBenefits();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const benefitItems = benefits.length ? benefits : ["Loan payment tracking", "EMI reminders", "AI Credit Coach weekly"];
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
+      <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+        <div className="min-h-44 bg-[radial-gradient(circle_at_82%_0%,rgba(94,242,194,0.24),transparent_34%),linear-gradient(180deg,#1D2A3A_0%,#0D131C_100%)] px-5 py-6">
+          <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close benefits" onClick={() => setShowLeavingMessage(true)}>
+            <X className="size-5" />
+          </button>
+          <div className="mt-10 max-w-[18rem]">
+            <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Premium Benefits</p>
+            <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Unlock complete loan tracking</h2>
+          </div>
+        </div>
+
+        <div className="px-5 pb-5 pt-4">
+          <div className="grid gap-3 text-[13px] font-medium leading-5 text-[#AAB6C8]">
+            {isLoadingBenefits ? (
+              <>
+                <span className="h-11 rounded-2xl bg-white/[0.06] animate-pulse" />
+                <span className="h-11 rounded-2xl bg-white/[0.06] animate-pulse" />
+                <span className="h-11 rounded-2xl bg-white/[0.06] animate-pulse" />
+              </>
+            ) : (
+              benefitItems.map((benefit) => (
+                <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
+              ))
+            )}
+          </div>
+
+          <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
+            Subscription
+          </button>
+          <button className="mx-auto mt-3 block text-[11px] font-medium text-[#6F7B8E]" type="button" onClick={() => setShowLeavingMessage(true)}>
+            skip for later
+          </button>
+        </div>
+      </section>
+
+      {showLeavingMessage ? (
+        <div className="absolute inset-0 z-10 flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm" onClick={onClose}>
+          <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]" onClick={(event) => event.stopPropagation()}>
+            <div className="min-h-44 bg-[radial-gradient(circle_at_82%_0%,rgba(94,242,194,0.24),transparent_34%),linear-gradient(180deg,#1D2A3A_0%,#0D131C_100%)] px-5 py-6">
+              <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close benefits message" onClick={onClose}>
+                <X className="size-5" />
+              </button>
+              <div className="mt-10 max-w-[18rem]">
+                <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Before you leave</p>
+                <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Enjoy more benefits with premium</h2>
+              </div>
+            </div>
+
+            <div className="px-5 pb-5 pt-4">
+              <div className="grid gap-3 text-[13px] font-medium leading-5 text-[#AAB6C8]">
+                {benefitItems.map((benefit) => (
+                  <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
+                ))}
+              </div>
+
+              <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
+                View subscription
+              </button>
+              <button className="mx-auto mt-3 block text-[11px] font-medium text-[#6F7B8E]" type="button" onClick={onClose}>
+                Continue free
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -513,14 +660,14 @@ function LoanApplicationStatusCard({
 }) {
   if (loading) {
     return (
-      <AppCard>
+      <AppCard className="!border-white/10 !bg-[#0C1626]">
         <div className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-xl bg-cyan-50 text-cyan-600">
+          <span className="grid size-10 place-items-center rounded-xl bg-[#6F6AFF]/10 text-[#8EA2FF]">
             <LoaderCircle className="size-5 animate-spin" />
           </span>
           <div>
-            <p className="text-sm font-bold text-slate-900">Loading application status</p>
-            <p className="mt-1 text-xs font-semibold text-slate-500">Checking your latest loan application.</p>
+            <p className="text-sm font-semibold text-white">Loading application status</p>
+            <p className="mt-1 text-xs font-medium text-[#94A3B8]">Checking your latest loan application.</p>
           </div>
         </div>
       </AppCard>
@@ -529,17 +676,17 @@ function LoanApplicationStatusCard({
 
   if (!application) {
     return (
-      <AppCard className="border-slate-200">
+      <AppCard className="!border-white/10 !bg-[#0C1626] rounded-[24px] p-4 shadow-[0_18px_42px_rgba(0,0,0,0.28)]">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-black text-slate-950">{error || "Loan application not found"}</p>
-            <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">Your submitted loan application will appear here after you apply.</p>
+            <p className="text-[0.82rem] font-semibold text-white">{error || "Loan application not found"}</p>
+            <p className="mt-1 text-xs font-medium leading-5 text-[#94A3B8]">Your submitted loan application will appear here after you apply.</p>
           </div>
           <div className="flex shrink-0 gap-2">
-            <button className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-slate-300" type="button" onClick={onRefresh}>
+            <button className="rounded-full border border-white/10 bg-white/[0.06] px-3.5 py-2 text-xs font-semibold text-[#CBD5E1] shadow-sm transition hover:border-white/20" type="button" onClick={onRefresh}>
               Refresh
             </button>
-            <button className="rounded-full bg-[var(--portal-orange)] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--portal-orange-deep)]" type="button" onClick={onApply}>
+            <button className="rounded-full bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] px-3.5 py-2 text-xs font-semibold text-[#07111F] shadow-[0_12px_24px_rgba(255,122,0,0.22)] transition hover:brightness-105" type="button" onClick={onApply}>
               Apply
             </button>
           </div>
@@ -551,18 +698,18 @@ function LoanApplicationStatusCard({
   const status = application.applicationStatus || "submitted";
 
   return (
-    <AppCard className="overflow-hidden border-emerald-100">
+    <AppCard className="!border-white/10 !bg-[#0C1626] overflow-hidden">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-600">Your Application</p>
-          <h3 className="mt-1 text-lg font-black tracking-tight text-slate-950">{formatRupees(application.loanAmount)}</h3>
-          <p className="mt-1 text-xs font-semibold text-slate-500">{formatLoanTypeLabel(application.loanType)} application</p>
+          <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[#22F2C2]">Your Application</p>
+          <h3 className="mt-1 text-base font-medium tracking-tight text-white">{formatRupees(application.loanAmount)}</h3>
+          <p className="mt-1 text-[0.72rem] font-normal text-[#94A3B8]">{formatLoanTypeLabel(application.loanType)} application</p>
         </div>
-        <span className="inline-flex w-fit items-center rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-black capitalize text-emerald-700">
+        <span className="inline-flex w-fit items-center rounded-full border border-[#22F2C2]/20 bg-[#22F2C2]/10 px-3 py-1.5 text-[0.7rem] font-medium capitalize text-[#22F2C2]">
           {status.replace(/_/g, " ")}
         </span>
       </div>
-      <div className="mt-4 grid gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3 sm:grid-cols-3">
+      <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-3 sm:grid-cols-3">
         <ApplicationMeta label="Application ID" value={application.id ? String(application.id) : "--"} />
         <ApplicationMeta label="Submitted" value={formatDateTime(application.submittedAt || "")} />
         <ApplicationMeta label="Updated" value={formatDateTime(application.updatedAt || "")} />
@@ -574,8 +721,8 @@ function LoanApplicationStatusCard({
 function ApplicationMeta({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[0.68rem] font-black uppercase tracking-[0.1em] text-slate-400">{label}</p>
-      <p className="mt-1 text-sm font-bold text-slate-800">{value}</p>
+      <p className="text-[0.65rem] font-medium uppercase tracking-[0.1em] text-[#94A3B8]">{label}</p>
+      <p className="mt-1 text-xs font-medium text-white">{value}</p>
     </div>
   );
 }
@@ -600,22 +747,22 @@ function SummaryCard({
   return (
     <button
       className={cn(
-        "relative border-r border-slate-200 bg-white p-4 text-left last:border-r-0",
-        onClick && "cursor-pointer transition hover:bg-slate-50",
-        !isGreen && "bg-rose-50/40",
+        "relative min-h-[140px] border-r border-white/10 bg-transparent p-4 text-left last:border-r-0",
+        onClick && "cursor-pointer transition hover:bg-white/[0.06]",
+        !isGreen && "bg-rose-500/5",
       )}
       onClick={onClick}
       type="button"
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-bold leading-tight text-slate-600">{title}</p>
-        <span className={cn("grid size-8 place-items-center rounded-lg border", isGreen ? "border-emerald-100 bg-emerald-50 text-emerald-600" : "border-rose-100 bg-rose-50 text-rose-600")}>
-          {isGreen ? <FileText className="size-5" /> : <Info className="size-5" />}
+        <p className="text-[0.72rem] font-semibold leading-tight text-[#94A3B8]">{title}</p>
+        <span className={cn("grid size-7 place-items-center rounded-lg border", isGreen ? "border-[#22F2C2]/20 bg-[#22F2C2]/10 text-[#22F2C2]" : "border-[#FF5C8A]/25 bg-[#FF5C8A]/10 text-[#FF5C8A]")}>
+          {isGreen ? <FileText className="size-4" /> : <Info className="size-4" />}
         </span>
       </div>
-      <p className="mt-3 text-2xl font-black text-slate-950">{value}</p>
-      <p className="mt-2 text-sm font-semibold text-slate-700">{amount}</p>
-      <p className="mt-1 text-xs text-slate-500">{caption}</p>
+      <p className="mt-5 text-xl font-semibold text-white">{value}</p>
+      <p className="mt-2 text-xs font-semibold text-[#CBD5E1]">{amount}</p>
+      <p className="mt-1 text-xs text-[#94A3B8]">{caption}</p>
     </button>
   );
 }
@@ -626,49 +773,49 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
   return (
     <AppCard
       className={cn(
-        "animate-[creditPanelIn_0.45s_ease-out_both] overflow-hidden p-0",
-        overdue ? "border-rose-200 bg-white" : "bg-white",
+        "!border-white/10 !bg-[#0C1626] animate-[creditPanelIn_0.45s_ease-out_both] overflow-hidden p-0 shadow-[0_18px_42px_rgba(0,0,0,0.28)]",
+        overdue && "!border-[#FF5C8A]/25",
       )}
       style={{ animationDelay: `${index * 70}ms` }}
     >
-      <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-4 py-4 sm:px-5">
+      <div className="flex items-start justify-between gap-4 border-b border-white/10 px-4 py-4 sm:px-5">
         <div>
-          <h3 className="text-base font-bold text-slate-950">{loan.bank}</h3>
-          <p className="mt-0.5 text-xs text-slate-500">{loan.borrower}</p>
+          <h3 className="text-base font-semibold text-white">{loan.bank}</h3>
+          <p className="mt-0.5 text-xs text-[#94A3B8]">{loan.borrower}</p>
         </div>
-        <span className={cn("rounded-full border px-3 py-1.5 text-xs font-bold", overdue ? "border-rose-300 text-rose-600" : "border-emerald-200 text-emerald-600")}>
+        <span className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold", overdue ? "border-[#FF5C8A]/25 bg-[#FF5C8A]/10 text-[#FF8AAB]" : "border-[#22F2C2]/20 bg-[#22F2C2]/10 text-[#22F2C2]")}>
           {loan.status}
         </span>
       </div>
 
       <div className="px-4 py-4 sm:px-5">
-        <p className="text-xs font-semibold text-slate-500">Loan Amount</p>
-        <p className="mt-1 text-2xl font-bold text-slate-950">{loan.amount}</p>
+        <p className="text-xs font-medium text-[#94A3B8]">Loan Amount</p>
+        <p className="mt-1 text-2xl font-semibold text-white">{loan.amount}</p>
       </div>
 
-      <div className="grid grid-cols-2 border-y border-slate-100">
+      <div className="grid grid-cols-2 border-y border-white/10">
         <LoanMetric title="EMI Amount" value={loan.emi} />
         <LoanMetric title="Last Payment" value={loan.nextEmi} />
       </div>
 
       {overdue ? (
-        <div className="mx-4 mt-4 inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600 sm:mx-5">
+        <div className="mx-4 mt-4 inline-flex items-center gap-2 rounded-xl border border-[#FF5C8A]/25 bg-[#FF5C8A]/10 px-3 py-2 text-xs font-medium text-[#FF8AAB] sm:mx-5">
           <Info className="size-5" /> {loan.overdue}
         </div>
       ) : null}
 
-      <div className="grid grid-cols-3 gap-3 px-4 py-4 text-xs text-slate-600 sm:px-5">
+      <div className="grid grid-cols-3 gap-3 px-4 py-4 text-xs text-[#94A3B8] sm:px-5">
         <MetaCell label="Sanctioned" value={loan.sanctioned} />
         <MetaCell label="Disbursed" value={loan.disbursed} />
         <MetaCell align="right" label="EMIs" value={loan.tenure} />
       </div>
 
-      <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3 sm:px-5">
+      <div className="border-t border-white/10 bg-white/[0.06] px-4 py-3 sm:px-5">
         <PrimaryPortalButton
           disabled
           className={cn(
             "h-11 w-full rounded-xl text-sm",
-            overdue && "border-rose-500 bg-rose-500 shadow-rose-100 hover:bg-rose-600"
+            overdue && "border-[#FF5C8A] bg-[#FF5C8A] shadow-none hover:bg-[#FF5C8A]"
           )}
         >
           <CreditCard className="size-5" />
@@ -683,15 +830,15 @@ function LoanLoadingCards() {
   return (
     <>
       {[0, 1].map((item) => (
-        <AppCard key={item} className="space-y-4">
+        <AppCard key={item} className="!border-white/10 !bg-[#0C1626] space-y-4">
           <div className="flex items-center justify-between gap-4">
-            <span className="h-4 w-36 rounded-full bg-slate-100 animate-pulse" />
-            <span className="h-7 w-20 rounded-full bg-slate-100 animate-pulse" />
+            <span className="h-4 w-36 rounded-full bg-white/10 animate-pulse" />
+            <span className="h-7 w-20 rounded-full bg-white/10 animate-pulse" />
           </div>
-          <span className="block h-8 w-44 rounded-full bg-slate-100 animate-pulse" />
+          <span className="block h-8 w-44 rounded-full bg-white/10 animate-pulse" />
           <div className="grid grid-cols-2 gap-3">
-            <span className="h-14 rounded-2xl bg-slate-100 animate-pulse" />
-            <span className="h-14 rounded-2xl bg-slate-100 animate-pulse" />
+            <span className="h-14 rounded-2xl bg-white/10 animate-pulse" />
+            <span className="h-14 rounded-2xl bg-white/10 animate-pulse" />
           </div>
         </AppCard>
       ))}
@@ -701,9 +848,9 @@ function LoanLoadingCards() {
 
 function LoanMetric({ title, value }: { title: string; value: string }) {
   return (
-    <div className="border-r border-slate-100 bg-white p-4 last:border-r-0">
-      <p className="text-xs font-semibold text-slate-500">{title}</p>
-      <p className="mt-1 text-sm font-bold text-slate-950">{value}</p>
+    <div className="border-r border-white/10 bg-transparent p-4 last:border-r-0">
+      <p className="text-xs font-medium text-[#94A3B8]">{title}</p>
+      <p className="mt-1 text-sm font-semibold text-white">{value}</p>
     </div>
   );
 }
@@ -711,7 +858,7 @@ function LoanMetric({ title, value }: { title: string; value: string }) {
 function MetaCell({ align, label, value }: { align?: "right"; label: string; value: string }) {
   return (
     <span className={cn(align === "right" && "text-right")}>
-      <strong className="block text-slate-800">{label}</strong>
+      <strong className="block font-semibold text-white">{label}</strong>
       {value}
     </span>
   );
@@ -736,7 +883,6 @@ function ApplyLoanDialog({
   onLoanTypeChange: (type: string) => void;
   score: number | null;
 }) {
-  const selectedLoanType = loanTypes.find((type) => type.value === loanType) ?? loanTypes[0];
   const uploadInputRefs = useRef<Record<UploadFieldName, HTMLInputElement | null>>({
     aadhaarCard: null,
     bankStatements: null,
@@ -747,7 +893,55 @@ function ApplyLoanDialog({
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [loanTypeOpen, setLoanTypeOpen] = useState(false);
+  const [loanTypeOptions, setLoanTypeOptions] = useState<LoanOption[]>(fallbackLoanTypes);
+  const [employmentTypeOptions, setEmploymentTypeOptions] = useState<LoanOption[]>(fallbackEmploymentTypes);
   const [scoreRefreshing, setScoreRefreshing] = useState(false);
+  const selectedLoanType = loanTypeOptions.find((type) => type.value === loanType) ?? loanTypeOptions[0];
+  const [loanAmount, setLoanAmount] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadLoanOptions() {
+      try {
+        const response = await apiRequest("/loans/options");
+
+        if (!response.ok) {
+          return;
+        }
+
+        const result = (await response.json()) as LoanOptionsResponse;
+        const nextLoanTypes = normalizeLoanOptions(result.data?.loanTypes, fallbackLoanTypes);
+        const nextEmploymentTypes = normalizeLoanOptions(result.data?.employmentTypes, fallbackEmploymentTypes);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setLoanTypeOptions(nextLoanTypes);
+        setEmploymentTypeOptions(nextEmploymentTypes);
+
+        if (!nextLoanTypes.some((type) => type.value === loanType)) {
+          onLoanTypeChange(nextLoanTypes[0].value);
+        }
+
+        if (!nextEmploymentTypes.some((type) => type.value === employmentType)) {
+          onEmploymentTypeChange(nextEmploymentTypes[0].value);
+        }
+      } catch {
+        if (isMounted) {
+          setLoanTypeOptions(fallbackLoanTypes);
+          setEmploymentTypeOptions(fallbackEmploymentTypes);
+        }
+      }
+    }
+
+    void loadLoanOptions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleScoreRefresh = async () => {
     if (scoreRefreshing) return;
@@ -884,17 +1078,25 @@ function ApplyLoanDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-[120] bg-slate-950/45 px-3 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))] pt-4 backdrop-blur-sm animate-[creditPanelIn_0.2s_ease-out] sm:px-6 sm:py-5 lg:pb-5">
-      <div className="mx-auto flex h-[calc(100dvh-6.75rem-env(safe-area-inset-bottom,0px))] max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.24)] sm:h-[calc(100dvh-2.5rem)]">
-        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 bg-white px-4 py-4 sm:px-5">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-600">Loan Application</p>
-            <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-950">Apply for Loan</h2>
-            <p className="mt-1 text-xs text-slate-500">Complete the details and upload required PDF documents.</p>
+    <div className="fixed inset-0 z-[120] flex items-end bg-black/70 px-0 pt-8 backdrop-blur-md animate-[creditPanelIn_0.2s_ease-out] sm:items-center sm:px-6 sm:py-5">
+      <div className="mx-auto flex h-[calc(100dvh-2rem)] max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-[32px] border border-white/10 bg-[#07111F] text-white shadow-[0_24px_70px_rgba(0,0,0,0.52)] sm:h-[calc(100dvh-2.5rem)] sm:rounded-[32px]">
+        <div className="flex shrink-0 items-start gap-3 border-b border-white/10 bg-[#07111F] px-4 py-4 sm:px-5">
+          <button
+            aria-label="Back from loan application"
+            className="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.08] text-white transition hover:bg-white/[0.12]"
+            type="button"
+            onClick={onClose}
+          >
+            <ArrowLeft className="size-4" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[#8EA2FF]">Loan Application</p>
+            <h2 className="mt-1 text-base font-semibold tracking-tight text-white">Apply for Loan</h2>
+            <p className="mt-1 text-[0.7rem] text-[#94A3B8]">Complete the details and upload required PDF documents.</p>
           </div>
           <button
             aria-label="Close loan application"
-            className="grid size-9 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:text-slate-900"
+            className="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.08] text-white transition hover:bg-white/[0.12]"
             type="button"
             onClick={onClose}
           >
@@ -903,30 +1105,48 @@ function ApplyLoanDialog({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5">
-          <div className="relative flex items-center justify-between gap-4 overflow-hidden rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm">
-            <div className="absolute inset-y-0 left-0 w-1 bg-emerald-500" />
+          <div className="relative flex items-center justify-between gap-4 overflow-hidden rounded-[24px] border border-white/10 bg-[#0C1626] p-4 shadow-[0_18px_42px_rgba(0,0,0,0.28)]">
+            <div className="absolute inset-y-0 left-0 w-1 bg-[#22F2C2]" />
             <div className="flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-2xl bg-emerald-50 text-emerald-600">
+              <span className="grid size-10 place-items-center rounded-2xl bg-[#22F2C2]/10 text-[#22F2C2]">
                 <CheckCircle2 className="size-6" />
               </span>
               <div>
-                <p className="text-sm font-bold text-emerald-700">CIBIL Score: {score ?? "--"}</p>
-                <p className="text-xs text-slate-600">{lastChecked ? `Verified on ${lastChecked}` : "Latest report data will be used when available"}</p>
+                <p className="text-xs font-semibold text-[#22F2C2]">CIBIL Score: {score ?? "--"}</p>
+                <p className="text-[0.7rem] text-[#94A3B8]">{lastChecked ? `Verified on ${lastChecked}` : "Latest report data will be used when available"}</p>
               </div>
             </div>
-            <button className="inline-flex items-center gap-1.5 text-xs font-bold text-cyan-700 transition hover:text-cyan-900" type="button" onClick={handleScoreRefresh} disabled={scoreRefreshing}>
+            <button className="inline-flex items-center gap-1.5 text-[0.7rem] font-semibold text-[#8EA2FF] transition hover:text-white" type="button" onClick={handleScoreRefresh} disabled={scoreRefreshing}>
               {scoreRefreshing ? <LoaderCircle className="size-3.5 animate-spin" /> : null}
               {scoreRefreshing ? "Loading..." : "Refresh"}
             </button>
           </div>
 
-          <form className="mt-5 grid gap-5" onSubmit={handleApplyLoan}>
-            <div className="grid gap-5 sm:grid-cols-2">
+          <form className="mt-5 grid gap-4" onSubmit={handleApplyLoan}>
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField label="Loan Amount" required>
-                <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-white px-4 shadow-sm focus-within:border-cyan-300">
-                  <BadgeIndianRupee className="size-5 shrink-0 text-slate-400" />
-                  <input className="min-w-0 flex-1 rounded-none bg-transparent px-3 text-sm font-semibold outline-none placeholder:text-slate-400 focus:outline-none focus:ring-0 focus-visible:outline-none" inputMode="numeric" name="loanAmount" placeholder="Enter Loan Amount" required />
+
+                <div
+                  className={cn(
+                    "flex h-12 items-center rounded-[18px] border bg-[#101B2B] px-3.5 shadow-sm transition",
+                    loanAmount
+                      ? "border-[#22F2C2] shadow-[0_0_0_1px_rgba(34,242,194,0.25)]"
+                      : "border-white/10",
+                  )}
+                >
+                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white/[0.08] text-[#94A3B8]">
+                    <BadgeIndianRupee className="size-4" />
+                  </span>
+
+                  <input
+                    type="number"
+                    value={loanAmount}
+                    onChange={(e) => setLoanAmount(e.target.value)}
+                    placeholder="Enter Loan Amount"
+                    className="ml-3 h-full flex-1 bg-transparent text-sm font-medium text-white outline-none"
+                  />
                 </div>
+
               </FormField>
 
               <FormField label="Type of Loan" required>
@@ -941,16 +1161,16 @@ function ApplyLoanDialog({
                   <button
                     aria-expanded={loanTypeOpen}
                     aria-haspopup="listbox"
-                    className="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:border-cyan-200 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
+                    className="flex h-12 w-full items-center justify-between rounded-[18px] border border-white/10 bg-[#101B2B] px-4 text-left text-xs font-medium text-white shadow-sm outline-none transition hover:border-white/20 focus:border-[#6F6AFF] focus:ring-4 focus:ring-[#6F6AFF]/10"
                     type="button"
                     onClick={() => setLoanTypeOpen((open) => !open)}
                   >
                     <span>{selectedLoanType.label}</span>
-                    <ChevronDown className={cn("size-5 text-slate-400 transition", loanTypeOpen && "rotate-180")} />
+                    <ChevronDown className={cn("size-5 text-[#94A3B8] transition", loanTypeOpen && "rotate-180")} />
                   </button>
                   {loanTypeOpen ? (
-                    <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-[0_18px_45px_rgba(15,23,42,0.18)]" role="listbox">
-                      {loanTypes.map((type) => {
+                    <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-2xl border border-white/10 bg-[#101B2B] py-1 shadow-[0_18px_45px_rgba(0,0,0,0.32)]" role="listbox">
+                      {loanTypeOptions.map((type) => {
                         const selected = type.value === loanType;
 
                         return (
@@ -958,8 +1178,8 @@ function ApplyLoanDialog({
                             key={type.value}
                             aria-selected={selected}
                             className={cn(
-                              "flex w-full items-center justify-between px-4 py-2.5 text-left text-sm font-semibold transition hover:bg-cyan-50",
-                              selected ? "bg-cyan-50 text-cyan-700" : "text-slate-600",
+                              "flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-medium transition hover:bg-white/[0.08]",
+                              selected ? "bg-[#6F6AFF]/10 text-[#8EA2FF]" : "text-[#CBD5E1]",
                             )}
                             role="option"
                             type="button"
@@ -969,7 +1189,7 @@ function ApplyLoanDialog({
                             }}
                           >
                             {type.label}
-                            {selected ? <Check className="size-4 text-cyan-600" /> : null}
+                            {selected ? <Check className="size-4 text-[#22F2C2]" /> : null}
                           </button>
                         );
                       })}
@@ -980,21 +1200,21 @@ function ApplyLoanDialog({
             </div>
 
             <FormField label="Employment Type" required>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {employmentTypes.map((type) => {
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                {employmentTypeOptions.map((type) => {
                   const selected = employmentType === type.value;
 
                   return (
                     <button
                       key={type.value}
                       className={cn(
-                        "flex min-h-12 items-center justify-center gap-2 rounded-full border px-3 text-center text-xs font-bold leading-tight transition hover:-translate-y-0.5",
-                        selected ? "border-cyan-200 bg-cyan-50 text-cyan-700" : "border-slate-200 bg-white text-slate-600",
+                        "flex min-h-11 items-center justify-center gap-2 rounded-full border px-3 text-center text-[0.7rem] font-semibold leading-tight transition hover:-translate-y-0.5",
+                        selected ? "border-[#22F2C2]/40 bg-[#10263A] text-[#22F2C2]" : "border-white/10 bg-white/[0.06] text-[#94A3B8]",
                       )}
                       type="button"
                       onClick={() => onEmploymentTypeChange(type.value)}
                     >
-                      {selected ? <span className="size-2 shrink-0 rounded-full bg-cyan-500" /> : null}
+                      {selected ? <span className="size-2 shrink-0 rounded-full bg-[#22F2C2]" /> : null}
                       <span className="min-w-0">{type.label}</span>
                     </button>
                   );
@@ -1002,7 +1222,7 @@ function ApplyLoanDialog({
               </div>
             </FormField>
 
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField label="Monthly Income" required>
                 <TextInput inputMode="numeric" name="monthlyIncome" placeholder="Enter Monthly Income" required />
               </FormField>
@@ -1016,7 +1236,7 @@ function ApplyLoanDialog({
               <TextInput inputMode="numeric" name="workExperience" placeholder="Enter Work Experience (Years)" required />
             </FormField>
 
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <UploadField files={selectedFiles.salarySlips} inputRef={(input) => { uploadInputRefs.current.salarySlips = input; }} label="Salary Slip" maxFiles={uploadLimits.salarySlips} name="salarySlips" onChange={handleUploadChange} onRemove={handleUploadRemove} />
               <UploadField files={selectedFiles.bankStatements} inputRef={(input) => { uploadInputRefs.current.bankStatements = input; }} label="Bank Statement (3 Months)" maxFiles={uploadLimits.bankStatements} name="bankStatements" onChange={handleUploadChange} onRemove={handleUploadRemove} />
               <UploadField files={selectedFiles.aadhaarCard} inputRef={(input) => { uploadInputRefs.current.aadhaarCard = input; }} label="Aadhaar Card" maxFiles={uploadLimits.aadhaarCard} name="aadhaarCard" onChange={handleUploadChange} onRemove={handleUploadRemove} />
@@ -1024,18 +1244,18 @@ function ApplyLoanDialog({
             </div>
 
             {submitError ? (
-              <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{submitError}</p>
+              <p className="rounded-2xl border border-[#FF5C8A]/25 bg-[#FF5C8A]/10 px-4 py-3 text-sm font-medium text-[#FF8AAB]">{submitError}</p>
             ) : null}
-            <div className="-mx-4 border-t border-slate-100 bg-white px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-4 sm:-mx-5 sm:px-5">
+            <div className="-mx-4 border-t border-white/10 bg-[#07111F] px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-4 sm:-mx-5 sm:px-5">
               <div className="grid gap-3 sm:grid-cols-[0.7fr_1fr]">
                 <button
-                  className="h-11 rounded-full border border-slate-200 bg-white text-xs font-bold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300"
+                  className="h-11 rounded-full border border-white/10 bg-white/[0.06] text-xs font-semibold text-[#CBD5E1] shadow-sm transition hover:-translate-y-0.5 hover:border-white/20"
                   type="button"
                   onClick={onClose}
                 >
                   Cancel
                 </button>
-                <PrimaryPortalButton className="h-11 rounded-full text-xs" disabled={submitting} type="submit">
+                <PrimaryPortalButton className="h-11 rounded-full border-0 bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-xs font-semibold text-[#07111F] shadow-[0_12px_24px_rgba(255,122,0,0.22)] hover:brightness-105" disabled={submitting} type="submit">
                   {submitting ? (
                     <>
                       <LoaderCircle className="size-4 animate-spin" />
@@ -1057,7 +1277,7 @@ function ApplyLoanDialog({
 function FormField({ children, label, required }: { children: React.ReactNode; label: string; required?: boolean }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-bold text-slate-900">
+      <span className="mb-2 block text-xs font-semibold text-white">
         {label} {required ? <span className="text-rose-500">*</span> : null}
       </span>
       {children}
@@ -1069,7 +1289,7 @@ function TextInput({ className, ...props }: React.ComponentPropsWithoutRef<"inpu
   return (
     <input
       className={cn(
-        "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold shadow-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:outline-none focus:ring-4 focus:ring-cyan-100 focus-visible:outline-none",
+        "h-12 w-full rounded-[18px] border border-white/10 bg-[#101B2B] px-4 text-xs font-medium text-white shadow-sm outline-none transition placeholder:text-[#94A3B8] focus:border-[#22F2C2] focus:outline-none focus:ring-4 focus:ring-[#22F2C2]/10 focus-visible:outline-none",
         className,
       )}
       {...props}
@@ -1098,21 +1318,21 @@ function UploadField({
 
   return (
     <FormField label={label} required>
-      <label className="grid min-h-32 cursor-pointer place-items-center rounded-2xl border border-dashed border-slate-300 bg-white/80 px-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-cyan-50/40">
+      <label className="grid min-h-32 cursor-pointer place-items-center rounded-[18px] border border-dashed border-white/10 bg-[#101B2B] px-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-[#6F6AFF]/60 hover:bg-white/[0.06]">
         <input ref={inputRef} className="sr-only" type="file" accept="application/pdf" multiple name={name} required onChange={(event) => onChange(name, event)} />
         <span className="min-w-0">
-          <Upload className="mx-auto size-8 text-slate-400" />
-          <span className="mt-3 block text-sm font-semibold text-slate-500">Upload {label}</span>
-          <span className="mt-2 block text-xs text-slate-400">Upload PDF format only. Max {maxFiles} files.</span>
-          <span className={cn("mt-3 block text-xs font-bold", files.length ? "text-cyan-700" : "text-slate-400")}>{fileCountLabel}</span>
+          <Upload className="mx-auto size-8 text-[#94A3B8]" />
+          <span className="mt-3 block text-xs font-medium text-[#CBD5E1]">Upload {label}</span>
+          <span className="mt-2 block text-[0.68rem] text-[#94A3B8]">Upload PDF format only. Max {maxFiles} files.</span>
+          <span className={cn("mt-3 block text-[0.68rem] font-semibold", files.length ? "text-[#8EA2FF]" : "text-[#94A3B8]")}>{fileCountLabel}</span>
           {files.length ? (
             <span className="mt-2 block space-y-1 text-left">
               {files.map((file, index) => (
-                <span key={`${file.name}-${file.lastModified}`} className="flex min-w-0 items-center gap-2 rounded-lg bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600">
+                <span key={`${file.name}-${file.lastModified}`} className="flex min-w-0 items-center gap-2 rounded-lg bg-white/[0.08] px-2 py-1 text-[0.68rem] font-medium text-[#CBD5E1]">
                   <span className="min-w-0 flex-1 truncate">{file.name}</span>
                   <button
                     aria-label={`Remove ${file.name}`}
-                    className="grid size-5 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-white hover:text-rose-600"
+                    className="grid size-5 shrink-0 place-items-center rounded-full text-[#94A3B8] transition hover:bg-white/10 hover:text-[#FF5C8A]"
                     type="button"
                     onClick={(event) => {
                       event.preventDefault();
@@ -1161,7 +1381,16 @@ function formatUploadFieldName(name: UploadFieldName) {
 }
 
 function formatLoanTypeLabel(value?: string | null) {
-  return loanTypes.find((type) => type.value === value)?.label ?? (value ? value.replace(/_/g, " ") : "Loan");
+  return fallbackLoanTypes.find((type) => type.value === value)?.label ?? (value ? value.replace(/_/g, " ") : "Loan");
+}
+
+function normalizeLoanOptions(options: LoanOption[] | null | undefined, fallback: LoanOption[]) {
+  const normalized = (options ?? [])
+    .filter((option) => option && option.isActive !== false && option.label && option.value)
+    .sort((first, second) => (first.displayOrder ?? 0) - (second.displayOrder ?? 0))
+    .map((option) => ({ label: option.label, value: option.value }));
+
+  return normalized.length ? normalized : fallback;
 }
 
 function buildLoans(result: DisplayDataResponse | null): Loan[] {

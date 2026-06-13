@@ -488,6 +488,20 @@ body:has(.auth-page) *::-webkit-scrollbar {
   --tw-shadow-color: rgba(92, 62, 37, 0.14) !important;
 }
 
+input,
+input:focus,
+input:active {
+  background-color: transparent;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff;
+  box-shadow: 0 0 0 1000px #101b2b inset !important;
+  border: 0;
+}
+
 .hero-video-poster {
   display: none;
 }@media (prefers-reduced-motion: reduce) {
