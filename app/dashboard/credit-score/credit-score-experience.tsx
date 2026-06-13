@@ -20,6 +20,7 @@ import {
   TrendingUp,
   WalletCards,
   XCircle,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -287,12 +288,12 @@ const fallbackReportAccounts: ReportAccountItem[] = [
     details: [],
     id: "fallback-hdfc",
     impact: "High impact",
-    impactTone: "bg-[#4EE6D2]/12 text-[#4EE6D2]",
+    impactTone: "border border-[#FFD34D]/25 bg-[#FFD34D]/14 text-[#FFD34D]",
     lender: "HDFC Bank",
     loanType: "Personal Loan",
     opened: "13 Jun 2026",
     status: "On Time",
-    statusTone: "bg-[#4EE6D2]/12 text-[#4EE6D2]",
+    statusTone: "bg-[#22F2C2]/12 text-[#22F2C2]",
   },
   {
     details: [],
@@ -303,18 +304,18 @@ const fallbackReportAccounts: ReportAccountItem[] = [
     loanType: "Home Loan",
     opened: "11 May 2025",
     status: "Overdue",
-    statusTone: "bg-white/[0.08] text-[#9fb2c6]",
+    statusTone: "bg-[#FF5C8A]/12 text-[#FF5C8A]",
   },
   {
     details: [],
     id: "fallback-axis",
     impact: "High impact",
-    impactTone: "bg-[#4EE6D2]/12 text-[#4EE6D2]",
+    impactTone: "border border-[#FFD34D]/25 bg-[#FFD34D]/14 text-[#FFD34D]",
     lender: "Axis Bank",
     loanType: "Credit Card",
     opened: "04 Feb 2024",
     status: "On Time",
-    statusTone: "bg-[#4EE6D2]/12 text-[#4EE6D2]",
+    statusTone: "bg-[#22F2C2]/12 text-[#22F2C2]",
   },
   {
     details: [],
@@ -356,6 +357,11 @@ const fallbackRepairContent: CibilRepairContent = {
     { id: "score-verification", title: "Score Verification", description: "Verify bureau update and score movement after resolution.", displayOrder: 5, isActive: true },
   ],
 };
+
+const reportCardClass = "border border-[#1F756B]/35 bg-[linear-gradient(135deg,rgba(8,33,24,0.98),rgba(8,17,31,0.98))] shadow-[0_18px_40px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.04)]";
+const reportHighlightCardClass = "border border-[#1F756B]/45 bg-[radial-gradient(circle_at_85%_0%,rgba(34,242,194,0.12),transparent_36%),linear-gradient(135deg,rgba(8,49,35,0.98),rgba(8,28,22,0.98))] shadow-[0_0_34px_rgba(34,242,194,0.08),0_18px_40px_rgba(0,0,0,0.30)]";
+const reportMiniCardClass = "border border-white/[0.06] bg-white/[0.045]";
+const reportSectionHeadingClass = "px-1 text-[0.72rem] font-extrabold uppercase tracking-[0.18em] text-[#B9C7D8]";
 
 const reportBottomNav = [
   { label: "Home", href: "/dashboard", Icon: Home },
@@ -750,10 +756,10 @@ export function CreditScoreExperience() {
               </Link>
             </div>
 
-            <div className="rounded-[2rem] bg-[radial-gradient(circle_at_84%_0%,rgba(94,242,194,0.14),transparent_34%),linear-gradient(145deg,#111821,#151E2A)] p-4 text-white shadow-[0_18px_38px_rgba(0,0,0,0.2)]">
+            <div className={cn("rounded-[2rem] p-4 text-white", reportHighlightCardClass)}>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#4EE6D2]">Credit Report</p>
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#1F756B]">Credit Report</p>
                 <h1 className="mt-1 text-lg font-semibold tracking-tight">Report Insights</h1>
                 <p className="mt-1 text-[0.72rem] text-[#9fb2c6]">
                   Updated {loading ? "Loading..." : lastChecked ?? "--"}
@@ -772,7 +778,7 @@ export function CreditScoreExperience() {
 
             {error ? <p className="mt-3 rounded-2xl bg-[#ff4d7d]/10 px-3 py-2 text-[0.72rem] font-medium text-[#ff8cab]">{error}</p> : null}
 
-            <div className="mt-5 grid grid-cols-3 gap-2 rounded-[1.35rem] bg-white/[0.06] p-1.5">
+            <div className="mt-5 grid grid-cols-3 gap-2 rounded-[1.35rem] border border-[#1F756B]/25 bg-[#0A1B16]/70 p-1.5">
               {(["accounts", "enquiries", "repair"] as Tab[]).map((tab) => (
                 <TabButton key={tab} active={activeTab === tab} onClick={() => setActiveTab(tab)}>
                   {toTitleCase(tab)}
@@ -801,8 +807,8 @@ export function CreditScoreExperience() {
         </div>
         </PageContent>
 
-        <div className="fixed bottom-4 left-0 right-0 z-30 px-4 pb-[env(safe-area-inset-bottom)]">
-          <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-full border border-white/12 bg-[#171F29]/88 px-2 py-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.42)] backdrop-blur-2xl">
+        <div className="fixed bottom-3 left-0 right-0 z-30 px-4 pb-[env(safe-area-inset-bottom)]">
+          <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-[32px] border border-[#1F756B]/35 bg-[#07130F]/88 px-3 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.42),inset_0_0_28px_rgba(31,117,107,0.08)] backdrop-blur-2xl">
             {reportBottomNav.map(({ label, href, Icon }) => {
               const active = label === "Report";
               const disabled = label !== "Home" && label !== "Report";
@@ -812,12 +818,12 @@ export function CreditScoreExperience() {
                   <button
                     key={label}
                     aria-disabled="true"
-                    className="flex cursor-not-allowed flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-1 text-[11px] font-normal text-[#6F7B8E] opacity-55"
+                    className="flex min-h-[58px] cursor-not-allowed flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[10px] font-semibold text-[#5B716A] opacity-55"
                     disabled
                     type="button"
                   >
-                    <span className="grid size-8 place-items-center rounded-full">
-                      <Icon className="size-4" strokeWidth={1.65} />
+                    <span className="grid size-8 place-items-center rounded-[14px]">
+                      <Icon className="size-4" strokeWidth={1.75} />
                     </span>
                     <span>{label}</span>
                   </button>
@@ -829,10 +835,10 @@ export function CreditScoreExperience() {
                   key={label}
                   href={href}
                   data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
-                  className={cn("flex flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-1 text-[11px] font-normal text-[#B9C0CC]", active && "text-[#FF9D28]")}
+                  className={cn("flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[10px] font-semibold tracking-normal text-[#5B716A] transition duration-300", active ? "text-[#18B98E]" : "hover:text-[#88A39A]")}
                 >
-                  <span className={cn("grid size-8 place-items-center rounded-full", active && "bg-[#9B5C18]/74 shadow-[0_0_18px_rgba(255,122,0,0.4)]")}>
-                    <Icon className="size-4" strokeWidth={active ? 2 : 1.65} />
+                  <span className={cn("grid size-8 place-items-center rounded-[14px] text-[#5B716A]", active && "border border-[#18B98E]/45 bg-[#18B98E]/12 text-[#18B98E] shadow-[0_0_16px_rgba(24,185,142,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]")}>
+                    <Icon className="size-4" strokeWidth={active ? 2.1 : 1.75} />
                   </span>
                   <span>{label}</span>
                 </Link>
@@ -998,7 +1004,7 @@ function TabButton({
     <button
       className={cn(
         "flex items-center justify-center rounded-full px-2.5 py-2 text-[0.7rem] font-semibold capitalize transition duration-300",
-        active ? "bg-[#4EE6D2] text-[#06111f] shadow-[0_10px_22px_rgba(78,230,210,0.22)]" : "text-[#9fb2c6] hover:bg-white/[0.08] hover:text-white",
+        active ? "bg-[linear-gradient(135deg,#22F2C2,#14D9A8)] text-[#041B12] shadow-[0_10px_22px_rgba(34,242,194,0.18)]" : "border border-[#1F756B]/20 text-[#8FA89F] hover:bg-white/[0.08] hover:text-white",
       )}
       type="button"
       onClick={onClick}
@@ -1030,14 +1036,14 @@ function ReportAccountsTab({ accounts, loading }: { accounts: CreditAccount[]; l
                 className={cn(
                   "rounded-2xl px-3 py-2 text-left text-white transition",
                   activeFilter === item.filter
-                    ? "bg-[#4EE6D2] text-[#06111f] shadow-[0_10px_22px_rgba(78,230,210,0.22)]"
-                    : "bg-[#081625]",
+                    ? "bg-[linear-gradient(135deg,#22F2C2,#14D9A8)] text-[#041B12] shadow-[0_10px_22px_rgba(34,242,194,0.18)]"
+                    : "border border-[#1F756B]/20 bg-[#102017]/80",
                 )}
                 type="button"
                 onClick={() => setActiveFilter(item.filter)}
               >
                 <p className="text-sm font-semibold">{item.value}</p>
-                <p className={cn("mt-1 text-[0.62rem] leading-3", activeFilter === item.filter ? "text-[#06111f]/70" : "text-[#9fb2c6]")}>{item.label}</p>
+                <p className={cn("mt-1 text-[0.62rem] leading-3", activeFilter === item.filter ? "text-[#041B12]/70" : "text-[#8FA89F]")}>{item.label}</p>
               </button>
             ))}
           </div>
@@ -1070,7 +1076,7 @@ function ReportEnquiriesTab({ enquiries, loading }: { enquiries: CreditEnquiry[]
           <ReportEnquirySection enquiries={softEnquiries} title="Soft Enquiries" />
         </>
       ) : (
-        <div className="rounded-[1.65rem] bg-[#081625] p-4 text-white shadow-[0_18px_40px_rgba(8,22,37,0.18)]">
+        <div className={cn("rounded-[1.65rem] p-4 text-white", reportCardClass)}>
           <p className="text-sm font-semibold">No recent enquiries found</p>
           <p className="mt-2 text-[0.72rem] leading-5 text-[#9fb2c6]">Your recent credit report does not contain any enquiry records.</p>
         </div>
@@ -1081,7 +1087,7 @@ function ReportEnquiriesTab({ enquiries, loading }: { enquiries: CreditEnquiry[]
 
 function EnquirySummaryCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl bg-[#081625] px-3 py-2 text-white">
+    <div className={cn("rounded-2xl px-3 py-2 text-white", reportCardClass)}>
       <p className="text-sm font-semibold">{value}</p>
       <p className="mt-1 text-[0.62rem] leading-3 text-[#9fb2c6]">{label}</p>
     </div>
@@ -1095,7 +1101,7 @@ function ReportEnquirySection({ enquiries, title }: { enquiries: ReportEnquiryIt
 
   return (
     <section className="space-y-3">
-      <h2 className="px-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#9fb2c6]">{title}</h2>
+      <h2 className={reportSectionHeadingClass}>{title}</h2>
       {enquiries.map((enquiry) => <ReportEnquiryCard key={enquiry.id} enquiry={enquiry} />)}
     </section>
   );
@@ -1108,7 +1114,7 @@ function ReportAccountSection({ items, title }: { items: ReportAccountItem[]; ti
 
   return (
     <section className="space-y-3">
-      <h2 className="px-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#9fb2c6]">{title}</h2>
+      <h2 className={reportSectionHeadingClass}>{title}</h2>
       {items.map((account) => <ReportAccountCard key={account.id} account={account} />)}
     </section>
   );
@@ -1143,9 +1149,9 @@ function ReportRepairTab({
 
   return (
     <div className="space-y-4">
-      <section className="overflow-hidden rounded-[1.75rem] bg-[#081625] text-white shadow-[0_18px_40px_rgba(8,22,37,0.2)]">
-        <div className="bg-[radial-gradient(circle_at_85%_0%,rgba(78,230,210,0.28),transparent_34%),linear-gradient(160deg,#10243a,#081625)] px-4 py-5">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#4EE6D2]">Credit Repair Service</p>
+      <section className={cn("overflow-hidden rounded-[1.75rem] text-white", reportCardClass)}>
+        <div className="bg-[radial-gradient(circle_at_85%_0%,rgba(31,117,107,0.28),transparent_34%),linear-gradient(160deg,#10243a,#081625)] px-4 py-5">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#1F756B]">Credit Repair Service</p>
           <h2 className="mt-2 text-base font-semibold">{plan.planName}</h2>
           <p className="mt-2 text-[0.72rem] leading-5 text-[#9fb2c6]">Expert review, disputes, lender follow-up, and score verification in one guided flow.</p>
           <button className="mt-4 h-11 w-full rounded-2xl bg-[#ff4d7d] text-xs font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)] disabled:opacity-60" disabled={repairSubmitting} type="button" onClick={() => onStartRepair(plan)}>
@@ -1154,25 +1160,25 @@ function ReportRepairTab({
         </div>
       </section>
 
-      <section className="rounded-[1.75rem] bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0f172a]">Repair timeline</h2>
+      <section className={cn("rounded-[1.75rem] p-4 text-white", reportCardClass)}>
+        <h2 className="text-sm font-semibold text-white">Repair timeline</h2>
         <div className="mt-4 space-y-3">
           {timelines.map((step, index) => (
             <div key={step.id} className="flex gap-3">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#e8fbf8] text-[0.68rem] font-semibold text-[#089981]">{index + 1}</span>
-              <div className="border-b border-slate-100 pb-3 last:border-b-0">
-                <p className="text-xs font-semibold text-[#172033]">{step.title}</p>
-                <p className="mt-1 text-[0.68rem] text-[#64748b]">{step.description}</p>
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#22F2C2]/12 text-[0.68rem] font-semibold text-[#22F2C2]">{index + 1}</span>
+              <div className="border-b border-white/10 pb-3 last:border-b-0">
+                <p className="text-xs font-semibold text-white">{step.title}</p>
+                <p className="mt-1 text-[0.68rem] text-[#9fb2c6]">{step.description}</p>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="rounded-[1.75rem] bg-[#081625] p-4 text-white shadow-[0_18px_40px_rgba(8,22,37,0.2)]">
+      <section className={cn("rounded-[1.75rem] p-4 text-white", reportCardClass)}>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#4EE6D2]">Dispute Centre</p>
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#1F756B]">Dispute Centre</p>
             <h2 className="mt-1 text-sm font-semibold">Case progress</h2>
           </div>
           <span className="rounded-full bg-[#ff4d7d]/14 px-3 py-1 text-[0.68rem] font-semibold text-[#ff8cab]">Live</span>
@@ -1180,7 +1186,7 @@ function ReportRepairTab({
 
         <div className="mt-4 grid grid-cols-3 gap-2">
           {disputeStats.map((stat) => (
-            <div key={stat.label} className="rounded-2xl bg-white/[0.06] px-3 py-3">
+            <div key={stat.label} className={cn("rounded-2xl px-3 py-3", reportMiniCardClass)}>
               <p className="text-sm font-semibold">{stat.value}</p>
               <p className="mt-1 text-[0.62rem] leading-3 text-[#9fb2c6]">{stat.label}</p>
             </div>
@@ -1204,7 +1210,7 @@ function RepairDisputeCards({ loading, requests }: { loading: boolean; requests:
 
   if (!disputes.length) {
     return (
-      <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.05] p-3">
+      <div className={cn("mt-4 rounded-2xl p-3", reportMiniCardClass)}>
         <p className="text-xs font-semibold">No active disputes found</p>
         <p className="mt-1 text-[0.68rem] leading-5 text-[#9fb2c6]">You currently have no dispute cases associated with this credit report.</p>
       </div>
@@ -1214,16 +1220,16 @@ function RepairDisputeCards({ loading, requests }: { loading: boolean; requests:
   return (
     <div className="mt-4 space-y-3">
       {disputes.map((dispute) => (
-        <div key={getDisputeId(dispute)} className="rounded-2xl border border-white/10 bg-white/[0.05] p-3">
+        <div key={getDisputeId(dispute)} className={cn("rounded-2xl p-3", reportMiniCardClass)}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold">{getDisputeId(dispute)}</p>
               <p className="mt-1 text-[0.68rem] text-[#9fb2c6]">{dispute.lenderName || "--"}</p>
               <p className="mt-1 text-[0.68rem] text-[#9fb2c6]">Created {formatDisputeCreatedDate(dispute)}</p>
             </div>
-            <span className="rounded-full bg-[#4EE6D2]/12 px-2.5 py-1 text-[0.62rem] font-semibold capitalize text-[#4EE6D2]">{dispute.repairStatus || dispute.paymentStatus || "--"}</span>
+            <span className="rounded-full bg-[#1F756B]/12 px-2.5 py-1 text-[0.62rem] font-semibold capitalize text-[#1F756B]">{dispute.repairStatus || dispute.paymentStatus || "--"}</span>
           </div>
-          {readDisputeProgress(dispute) ? <p className="mt-3 text-[0.68rem] font-semibold text-[#4EE6D2]">Progress {readDisputeProgress(dispute)}</p> : null}
+          {readDisputeProgress(dispute) ? <p className="mt-3 text-[0.68rem] font-semibold text-[#1F756B]">Progress {readDisputeProgress(dispute)}</p> : null}
         </div>
       ))}
     </div>
@@ -1232,7 +1238,7 @@ function RepairDisputeCards({ loading, requests }: { loading: boolean; requests:
 
 function RepairRequestsTable({ loading, requests }: { loading: boolean; requests: CibilRepairRequest[] }) {
   return (
-    <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+    <div className={cn("mt-4 overflow-hidden rounded-2xl", reportMiniCardClass)}>
       <div className="grid grid-cols-[1.1fr_0.8fr_1fr] border-b border-white/10 px-3 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#9fb2c6]">
         <span>Date/Time</span>
         <span>Status</span>
@@ -1247,7 +1253,7 @@ function RepairRequestsTable({ loading, requests }: { loading: boolean; requests
         requests.map((request) => (
           <div key={request.publicId ?? request.id} className="grid grid-cols-[1.1fr_0.8fr_1fr] gap-2 border-b border-white/8 px-3 py-2 text-[0.68rem] text-white last:border-b-0">
             <span className="text-[#c8d3e2]">{formatRepairRequestDate(request)}</span>
-            <span className="font-semibold capitalize text-[#5EF2C2]">{request.repairStatus || request.paymentStatus || "--"}</span>
+            <span className="font-semibold capitalize text-[#1F756B]">{request.repairStatus || request.paymentStatus || "--"}</span>
             <span className="text-[#9fb2c6]">{request.remarks || "--"}</span>
           </div>
         ))
@@ -1260,7 +1266,7 @@ function RepairRequestsTable({ loading, requests }: { loading: boolean; requests
 
 function ReportAccountCard({ account }: { account: ReportAccountItem }) {
   return (
-    <article className="rounded-[1.65rem] bg-[#081625] p-4 text-white shadow-[0_18px_40px_rgba(8,22,37,0.18)]">
+    <article className={cn("rounded-[1.65rem] p-4 text-white", reportCardClass)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold">{account.lender}</h2>
@@ -1271,13 +1277,16 @@ function ReportAccountCard({ account }: { account: ReportAccountItem }) {
         </span>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <span className={cn("rounded-full px-3 py-1.5 text-[0.66rem] font-semibold", account.impactTone)}>{account.impact}</span>
-        <span className="rounded-full bg-white/[0.06] px-3 py-1.5 text-[0.66rem] font-medium text-[#9fb2c6]">Opened {account.opened}</span>
+        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.66rem] font-semibold", account.impactTone)}>
+          {account.impact === "High impact" ? <Zap className="size-3" fill="currentColor" strokeWidth={2.4} /> : null}
+          {account.impact}
+        </span>
+        <span className="rounded-full border border-white/[0.06] bg-white/[0.045] px-3 py-1.5 text-[0.66rem] font-medium text-[#9fb2c6]">Opened {account.opened}</span>
       </div>
       {account.details.length ? (
         <div className="mt-4 grid grid-cols-2 gap-2">
           {account.details.map((detail) => (
-            <div key={detail.label} className="rounded-2xl bg-white/[0.06] px-3 py-2">
+            <div key={detail.label} className={cn("rounded-2xl px-3 py-2", reportMiniCardClass)}>
               <p className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#6f8399]">{detail.label}</p>
               <p className="mt-1 truncate text-[0.72rem] font-semibold text-[#dbe7f4]">{detail.value}</p>
             </div>
@@ -1290,13 +1299,13 @@ function ReportAccountCard({ account }: { account: ReportAccountItem }) {
 
 function ReportEnquiryCard({ enquiry }: { enquiry: ReportEnquiryItem }) {
   return (
-    <article className="rounded-[1.65rem] bg-[#081625] p-4 text-white shadow-[0_18px_40px_rgba(8,22,37,0.18)]">
+    <article className={cn("rounded-[1.65rem] p-4 text-white", reportCardClass)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold">{enquiry.lender}</h2>
           <p className="mt-1 text-[0.72rem] text-[#9fb2c6]">{enquiry.loanType}</p>
         </div>
-        <span className={cn("shrink-0 rounded-full px-3 py-1 text-[0.64rem] font-semibold", enquiry.kind === "Hard" ? "bg-[#ff4d7d]/14 text-[#ff8cab]" : "bg-[#4EE6D2]/12 text-[#4EE6D2]")}>
+        <span className={cn("shrink-0 rounded-full px-3 py-1 text-[0.64rem] font-semibold", enquiry.kind === "Hard" ? "bg-[#ff4d7d]/14 text-[#ff8cab]" : "bg-[#1F756B]/12 text-[#1F756B]")}>
           {enquiry.kind}
         </span>
       </div>
@@ -1304,7 +1313,7 @@ function ReportEnquiryCard({ enquiry }: { enquiry: ReportEnquiryItem }) {
         <p>Enquiry Date {enquiry.date}</p>
         {enquiry.amount ? <p>Requested Amount {enquiry.amount}</p> : null}
       </div>
-      <p className={cn("mt-3 text-[0.72rem] font-medium", enquiry.kind === "Hard" ? "text-[#ff8cab]" : "text-[#4EE6D2]")}>{enquiry.message}</p>
+      <p className={cn("mt-3 text-[0.72rem] font-medium", enquiry.kind === "Hard" ? "text-[#ff8cab]" : "text-[#1F756B]")}>{enquiry.message}</p>
     </article>
   );
 }
@@ -1313,7 +1322,7 @@ function ReportAccountsSkeleton() {
   return (
     <>
       {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className="rounded-[1.65rem] bg-[#081625] p-4 shadow-[0_18px_40px_rgba(8,22,37,0.18)]">
+        <div key={index} className={cn("rounded-[1.65rem] p-4", reportCardClass)}>
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <div className="h-4 w-7/12 animate-pulse rounded-full bg-white/10" />
@@ -1322,9 +1331,9 @@ function ReportAccountsSkeleton() {
             <div className="h-6 w-20 animate-pulse rounded-full bg-white/10" />
           </div>
           <div className="mt-4 grid grid-cols-3 gap-2">
-            <div className="h-12 animate-pulse rounded-2xl bg-white/[0.06]" />
-            <div className="h-12 animate-pulse rounded-2xl bg-white/[0.06]" />
-            <div className="h-12 animate-pulse rounded-2xl bg-white/[0.06]" />
+            <div className={cn("h-12 animate-pulse rounded-2xl", reportMiniCardClass)} />
+            <div className={cn("h-12 animate-pulse rounded-2xl", reportMiniCardClass)} />
+            <div className={cn("h-12 animate-pulse rounded-2xl", reportMiniCardClass)} />
           </div>
         </div>
       ))}
@@ -1334,7 +1343,7 @@ function ReportAccountsSkeleton() {
 
 function ReportLoadingCard({ label }: { label: string }) {
   return (
-    <div className="rounded-[1.65rem] bg-[#081625] p-4 text-[0.75rem] font-medium text-[#9fb2c6] shadow-[0_18px_40px_rgba(8,22,37,0.18)]">
+    <div className={cn("rounded-[1.65rem] p-4 text-[0.75rem] font-medium text-[#9fb2c6]", reportCardClass)}>
       {label}
     </div>
   );
@@ -1932,17 +1941,17 @@ function buildReportAccounts(accounts: CreditAccount[], useFallback = true): Rep
       details: buildReportAccountDetails(account),
       id: `${account.member_name || "account"}-${readAccountType(account) || "account"}-${index}`,
       impact,
-      impactTone: highImpact ? "bg-[#4EE6D2]/12 text-[#4EE6D2]" : "bg-[#ffd166]/14 text-[#ffd166]",
+      impactTone: highImpact ? "border border-[#FFD34D]/25 bg-[#FFD34D]/14 text-[#FFD34D]" : "bg-[#ffd166]/14 text-[#ffd166]",
       lender: account.member_name || fallbackReportAccounts[index % fallbackReportAccounts.length].lender,
       loanType: getAccountTypeLabel(account),
       opened: formatCompactDate(account.opened),
       status,
       statusTone:
         status === "On Time"
-          ? "bg-[#4EE6D2]/12 text-[#4EE6D2]"
+          ? "bg-[#22F2C2]/12 text-[#22F2C2]"
           : status === "Closed"
             ? "bg-[#7895ff]/14 text-[#aebcff]"
-            : "bg-white/[0.08] text-[#9fb2c6]",
+            : "bg-[#FF5C8A]/12 text-[#FF5C8A]",
     };
   });
 

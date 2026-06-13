@@ -484,7 +484,7 @@ function RepaymentsView({
             <span className="min-w-0 flex-1">
               <span className="block text-[0.82rem] font-semibold text-white">Need a new loan?</span>
               <span className="mt-1 flex items-center gap-1.5 text-xs font-medium text-[#94A3B8]">
-                <CheckCircle2 className="size-3.5 text-[#22F2C2]" /> CIBIL score {score ?? "--"} and report details are ready
+                <CheckCircle2 className="size-3.5 text-[#1F756B]" /> CIBIL score {score ?? "--"} and report details are ready
               </span>
             </span>
           </div>
@@ -495,7 +495,7 @@ function RepaymentsView({
         <div className="relative mt-3 flex flex-wrap gap-2">
           {["CIBIL", "KYC", "Plan"].map((item) => (
             <span key={item} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-[0.65rem] font-semibold text-[#94A3B8]">
-              <Check className="size-3 text-[#22F2C2]" /> {item}
+              <Check className="size-3 text-[#1F756B]" /> {item}
             </span>
           ))}
         </div>
@@ -540,7 +540,7 @@ function RepaymentsView({
               key={tab}
               className={cn(
                 "shrink-0 rounded-full border px-3 py-1.5 text-[0.68rem] font-semibold transition",
-                loanStatusFilter === tab ? "border-[#22F2C2] bg-[#22F2C2]/10 text-[#5EF2C2]" : "border-white/10 bg-white/[0.05] text-[#94A3B8]",
+                loanStatusFilter === tab ? "border-[#1F756B] bg-[#1F756B]/10 text-[#1F756B]" : "border-white/10 bg-white/[0.05] text-[#94A3B8]",
               )}
               type="button"
               onClick={() => onLoanStatusFilterChange(tab)}
@@ -576,7 +576,7 @@ function LoanSuccessToast({ message, onClose, title }: { message: string; onClos
         className="flex w-full max-w-md items-start gap-3 rounded-2xl border border-white/10 bg-[#0C1626] p-4 text-white shadow-[0_22px_60px_rgba(0,0,0,0.42)] animate-[creditPanelIn_0.22s_ease-out]"
         role="status"
       >
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#22F2C2]/10 text-[#22F2C2]">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#1F756B]/10 text-[#1F756B]">
           <CheckCircle2 className="size-5" />
         </span>
         <span className="min-w-0 flex-1">
@@ -640,7 +640,7 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
             <X className="size-5" />
           </button>
           <div className="mt-10 max-w-[18rem]">
-            <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Premium Benefits</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#1F756B]">Premium Benefits</p>
             <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Unlock complete loan tracking</h2>
           </div>
         </div>
@@ -677,7 +677,7 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
                 <X className="size-5" />
               </button>
               <div className="mt-10 max-w-[18rem]">
-                <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Before you leave</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#1F756B]">Before you leave</p>
                 <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Enjoy more benefits with premium</h2>
               </div>
             </div>
@@ -759,11 +759,11 @@ function LoanApplicationStatusCard({
     <AppCard className="!border-white/10 !bg-[#0C1626] overflow-hidden">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[#22F2C2]">Your Application</p>
+          <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[#1F756B]">Your Application</p>
           <h3 className="mt-1 text-base font-medium tracking-tight text-white">{formatRupees(application.loanAmount)}</h3>
           <p className="mt-1 text-[0.72rem] font-normal text-[#94A3B8]">{formatLoanTypeLabel(application.loanType)} application</p>
         </div>
-        <span className="inline-flex w-fit items-center rounded-full border border-[#22F2C2]/20 bg-[#22F2C2]/10 px-3 py-1.5 text-[0.7rem] font-medium capitalize text-[#22F2C2]">
+        <span className="inline-flex w-fit items-center rounded-full border border-[#1F756B]/20 bg-[#1F756B]/10 px-3 py-1.5 text-[0.7rem] font-medium capitalize text-[#1F756B]">
           {status.replace(/_/g, " ")}
         </span>
       </div>
@@ -814,7 +814,7 @@ function SummaryCard({
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-[0.72rem] font-semibold leading-tight text-[#94A3B8]">{title}</p>
-        <span className={cn("grid size-7 place-items-center rounded-lg border", isGreen ? "border-[#22F2C2]/20 bg-[#22F2C2]/10 text-[#22F2C2]" : "border-[#FF5C8A]/25 bg-[#FF5C8A]/10 text-[#FF5C8A]")}>
+        <span className={cn("grid size-7 place-items-center rounded-lg border", isGreen ? "border-[#1F756B]/20 bg-[#1F756B]/10 text-[#1F756B]" : "border-[#FF5C8A]/25 bg-[#FF5C8A]/10 text-[#FF5C8A]")}>
           {isGreen ? <FileText className="size-4" /> : <Info className="size-4" />}
         </span>
       </div>
@@ -842,7 +842,7 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
           <h3 className="text-sm font-semibold text-white">{loan.bank}</h3>
           <p className="mt-0.5 text-xs text-[#94A3B8]">{loan.loanType}</p>
         </div>
-        <span className={cn("rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold", overdue ? "border-[#FF5C8A]/25 bg-[#FF5C8A]/10 text-[#FF8AAB]" : "border-[#22F2C2]/20 bg-[#22F2C2]/10 text-[#22F2C2]")}>
+        <span className={cn("rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold", overdue ? "border-[#FF5C8A]/25 bg-[#FF5C8A]/10 text-[#FF8AAB]" : "border-[#1F756B]/20 bg-[#1F756B]/10 text-[#1F756B]")}>
           {loan.status}
         </span>
       </div>
@@ -1168,13 +1168,13 @@ function ApplyLoanDialog({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5">
           <div className="relative flex items-center justify-between gap-4 overflow-hidden rounded-[24px] border border-white/10 bg-[#0C1626] p-4 shadow-[0_18px_42px_rgba(0,0,0,0.28)]">
-            <div className="absolute inset-y-0 left-0 w-1 bg-[#22F2C2]" />
+            <div className="absolute inset-y-0 left-0 w-1 bg-[#1F756B]" />
             <div className="flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-2xl bg-[#22F2C2]/10 text-[#22F2C2]">
+              <span className="grid size-10 place-items-center rounded-2xl bg-[#1F756B]/10 text-[#1F756B]">
                 <CheckCircle2 className="size-6" />
               </span>
               <div>
-                <p className="text-xs font-semibold text-[#22F2C2]">CIBIL Score: {score ?? "--"}</p>
+                <p className="text-xs font-semibold text-[#1F756B]">CIBIL Score: {score ?? "--"}</p>
                 <p className="text-[0.7rem] text-[#94A3B8]">{lastChecked ? `Verified on ${lastChecked}` : "Latest report data will be used when available"}</p>
               </div>
             </div>
@@ -1192,7 +1192,7 @@ function ApplyLoanDialog({
                   className={cn(
                     "flex h-12 items-center rounded-[18px] border bg-[#101B2B] px-3.5 shadow-sm transition",
                     loanAmount
-                      ? "border-[#22F2C2] shadow-[0_0_0_1px_rgba(34,242,194,0.25)]"
+                      ? "border-[#1F756B] shadow-[0_0_0_1px_rgba(31,117,107,0.25)]"
                       : "border-white/10",
                   )}
                 >
@@ -1251,7 +1251,7 @@ function ApplyLoanDialog({
                             }}
                           >
                             {type.label}
-                            {selected ? <Check className="size-4 text-[#22F2C2]" /> : null}
+                            {selected ? <Check className="size-4 text-[#1F756B]" /> : null}
                           </button>
                         );
                       })}
@@ -1271,12 +1271,12 @@ function ApplyLoanDialog({
                       key={type.value}
                       className={cn(
                         "flex min-h-11 items-center justify-center gap-2 rounded-full border px-3 text-center text-[0.7rem] font-semibold leading-tight transition hover:-translate-y-0.5",
-                        selected ? "border-[#22F2C2]/40 bg-[#10263A] text-[#22F2C2]" : "border-white/10 bg-white/[0.06] text-[#94A3B8]",
+                        selected ? "border-[#1F756B]/40 bg-[#10263A] text-[#1F756B]" : "border-white/10 bg-white/[0.06] text-[#94A3B8]",
                       )}
                       type="button"
                       onClick={() => onEmploymentTypeChange(type.value)}
                     >
-                      {selected ? <span className="size-2 shrink-0 rounded-full bg-[#22F2C2]" /> : null}
+                      {selected ? <span className="size-2 shrink-0 rounded-full bg-[#1F756B]" /> : null}
                       <span className="min-w-0">{type.label}</span>
                     </button>
                   );
@@ -1351,7 +1351,7 @@ function TextInput({ className, ...props }: React.ComponentPropsWithoutRef<"inpu
   return (
     <input
       className={cn(
-        "h-12 w-full rounded-[18px] border border-white/10 bg-[#101B2B] px-4 text-xs font-medium text-white shadow-sm outline-none transition placeholder:text-[#94A3B8] focus:border-[#22F2C2] focus:outline-none focus:ring-4 focus:ring-[#22F2C2]/10 focus-visible:outline-none",
+        "h-12 w-full rounded-[18px] border border-white/10 bg-[#101B2B] px-4 text-xs font-medium text-white shadow-sm outline-none transition placeholder:text-[#94A3B8] focus:border-[#1F756B] focus:outline-none focus:ring-4 focus:ring-[#1F756B]/10 focus-visible:outline-none",
         className,
       )}
       {...props}

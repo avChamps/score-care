@@ -546,11 +546,11 @@ export function HomeDashboard() {
                   <div key={factor.name}>
                     <div className="flex items-center justify-between gap-3 text-[12px]">
                       <p className="font-normal text-[13px] text-white">{factor.name}</p>
-                      <p className={cn("font-normal", factor.tone === "good" && "text-[#5EF2C2]", factor.tone === "warn" && "text-[#FFD34D]", factor.tone === "alert" && "text-[#FF5C8A]")}>{factor.meta}</p>
+                      <p className={cn("font-normal", factor.tone === "good" && "text-[#1F756B]", factor.tone === "warn" && "text-[#FFD34D]", factor.tone === "alert" && "text-[#FF5C8A]")}>{factor.meta}</p>
                     </div>
                     <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-white/8">
                       <div
-                        className={cn("h-full rounded-full shadow-[0_0_12px_currentColor]", factor.tone === "good" && "bg-[#5EF2C2] text-[#5EF2C2]", factor.tone === "warn" && "bg-[#FFD34D] text-[#FFD34D]", factor.tone === "alert" && "bg-[#FF5C8A] text-[#FF5C8A]")}
+                        className={cn("h-full rounded-full", factor.tone === "good" && "bg-[#1F756B]", factor.tone === "warn" && "bg-[#FFD34D]", factor.tone === "alert" && "bg-[#FF5C8A]")}
                         style={{ width: `${factor.value}%` }}
                       />
                     </div>
@@ -559,21 +559,21 @@ export function HomeDashboard() {
               </div>
             </section>
 
-            <section {...premiumClickProps} className={cn("mt-5 rounded-[28px] bg-[radial-gradient(circle_at_100%_0%,rgba(94,242,194,0.14),transparent_34%),linear-gradient(135deg,#111821,#151E2A)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.2)]", isFreeTier && "cursor-pointer")}>
+            <section {...premiumClickProps} className={cn("mt-5 rounded-[28px] bg-[radial-gradient(circle_at_100%_0%,rgba(35,143,128,0.1),transparent_34%),linear-gradient(135deg,#111821,#151E2A)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.2)]", isFreeTier && "cursor-pointer")}>
               <div className="flex items-start gap-4">
-                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#5EF2C2]/14 text-[#5EF2C2]">
+                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#16415A] text-white">
                   <Lightbulb className="size-7" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-medium text-[#5EF2C2]">AI Credit Coach</p>
+                  <p className="text-[11px] font-medium text-[#1F756B]">AI Credit Coach</p>
                   <h2 className="mt-2 text-[13px] font-normal leading-5 tracking-normal">{visibleDashboard.coach}</h2>
                   <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-medium">
-                    <span className="rounded-full bg-[#5EF2C2]/12 px-3 py-1 text-[#5EF2C2]">+{visibleDashboard.coachGain} points</span>
+                    <span className="rounded-full bg-[#1F756B]/18 px-3 py-1 text-[#1F756B]">+{visibleDashboard.coachGain} points</span>
                     <span className="rounded-full bg-white/8 px-3 py-1 text-[#AAB6C8]">{visibleDashboard.coachTime}</span>
                   </div>
                 </div>
               </div>
-              <button className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#5EF2C2,#22D983)] text-[12px] font-medium text-[#06221a] shadow-[0_12px_24px_rgba(94,242,194,0.2)]" type="button" onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : () => setShowActionPlan(true)}>
+              <button className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#1F756B] text-[12px] font-medium text-white shadow-[0_12px_24px_rgba(31,117,107,0.18)]" type="button" onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : () => setShowActionPlan(true)}>
                 View Action Plan <ArrowUpRight className="size-5" />
               </button>
             </section>
@@ -583,8 +583,8 @@ export function HomeDashboard() {
         )}
       </main>
 
-      <div className="fixed bottom-4 left-0 right-0 z-30 px-4 pb-[env(safe-area-inset-bottom)]">
-        <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-full border border-white/12 bg-[#171F29]/88 px-2 py-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.42)] backdrop-blur-2xl">
+      <div className="fixed bottom-3 left-0 right-0 z-30 px-4 pb-[env(safe-area-inset-bottom)]">
+        <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-[32px] border border-[#1F756B]/35 bg-[#08110D]/88 px-3 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.42),inset_0_0_28px_rgba(31,117,107,0.08)] backdrop-blur-2xl">
           {bottomNav.map(({ label, href, Icon }) => {
             const active = label === "Home";
             const enabled = active || label === "Report";
@@ -596,15 +596,13 @@ export function HomeDashboard() {
                 data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
                 aria-disabled={!enabled}
                 tabIndex={enabled ? 0 : -1}
-                className={cn("flex flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-1 text-[11px] font-normal text-[#B9C0CC]", active ? "text-[#FF9D28]" : !enabled && "pointer-events-none opacity-72")}
+                className={cn("flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[10px] font-semibold tracking-normal text-[#5B716A] transition duration-300", active ? "text-[#18B98E]" : enabled ? "hover:text-[#88A39A]" : "pointer-events-none opacity-60")}
                 onClick={(event) => {
-                  if (!enabled) {
-                    event.preventDefault();
-                  }
+                  if (!enabled) event.preventDefault();
                 }}
               >
-                <span className={cn("grid size-8 place-items-center rounded-full", active && "bg-[#9B5C18]/74 shadow-[0_0_18px_rgba(255,122,0,0.4)]")}>
-                  <Icon className="size-4" strokeWidth={active ? 2 : 1.65} />
+                <span className={cn("grid size-8 place-items-center rounded-[14px] text-[#5B716A]", active && "border border-[#18B98E]/45 bg-[#18B98E]/12 text-[#18B98E] shadow-[0_0_16px_rgba(24,185,142,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]")}>
+                  <Icon className="size-4" strokeWidth={active ? 2.1 : 1.75} />
                 </span>
                 <span>{label}</span>
               </Link>
