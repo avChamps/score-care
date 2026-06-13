@@ -7,7 +7,6 @@ import { ArrowLeft, BadgeCheck, ShieldCheck, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import panDetailsImage from "@/assets/pan-details.png";
 import { ButtonLoader } from "@/components/auth/button-loader";
-import { ScorecareBrandAnimation } from "@/components/auth/scorecare-brand-animation";
 import { apiRequest } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +34,6 @@ export function LoginFlow() {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [showDashboardTransition, setShowDashboardTransition] = useState(false);
   const [otpSeconds, setOtpSeconds] = useState(0);
   const [signupConsent, setSignupConsent] = useState(false);
   const [legalPopup, setLegalPopup] = useState<LegalPopup | null>(null);
@@ -67,11 +65,8 @@ export function LoginFlow() {
     return () => window.clearTimeout(timer);
   }, [otpSeconds, step]);
 
-  function goToDashboardWithAnimation() {
-    setShowDashboardTransition(true);
-    window.setTimeout(() => {
-      router.push("/dashboard");
-    }, 5000);
+  function goToDashboard() {
+    router.push("/dashboard");
   }
 
   async function sendOtp() {
@@ -137,7 +132,7 @@ export function LoginFlow() {
         session?.profileComplete ||
         session?.shouldShowPanDetailsForm === false
       ) {
-        goToDashboardWithAnimation();
+        goToDashboard();
         return;
       }
 
@@ -183,7 +178,7 @@ export function LoginFlow() {
       sessionStorage.setItem("scorecare_email", email.trim());
       sessionStorage.setItem("scorecare_date_of_birth", dateOfBirth);
 
-      goToDashboardWithAnimation();
+      goToDashboard();
     } catch {
       setProfileError("Could not save PAN details. Please try again.");
     } finally {
@@ -681,11 +676,6 @@ export function LoginFlow() {
 
   return (
     <>
-      <AnimatePresence>
-        {showDashboardTransition ? (
-          <ScorecareBrandAnimation message="Preparing your dashboard" />
-        ) : null}
-      </AnimatePresence>
       <AnimatePresence mode="wait">{content}</AnimatePresence>
       <AnimatePresence>
         {legalPopup ? (

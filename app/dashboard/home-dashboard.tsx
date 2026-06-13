@@ -45,6 +45,7 @@ import {
   BadgeIndianRupee,
   Sparkles,
   Star,
+  Receipt
 } from "lucide-react";
 
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
@@ -133,7 +134,7 @@ const bottomNav = [
   { label: "Report", href: "/dashboard/credit-score", Icon: FileText },
   { label: "Improve", href: "/dashboard/score-fix", Icon: TrendingUp },
   { label: "Offers", href: "/pricing", Icon: Gift },
-  { label: "Loans", href: "/dashboard/loans", Icon: ReceiptText },
+{ label: "Bills", href: "/dashboard/loans", Icon: BadgeIndianRupee }
 ];
 const appTiles = [
   { href: "/dashboard/score-fix", Icon: Wrench, title: "Dispute Centre", value: "0", meta: "active", alert: true },

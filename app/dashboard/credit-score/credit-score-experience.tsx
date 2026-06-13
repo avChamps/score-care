@@ -11,6 +11,7 @@ import {
   Gift,
   Gauge,
   Home,
+  LoaderCircle,
   Menu,
   ReceiptText,
   RotateCcw,
@@ -757,7 +758,7 @@ export function CreditScoreExperience() {
                 onClick={downloadReport}
                 disabled={downloading}
               >
-                <Download className="size-3.5" />
+                {downloading ? <LoaderCircle className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
                 {downloading ? "Loading" : "PDF"}
               </button>
             </div>
@@ -2243,7 +2244,7 @@ function getReportFileName(contentDisposition: string | null) {
   const quotedMatch = /filename="?([^"]+)"?/i.exec(contentDisposition);
   const fileName = utf8Match?.[1] ?? quotedMatch?.[1];
 
-  return fileName ? decodeURIComponent(fileName.trim()) : "scorecare-cibil-report.pdf";
+  return fileName ? decodeURIComponent(fileName.trim()) : "Scorecare-cibil-report.pdf";
 }
 
 function toTitleCase(value: string) {
