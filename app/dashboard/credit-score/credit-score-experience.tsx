@@ -2021,7 +2021,7 @@ function buildReportEnquiries(enquiries: CreditEnquiry[]): ReportEnquiryItem[] {
     return {
       amount: amount > 0 ? formatRupees(enquiry.enquiry_amount) : undefined,
       date: formatCompactDate(enquiry.enquiry_date),
-      id: `${enquiry.member || "enquiry"}-${enquiry.enquiry_date || index}`,
+      id: `${enquiry.member || "enquiry"}-${enquiry.enquiry_date || "unknown"}-${index}`,
       kind,
       lender: enquiry.member || "Credit Bureau",
       loanType: getEnquiryPurposeLabel(enquiry.enquiry_purpose),

@@ -299,8 +299,8 @@ export function ComparisonTable() {
           </div>
           {comparisonRows.map((row) => (
             <div key={row[0]} className="grid grid-cols-[1.4fr_1fr_1fr_1fr] gap-2 border-t border-[#6f5948]/12 p-4 text-sm">
-              {row.map((cell) => (
-                <span key={cell} className="text-[#6f5948]">{cell}</span>
+              {row.map((cell, index) => (
+                <span key={`${row[0]}-${index}`} className="text-[#6f5948]">{cell}</span>
               ))}
             </div>
           ))}

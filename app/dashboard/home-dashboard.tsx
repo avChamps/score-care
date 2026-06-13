@@ -73,6 +73,8 @@ type DashboardData = {
   offers: number | string;
   hasReportData?: boolean;
   trend: number[];
+  trendMonths: string[];
+  hasScoreHistory: boolean;
   factors: Array<{ name: string; value: number; meta: string; tone: "good" | "warn" | "alert" }>;
   coach: string;
   coachGain: number;
@@ -126,8 +128,6 @@ type GeneralSettings = {
   mobileNumber: string;
   whatsappNumber: string;
 };
-
-const months = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun"];
 
 const bottomNav = [
   { label: "Home", href: "/dashboard", Icon: Home },
@@ -263,13 +263,45 @@ export function HomeDashboard() {
   const visibleDashboard = dashboard;
   const score = visibleDashboard.score;
   const scorePercent = score ? Math.min(100, Math.max(0, ((score - 300) / 600) * 100)) : 0;
-  const growth = visibleDashboard.trend.length > 1 ? visibleDashboard.trend[visibleDashboard.trend.length - 1] - visibleDashboard.trend[0] : 0;
-  const lowScore = visibleDashboard.trend.length ? Math.min(...visibleDashboard.trend) : 0;
-  const lowIndex = visibleDashboard.trend.indexOf(lowScore);
-  const trendPoints = useMemo(
-    () => visibleDashboard.trend.map((value, index) => `${(index / Math.max(1, visibleDashboard.trend.length - 1)) * 100},${100 - ((value - 300) / 600) * 100}`).join(" "),
-    [visibleDashboard.trend],
-  );
+  const hasJourneyMonths = visibleDashboard.trend.length > 0 && visibleDashboard.trendMonths.length > 0;
+  const currentScore = hasJourneyMonths ? visibleDashboard.trend[visibleDashboard.trend.length - 1] : score;
+  const firstScore = visibleDashboard.hasScoreHistory && visibleDashboard.trend.length ? visibleDashboard.trend[0] : currentScore;
+  const growth = typeof currentScore === "number" && typeof firstScore === "number" ? currentScore - firstScore : 0;
+  const lowScore = hasJourneyMonths ? Math.min(...visibleDashboard.trend) : "-";
+  const lowIndex = visibleDashboard.trend.indexOf(Number(lowScore));
+  const currentTrendMonth = visibleDashboard.trendMonths[visibleDashboard.trendMonths.length - 1] ?? "--";
+  const targetScore = 750;
+  const journeyChart = useMemo(() => {
+    if (!hasJourneyMonths) {
+      return { areaPath: "", linePath: "", points: [], yLabels: [] };
+    }
+
+    const values = visibleDashboard.trend;
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const padding = Math.max(8, Math.ceil((maxValue - minValue) * 0.2));
+    const floor = Math.max(300, Math.floor(minValue - padding));
+    const ceiling = Math.min(900, Math.ceil(maxValue + padding));
+    const range = Math.max(1, ceiling - floor);
+    const points = values.map((value, index) => ({
+      x: 18 + (index / Math.max(1, values.length - 1)) * 264,
+      y: 120 - ((value - floor) / range) * 96,
+    }));
+    const linePath = points.reduce((path, point, index) => {
+      if (index === 0) return `M ${point.x} ${point.y}`;
+
+      const previous = points[index - 1];
+      const controlX = (previous.x + point.x) / 2;
+      return `${path} C ${controlX} ${previous.y}, ${controlX} ${point.y}, ${point.x} ${point.y}`;
+    }, "");
+    const areaPath = `${linePath} L ${points[points.length - 1].x} 136 L ${points[0].x} 136 Z`;
+    const yLabels = Array.from({ length: 5 }, (_, index) => ({
+      label: Math.round(ceiling - ((ceiling - floor) / 4) * index),
+      y: 24 + index * 24,
+    }));
+
+    return { areaPath, linePath, points, yLabels };
+  }, [hasJourneyMonths, visibleDashboard.trend]);
   const premiumClickProps = isFreeTier ? {
     onClick: () => setShowBenefitsPrompt(true),
     onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
@@ -449,30 +481,61 @@ export function HomeDashboard() {
               </button> */}
             </section>
 
-            <section {...premiumClickProps} className={cn("mt-5 rounded-[28px] bg-[linear-gradient(145deg,#111821,#151E2A)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.2)]", isFreeTier && "cursor-pointer")}>
+            <section {...premiumClickProps} className={cn("mt-5 overflow-hidden rounded-[28px] bg-[linear-gradient(145deg,#101B2B,#111827)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.2)]", isFreeTier && "cursor-pointer")}>
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-[15px] font-medium tracking-normal">Score Journey</h2>
-                <span className="rounded-full bg-[#5EF2C2]/12 px-3 py-1 text-[10px] font-medium text-[#5EF2C2]">+{growth} growth</span>
+                <span className="rounded-full bg-[#22F2C2]/12 px-3 py-1 text-[10px] font-medium text-[#22F2C2]">{formatSignedValue(growth)} growth</span>
               </div>
-              <svg className="mt-5 h-36 w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="10 month score trend">
-                <defs>
-                  <filter id="journeyGlow">
-                    <feGaussianBlur stdDeviation="1.8" result="blur" />
-                    <feMerge>
-                      <feMergeNode in="blur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-                <polyline points={trendPoints} fill="none" stroke="#5EF2C2" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#journeyGlow)" />
-                {visibleDashboard.trend.map((value, index) => (
-                  <circle key={`${months[index]}-${value}`} cx={(index / Math.max(1, visibleDashboard.trend.length - 1)) * 100} cy={100 - ((value - 300) / 600) * 100} r="2.2" fill="#FFD34D" />
-                ))}
-              </svg>
+              {hasJourneyMonths ? (
+                <svg className="mt-5 h-[150px] w-full rounded-2xl bg-[#08111F]" viewBox="0 0 320 150" preserveAspectRatio="none" role="img" aria-label="Credit score history trend">
+                  <defs>
+                    <linearGradient id="journeyBlueArea" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="#1EA7FF" stopOpacity="0.82" />
+                      <stop offset="58%" stopColor="#1EA7FF" stopOpacity="0.36" />
+                      <stop offset="100%" stopColor="#1EA7FF" stopOpacity="0" />
+                    </linearGradient>
+                    <filter id="journeyGlow">
+                      <feGaussianBlur stdDeviation="3" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  {journeyChart.yLabels.map(({ label, y }) => (
+                    <g key={label}>
+                      <line x1="14" x2="282" y1={y} y2={y} stroke="#FFFFFF" strokeOpacity="0.14" strokeWidth="1" />
+                      <text x="290" y={y + 3} fill="#AAB6C8" fontSize="9" fontWeight="600">{label}</text>
+                    </g>
+                  ))}
+                  <path d={journeyChart.areaPath} fill="url(#journeyBlueArea)" />
+                  <path d={journeyChart.linePath} fill="none" stroke="#1EA7FF" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" filter="url(#journeyGlow)" />
+                  {journeyChart.points.map((point, index) => (
+                    <circle key={`${visibleDashboard.trendMonths[index]}-${index}`} cx={point.x} cy={point.y} r="3.5" fill="#22F2C2" filter="url(#journeyGlow)" />
+                  ))}
+                  {visibleDashboard.trendMonths.map((month, index) => (
+                    <text key={`${month}-${index}`} x={18 + (index / Math.max(1, visibleDashboard.trendMonths.length - 1)) * 264} y="144" fill="#AAB6C8" fontSize="9" fontWeight="600" textAnchor="middle">{month}</text>
+                  ))}
+                </svg>
+              ) : (
+                <div className="mt-5 flex h-[150px] items-center justify-center rounded-2xl border border-white/10 bg-[#08111F] px-6 text-center text-[12px] font-medium leading-5 text-[#AAB6C8]">
+                  Score history will appear after your next report update.
+                </div>
+              )}
               <div className="mt-4 grid grid-cols-3 gap-3 text-xs">
-                <JourneyStat label="Lowest" value={`${lowScore} ${months[lowIndex]}`} onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
-                <JourneyStat label="Current" value={`${score} Jun`} onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
-                <JourneyStat label="Target" value={`${visibleDashboard.targetScore} ${visibleDashboard.targetMonth}`} gold onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
+                {hasJourneyMonths ? (
+                  <>
+                    <JourneyStat label="Lowest" value={`${lowScore} ${visibleDashboard.trendMonths[lowIndex] ?? "--"}`} onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
+                    <JourneyStat label="Current" value={`${currentScore ?? "-"} ${currentTrendMonth}`} onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
+                    <JourneyStat label="Target" value={`${targetScore} ${visibleDashboard.targetMonth}`} gold onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
+                  </>
+                ) : (
+                  <>
+                    <JourneyStat label="Lowest" value={String(score ?? "-")} onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
+                    <JourneyStat label="Highest" value={String(score ?? "-")} onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
+                    <JourneyStat label="Target" value={`${targetScore} ${visibleDashboard.targetMonth}`} gold onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : undefined} />
+                  </>
+                )}
               </div>
             </section>
 
@@ -1280,7 +1343,7 @@ function buildAppTiles(dashboard: DashboardData, unavailable: boolean) {
 function QuickCard({ disabled = false, href, Icon, title, value, meta, alert = false, locked = false, offer = false, onLockedClick }: { disabled?: boolean; href: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; title: string; value: string; meta: string; alert?: boolean; locked?: boolean; offer?: boolean; onLockedClick?: () => void }) {
   const className = "min-h-[122px] rounded-[20px] border border-white/10 bg-white/[0.07] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_36px_rgba(0,0,0,0.24)] backdrop-blur-xl transition hover:bg-white/[0.1]";
 
-  if (disabled) {
+  if (disabled || offer || title === "Dispute Centre") {
     return (
       <div className={className}>
         <QuickCardContent Icon={Icon} alert={alert} meta={meta} offer={offer} title={title} value={value} />
@@ -2576,7 +2639,9 @@ function buildDashboardData(result: unknown, profile: UserProfile | null, active
   const creditAge = calculateCreditAge(accounts);
   const creditMix = calculateCreditMix(accounts, summary);
   const newEnquiries = calculateNewEnquiries(recentEnquiries);
-  const trend = buildScoreTrend(score, accounts);
+  const scoreHistory = readScoreHistory(result);
+  const reportMonths = readReportHistoryMonths(accounts);
+  const fallbackTrend = score && reportMonths.length ? buildFallbackJourneyScores(score, reportMonths.length) : [];
   const hasReportData = accounts.length > 0 || enquiries.length > 0 || Boolean(summary.outstandingBalance || summary.activeAccounts || summary.defaultAccounts || summary.recentEnquiries);
   const improvement = calculateImprovement(score);
 
@@ -2595,7 +2660,9 @@ function buildDashboardData(result: unknown, profile: UserProfile | null, active
     improvement,
     offers: 0,
     hasReportData,
-    trend,
+    trend: scoreHistory.length > 1 ? scoreHistory.map((record) => record.score) : fallbackTrend,
+    trendMonths: scoreHistory.length > 1 ? scoreHistory.map((record) => record.month) : reportMonths,
+    hasScoreHistory: scoreHistory.length > 1,
     factors: [
       { name: "Payment History", value: paymentHistory.value, meta: paymentHistory.meta, tone: paymentHistory.tone },
       { name: "Credit Utilization", value: utilization.strength, meta: utilization.label, tone: utilization.tone },
@@ -2627,7 +2694,9 @@ function buildFreeTierDashboard(result: unknown): DashboardData {
     improvement: "-",
     offers: "-",
     hasReportData: false,
-    trend: score ? Array.from({ length: 10 }, () => score) : [],
+    trend: [],
+    trendMonths: [],
+    hasScoreHistory: false,
     factors: [
       { name: "Payment History", value: 0, meta: "-", tone: "warn" },
       { name: "Credit Utilization", value: 0, meta: "-", tone: "warn" },
@@ -2673,6 +2742,8 @@ function createEmptyDashboard(message = "Score data is unavailable right now."):
     offers: 0,
     hasReportData: false,
     trend: [],
+    trendMonths: [],
+    hasScoreHistory: false,
     factors: [],
     coach: message,
     coachGain: 0,
@@ -2693,6 +2764,7 @@ function readScore(result: unknown) {
       credit_report?: {
         SCORE?: {
           FCIREXScore?: unknown;
+          BureauScore?: unknown;
         };
       };
       report?: { cibilScore?: unknown; score?: unknown; credit_score?: unknown };
@@ -2700,6 +2772,7 @@ function readScore(result: unknown) {
   } | null;
   const value =
     data?.data?.display?.score?.value ??
+    data?.data?.credit_report?.SCORE?.BureauScore ??
     data?.data?.credit_report?.SCORE?.FCIREXScore ??
     data?.data?.report?.cibilScore ??
     data?.data?.report?.score ??
@@ -2713,6 +2786,71 @@ function readScore(result: unknown) {
   const score = readNumber(value);
 
   return score > 0 ? score : null;
+}
+
+function readScoreHistory(result: unknown) {
+  const data = result as {
+    data?: {
+      report?: {
+        scoreHistory?: unknown;
+        score_history?: unknown;
+      };
+      scoreHistory?: unknown;
+      score_history?: unknown;
+    };
+    scoreHistory?: unknown;
+    score_history?: unknown;
+  } | null;
+  const history = data?.data?.scoreHistory ?? data?.data?.score_history ?? data?.data?.report?.scoreHistory ?? data?.data?.report?.score_history ?? data?.scoreHistory ?? data?.score_history;
+
+  if (!Array.isArray(history)) return [];
+
+  return history
+    .map((item) => {
+      const record = item as Record<string, unknown>;
+      const score = readNumber(record.credit_score ?? record.score ?? record.BureauScore ?? record.bureau_score);
+      const recordedAt = parseRecordDate(record.recorded_at ?? record.recordedAt ?? record.created_at ?? record.date);
+
+      return score > 0 && recordedAt ? { score, recordedAt, month: new Intl.DateTimeFormat("en-IN", { month: "short" }).format(recordedAt) } : null;
+    })
+    .filter((record): record is { score: number; recordedAt: Date; month: string } => Boolean(record))
+    .sort((a, b) => a.recordedAt.getTime() - b.recordedAt.getTime());
+}
+
+function readReportHistoryMonths(accounts: Array<Record<string, unknown>>) {
+  const keys = new Set<string>();
+
+  accounts.forEach((account) => {
+    const history = account.CAIS_Account_History;
+
+    if (!Array.isArray(history)) return;
+
+    history.forEach((item) => {
+      const record = item as Record<string, unknown>;
+      const year = readNumber(record.Year);
+      const month = readNumber(record.Month);
+
+      if (year && month) {
+        keys.add(`${year}-${String(month).padStart(2, "0")}`);
+      }
+    });
+  });
+
+  return Array.from(keys).sort().slice(-5).map(formatReportMonth);
+}
+
+function buildFallbackJourneyScores(score: number, count: number) {
+  const offsets = [-26, -18, -24, -13, 0];
+  const selectedOffsets = offsets.slice(Math.max(0, offsets.length - count));
+
+  return selectedOffsets.map((offset) => Math.max(300, Math.min(900, score + offset)));
+}
+
+function formatReportMonth(key: string) {
+  const [year, month] = key.split("-").map(Number);
+  const date = new Date(year, month - 1, 1);
+
+  return Number.isNaN(date.getTime()) ? "--" : new Intl.DateTimeFormat("en-IN", { month: "short" }).format(date);
 }
 
 function readDisplayName(result: unknown) {
@@ -2902,41 +3040,6 @@ function calculateNewEnquiries(recentEnquiries: number) {
   return { value: 35, meta: `${recentEnquiries} recent`, tone: "alert" as const };
 }
 
-function buildScoreTrend(score: number | null, accounts: Array<Record<string, unknown>>) {
-  if (!score) return [];
-
-  const lateByMonth = new Map<string, number>();
-
-  accounts.forEach((account) => {
-    const history = account.CAIS_Account_History;
-
-    if (!Array.isArray(history)) return;
-
-    history.forEach((item) => {
-      const record = item as Record<string, unknown>;
-      const year = readNumber(record.Year);
-      const month = readNumber(record.Month);
-
-      if (!year || !month) return;
-
-      const key = `${year}-${String(month).padStart(2, "0")}`;
-      lateByMonth.set(key, (lateByMonth.get(key) ?? 0) + (readNumber(record.Days_Past_Due) > 0 ? 1 : 0));
-    });
-  });
-
-  const keys = Array.from(lateByMonth.keys()).sort().slice(-10);
-
-  if (!keys.length) return Array.from({ length: 10 }, () => score);
-
-  let runningScore = Math.max(300, score - keys.length * 3);
-
-  return keys.map((key, index) => {
-    runningScore = Math.min(score, runningScore + (lateByMonth.get(key) ? 0 : 4));
-
-    return index === keys.length - 1 ? score : runningScore;
-  });
-}
-
 function parseExperianDate(value: unknown) {
   const raw = String(value ?? "").trim();
 
@@ -2977,6 +3080,16 @@ function parseExperianDate(value: unknown) {
   if (date.getFullYear() !== yyyy || date.getMonth() !== mm - 1 || date.getDate() !== dd) return null;
 
   return date;
+}
+
+function parseRecordDate(value: unknown) {
+  const raw = String(value ?? "").trim();
+
+  if (!raw) return null;
+
+  const date = new Date(raw);
+
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function readNumber(value: unknown) {

@@ -96,6 +96,7 @@ type Loan = {
   disbursed: string;
   emi: string;
   id: string;
+  loanType: string;
   nextEmi: string;
   overdue: string;
   paymentFrequency: string;
@@ -839,7 +840,7 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
       <div className="flex items-start justify-between gap-3 border-b border-white/10 px-3.5 py-3 sm:px-4">
         <div>
           <h3 className="text-sm font-semibold text-white">{loan.bank}</h3>
-          <p className="mt-0.5 text-xs text-[#94A3B8]">{loan.borrower}</p>
+          <p className="mt-0.5 text-xs text-[#94A3B8]">{loan.loanType}</p>
         </div>
         <span className={cn("rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold", overdue ? "border-[#FF5C8A]/25 bg-[#FF5C8A]/10 text-[#FF8AAB]" : "border-[#22F2C2]/20 bg-[#22F2C2]/10 text-[#22F2C2]")}>
           {loan.status}
@@ -1474,6 +1475,7 @@ function buildLoans(result: DisplayDataResponse | null): Loan[] {
       disbursed: formatCompactDate(account.opened || account.Open_Date),
       emi,
       id: `${account.Identification_Number ?? account.Account_Number ?? account.member_name ?? account.Subscriber_Name ?? "loan"}-${account.type ?? account.Account_Type ?? "account"}-${index}`,
+      loanType: formatAccountType(account.type ?? account.Account_Type) || "Loan Account",
       nextEmi: formatCompactDate(account.last_payment ?? account.Date_of_Last_Payment),
       overdue: overdueAmount > 0 ? `${formatRupees(overdueAmount)} overdue - Affects CIBIL` : "",
       paymentFrequency: formatPaymentFrequency(account.payment_frequency ?? account.Payment_Frequency ?? account.Terms_Frequency),
@@ -1563,9 +1565,32 @@ function formatOptionalRupees(value: unknown) {
 
 function formatAccountType(value: unknown) {
   const accountTypes: Record<string, string> = {
+    "1": "Auto Loan",
+    "2": "Home Loan",
+    "3": "Loan Against Property",
+    "4": "Loan Against Shares",
     "5": "Personal Loan",
     "6": "Consumer Loan",
+    "7": "Gold Loan",
+    "8": "Education Loan",
+    "9": "Business Loan",
     "10": "Credit Card",
+    "13": "Auto Loan",
+    "17": "Auto Loan",
+    "31": "Credit Card",
+    "35": "Credit Card",
+    "36": "Credit Card",
+    "37": "Business Loan",
+    "51": "Business Loan",
+    "52": "Business Loan",
+    "53": "Business Loan",
+    "54": "Business Loan",
+    "55": "Business Loan",
+    "56": "Business Loan",
+    "57": "Business Loan",
+    "58": "Business Loan",
+    "59": "Business Loan",
+    "61": "Business Loan",
   };
   const key = String(value ?? "").trim();
 

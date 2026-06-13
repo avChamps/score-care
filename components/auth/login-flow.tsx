@@ -228,7 +228,7 @@ export function LoginFlow() {
     "mt-2.5 h-14 w-full rounded-2xl border border-white/10 bg-[#071626] px-4 text-[14px] font-medium text-white outline-none transition placeholder:font-normal placeholder:text-[#64748B] focus:border-[#22F2C2] focus:ring-2 focus:ring-[#22F2C2]/20";
 
   const labelClass =
-    "text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8F9BAA]";
+    "text-[12px] font-semibold uppercase tracking-[0.14em] text-white";
 
   const legalMeta = {
     terms: {
@@ -331,7 +331,7 @@ export function LoginFlow() {
                 </div>
 
                 <label className={labelClass}>
-                  Full name <span className="tracking-normal text-[#64748B]">(as per PAN)</span>
+                  Full name <span className="tracking-normal text-white">(as per PAN)</span>
                   <input
                     value={name}
                     onChange={(event) => {
@@ -372,7 +372,7 @@ export function LoginFlow() {
                   />
                 </label>
 
-                <label className="flex gap-3 text-[13px] font-medium leading-6 text-[#AAB6C8]">
+                <label className="flex gap-3 text-[14px] font-medium leading-6 text-white">
                   <input
                     checked={consent}
                     onChange={(event) => {
@@ -461,7 +461,7 @@ export function LoginFlow() {
             </button>
 
             <div className="flex-1 rounded-[28px] border border-white/10 bg-[#0F1B2D]/95 p-5 shadow-[0_22px_54px_rgba(0,0,0,0.42)]">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#22F2C2]">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#22F2C2]">
                 Verification
               </p>
 
@@ -469,12 +469,12 @@ export function LoginFlow() {
                 Enter OTP
               </h1>
 
-              <p className="mt-3 text-[13px] font-medium leading-6 text-[#8F9BAA]">
+              <p className="mt-3 text-[15px] font-medium leading-6 text-[#8F9BAA]">
                 We sent a verification code to{" "}
                 <span className="font-semibold text-white">+91 {cleanMobile}</span>.
               </p>
 
-              <div className="mt-9 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8F9BAA]">
+              <div className="mt-9 text-[13px] font-semibold uppercase tracking-[0.14em] text-[#8F9BAA]">
                 Verification code
                 <div className="mt-3 grid grid-cols-6 gap-2">
                   {otpDigits.map((digit, index) => (
@@ -484,7 +484,7 @@ export function LoginFlow() {
                       value={digit}
                       onChange={(event) => updateOtpDigit(index, event.target.value)}
                       onKeyDown={(event) => handleOtpKeyDown(index, event.key)}
-                      className="aspect-square w-full rounded-2xl border border-white/10 bg-[#071626] text-center text-[18px] font-semibold text-white outline-none transition placeholder:text-[#64748B] focus:border-[#22F2C2] focus:ring-2 focus:ring-[#22F2C2]/20"
+                      className="aspect-square w-full rounded-2xl border border-white/10 bg-[#071626] text-center text-[20px] font-semibold text-white outline-none transition placeholder:text-[#64748B] focus:border-[#22F2C2] focus:ring-2 focus:ring-[#22F2C2]/20"
                       inputMode="numeric"
                       type="tel"
                       maxLength={1}
@@ -497,7 +497,7 @@ export function LoginFlow() {
               <button
                 type="button"
                 className={cn(
-                  "mt-5 text-sm font-semibold transition",
+                  "mt-5 text-base font-semibold transition",
                   otpSeconds === 0 && !isSendingOtp ? "text-[#22F2C2]" : "text-[#64748B]",
                 )}
                 disabled={isSendingOtp || otpSeconds > 0}
@@ -507,7 +507,7 @@ export function LoginFlow() {
               </button>
 
               {otpSeconds > 0 ? (
-                <p className="mt-2 text-[13px] font-medium text-[#8F9BAA]">
+                <p className="mt-2 text-[15px] font-medium text-[#8F9BAA]">
                   Resend available in {otpTimerText}
                 </p>
               ) : null}
@@ -554,12 +554,12 @@ export function LoginFlow() {
 
         <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col">
           <div className="pt-7">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 shadow-[0_10px_25px_rgba(0,0,0,0.22)]">
+            {/* <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 shadow-[0_10px_25px_rgba(0,0,0,0.22)]">
               <ShieldCheck className="size-4 text-[#22F2C2]" />
               <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#B8FFF0]">
                 ScoreCare
               </span>
-            </div>
+            </div> */}
 
             <h1 className="mt-7 max-w-sm text-[1.75rem] font-bold leading-tight tracking-tight text-white">
               Enter your mobile number

@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ScorecareBrandAnimation } from "@/components/auth/scorecare-brand-animation";
 
 export default function LoadingPage() {
   const router = useRouter();
@@ -15,5 +14,11 @@ export default function LoadingPage() {
     return () => window.clearTimeout(timer);
   }, [router]);
 
-  return <ScorecareBrandAnimation message="Welcome to ScoreCare" />;
+  return (
+    <div className="fixed inset-0 z-[120] h-[100dvh] w-[100vw] overflow-hidden bg-[#020B18]">
+      <video autoPlay muted playsInline preload="auto" className="absolute inset-0 h-full w-full object-fill">
+        <source src="/loginpage-animation.mp4" type="video/mp4" />
+      </video>
+    </div>
+  );
 }
