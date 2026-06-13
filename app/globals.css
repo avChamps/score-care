@@ -46,6 +46,21 @@ body {
   top: 0 !important;
 }
 
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+#__next,
+body > div {
+  width: 100%;
+  min-height: 100%;
+}
+
 .goog-te-banner-frame,
 .goog-te-banner-frame.skiptranslate,
 iframe.goog-te-banner-frame,

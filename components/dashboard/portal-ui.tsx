@@ -1,25 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ComponentPropsWithoutRef } from "react";
-import { useRouter } from "next/navigation";
-import {
-  BadgeIndianRupee,
-  CircleHelp,
-  CreditCard,
-  Gauge,
-  Headphones,
-  Home,
-  MessageCircle,
-  Plus,
-  ReceiptText,
-  User,
-  Users,
-} from "lucide-react";
+import { type ComponentPropsWithoutRef } from "react";
+import { CreditCard, Plus, ReceiptText } from "lucide-react";
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
-import { TopBarActions } from "@/components/dashboard/topbar-actions";
-import { apiRequest } from "@/lib/api";
-import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { useDashboardActionsDisabled } from "@/lib/dashboard-lock";
 import { cn } from "@/lib/utils";
 
@@ -29,153 +13,23 @@ type PortalShellProps = {
   variant?: "user" | "admin";
 };
 
-type UserProfile = {
-  mobileNumber?: string;
-  panNumber?: string;
-  fullName?: string;
-  email?: string;
-  dateOfBirth?: string;
-};
-
-const navItems = [
-  { id: "home", label: "Home", href: "/dashboard", Icon: Home },
-  { id: "score", label: "Credit score", href: "/dashboard/credit-score", Icon: Gauge },
-  { id: "loans", label: "Loans", href: "/dashboard/loans", Icon: BadgeIndianRupee },
-  { id: "fix", label: "Score Fix", href: "/dashboard/score-fix", Icon: Headphones },
-  { id: "bills", label: "Bill payments", href: "/dashboard/bill-payments", Icon: ReceiptText },
-] as const;
-
-const adminNavItems = [
-  { id: "home", label: "Home", href: "/dashboard/admin", Icon: Home },
-  { id: "users", label: "Users", href: "/dashboard/admin/users", Icon: Users },
-  { id: "subscriptions", label: "Subscriptions", href: "/dashboard/admin/subscriptions", Icon: CreditCard },
-  { id: "loans", label: "Loans", href: "/dashboard/admin/loans", Icon: BadgeIndianRupee },
-  { id: "chats", label: "Chats", href: "/dashboard/admin/chats", Icon: MessageCircle },
-  { id: "help", label: "Help", href: "/dashboard/admin/help", Icon: CircleHelp },
-] as const;
-
-export function PortalShell({ active, children, variant = "user" }: PortalShellProps) {
+export function PortalShell({ children }: PortalShellProps) {
   const dashboardActionsDisabled = useDashboardActionsDisabled();
-  const isAdminVariant = variant === "admin";
 
   return (
     <section className={cn("portal-theme relative min-h-screen overflow-hidden text-[var(--portal-ink)] lg:h-screen", dashboardActionsDisabled && "dashboard-actions-disabled")}>
       <DashboardAuthGuard />
-      <div className="relative z-10 mx-auto grid min-h-screen max-w-7xl lg:h-screen lg:grid-cols-[248px_1fr]">
-        <aside className="portal-surface m-4 hidden rounded-2xl border px-3 py-4 lg:block lg:h-[calc(100vh-2rem)] lg:overflow-hidden">
-          <Link href="/dashboard" data-dashboard-home="true" className="mb-6 flex items-center gap-3 rounded-2xl px-3 py-2 transition hover:bg-[var(--portal-blue-soft)]">
-            <span className="grid size-9 place-items-center rounded-2xl bg-[var(--portal-blue)] text-[0.7rem] font-black text-white shadow-[0_10px_22px_rgba(7,112,227,0.22)]">
-              SC
-            </span>
-            <span className="text-sm font-black tracking-tight text-[var(--portal-ink)]">{isAdminVariant ? "ADMIN VIEW" : "SCORECARE"}</span>
-          </Link>
-          <NavItems active={active} direction="side" variant={variant} />
-        </aside>
-        <div className="min-w-0 pb-24 lg:h-screen lg:overflow-y-auto lg:pb-0">
+      <div className="relative z-10 mx-auto grid min-h-screen max-w-7xl lg:h-screen">
+        <div className="min-w-0 lg:h-screen lg:overflow-y-auto">
           {children}
         </div>
       </div>
-      <BottomNav active={active} variant={variant} />
     </section>
   );
 }
 
-export function PortalTopBar({ title, backHref, profileHref = "/profile" }: { title?: string; backHref?: string; profileHref?: string }) {
-  const router = useRouter();
-  const [displayName, setDisplayName] = useState("");
-
-  useEffect(() => {
-    if (title) {
-      return;
-    }
-
-    async function loadProfile() {
-      const token = sessionStorage.getItem("scorecare_token");
-
-      if (!token || isTokenExpired(token)) {
-        clearScorecareSession();
-        router.replace("/login");
-        return;
-      }
-
-      try {
-        const response = await apiRequest("/users/me/profile", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.status === 401 || response.status === 403) {
-          clearScorecareSession();
-          router.replace("/login");
-          return;
-        }
-
-        if (!response.ok) {
-          return;
-        }
-
-        const result = await response.json();
-        const user = (result?.data?.user ?? null) as UserProfile | null;
-
-        setDisplayName(user?.fullName?.trim() ?? "");
-
-        if (user?.mobileNumber) {
-          sessionStorage.setItem("scorecare_mobile_number", user.mobileNumber);
-        }
-
-        if (user?.panNumber) {
-          sessionStorage.setItem("scorecare_pan_number", user.panNumber);
-        }
-
-        if (user?.fullName) {
-          sessionStorage.setItem("scorecare_full_name", user.fullName);
-        }
-
-        if (user?.email) {
-          sessionStorage.setItem("scorecare_email", user.email);
-        }
-
-        if (user?.dateOfBirth) {
-          sessionStorage.setItem("scorecare_date_of_birth", user.dateOfBirth);
-        }
-      } catch {
-        setDisplayName("");
-      }
-    }
-
-    loadProfile();
-  }, [router, title]);
-
-  return (
-    <div className="sticky top-0 z-20 border-b border-[var(--portal-border)] bg-white/95 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
-          {backHref ? (
-            <Link href={backHref} data-dashboard-home={backHref === "/dashboard" ? "true" : undefined} aria-label="Back" className="grid size-9 shrink-0 place-items-center rounded-full border border-[var(--portal-border)] bg-white text-[var(--portal-muted)] transition hover:border-[var(--portal-blue)] hover:text-[var(--portal-blue)]">
-              <span className="text-2xl leading-none">&lsaquo;</span>
-            </Link>
-          ) : (
-            <Link href={profileHref} data-dashboard-profile="true" aria-label="Open profile" className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--portal-blue-soft)] text-[var(--portal-blue)] transition hover:bg-[#dceeff]">
-              <User className="size-5" />
-            </Link>
-          )}
-          {title ? (
-            <div className="min-w-0">
-              <p className="text-[0.65rem] font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">ScoreCare</p>
-              <h1 className="truncate text-base font-black tracking-tight text-[var(--portal-ink)] sm:text-lg">{title}</h1>
-            </div>
-          ) : (
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-[var(--portal-muted)]">Welcome back</p>
-              <h1 className="truncate text-base font-black tracking-tight text-[var(--portal-ink)] sm:text-lg">Hi {displayName || "there"}</h1>
-            </div>
-          )}
-        </div>
-        <TopBarActions />
-      </div>
-    </div>
-  );
+export function PortalTopBar({ title: _title, backHref: _backHref, profileHref: _profileHref = "/profile" }: { title?: string; backHref?: string; profileHref?: string }) {
+  return null;
 }
 
 export function PageContent({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -369,101 +223,6 @@ export function PlusApplyButton() {
     <Link href="/dashboard/loans" data-dashboard-loans="true" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--portal-orange)] px-5 py-3 text-sm font-bold text-white shadow-[0_2px_6px_rgba(255,109,0,0.2)]">
       <Plus className="size-5" /> Apply for Loan
     </Link>
-  );
-}
-
-function BottomNav({ active, variant }: { active: PortalShellProps["active"]; variant: NonNullable<PortalShellProps["variant"]> }) {
-  const items = variant === "admin" ? adminNavItems : navItems;
-
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--portal-border)] bg-white px-2 py-1.5 shadow-[0_-8px_20px_rgba(16,24,40,0.08)] lg:hidden">
-      <div className={cn("mx-auto grid max-w-md", variant === "admin" ? "grid-cols-6" : "grid-cols-5")}>
-        {items.map(({ id, label, href, Icon }) => {
-          const selected = id === active;
-
-          if (variant === "admin" || id === "score" || id === "loans" || id === "home") {
-
-          return (
-            <Link
-              key={id}
-              href={href}
-              data-dashboard-admin={variant === "admin" ? "true" : undefined}
-              data-dashboard-loans={id === "loans" ? "true" : undefined}
-              data-dashboard-score={id === "score" ? "true" : undefined}
-              className={cn(
-                "relative flex flex-col items-center justify-center gap-1 px-1 py-2 text-[0.66rem] font-black text-[var(--portal-muted)] transition hover:text-[var(--portal-blue)]",
-                selected && "text-[var(--portal-ink)]",
-                )}
-              >
-                <Icon className="size-5" strokeWidth={selected ? 2.5 : 1.8} />
-                <span className="text-center leading-tight">{label}</span>
-              </Link>
-            );
-          }
-
-          return (
-            <button
-              key={id}
-              aria-disabled="true"
-              className={cn(
-                "relative flex cursor-not-allowed flex-col items-center justify-center gap-1 px-1 py-2 text-[0.66rem] font-black text-[var(--portal-muted)] opacity-45",
-                selected && "text-[var(--portal-ink)] opacity-60",
-              )}
-              type="button"
-            >
-              <Icon className="size-5" strokeWidth={selected ? 2.5 : 1.8} />
-              <span className="text-center leading-tight">{label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}
-
-function NavItems({ active, direction, variant }: { active: PortalShellProps["active"]; direction: "side"; variant: NonNullable<PortalShellProps["variant"]> }) {
-  const items = variant === "admin" ? adminNavItems : navItems;
-
-  return (
-    <div className={cn("grid gap-1.5", direction === "side" && "text-xs")}>
-      {items.map(({ id, label, href, Icon }) => {
-        const selected = id === active;
-
-        if (variant === "admin" || id === "score" || id === "loans" || id === "home") {
-          return (
-            <Link
-              key={id}
-              href={href}
-              data-dashboard-admin={variant === "admin" ? "true" : undefined}
-              data-dashboard-loans={id === "loans" ? "true" : undefined}
-              data-dashboard-score={id === "score" ? "true" : undefined}
-              className={cn(
-                "flex items-center gap-3 rounded-2xl border-l-4 border-transparent px-3 py-2.5 text-left font-black text-[var(--portal-muted)] transition hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)]",
-                selected && "border-[var(--portal-orange)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]",
-              )}
-            >
-              <Icon className="size-4" />
-              {label}
-            </Link>
-          );
-        }
-
-        return (
-          <button
-            key={id}
-            aria-disabled="true"
-            className={cn(
-              "flex cursor-not-allowed items-center gap-3 rounded-2xl border-l-4 border-transparent px-3 py-2.5 text-left font-black text-[var(--portal-muted)] opacity-45",
-              selected && "border-[var(--portal-orange)] bg-[var(--portal-blue-soft)] text-[var(--portal-blue)] opacity-60",
-            )}
-            type="button"
-          >
-            <Icon className="size-4" />
-            {label}
-          </button>
-        );
-      })}
-    </div>
   );
 }
 

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <section className="auth-page min-h-dvh bg-white px-6 py-5 text-[#172033] sm:px-8">
+    <section className="auth-page min-h-dvh bg-white text-[#172033] sm:px-8">
       <AuthLaunchMotion>
         <div className="mx-auto max-w-md">
           <LoginFlow />

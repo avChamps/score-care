@@ -23,9 +23,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <Navbar />
+      {/* <Navbar /> */}
       <main className="flex-1">{children}</main>
-      <Footer />
+      {/* <Footer /> */}
     </>
   );
 }

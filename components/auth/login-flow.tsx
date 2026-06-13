@@ -1,16 +1,24 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, BadgeCheck } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, BadgeCheck, ShieldCheck, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import panDetailsImage from "@/assets/pan-details.png";
 import { ButtonLoader } from "@/components/auth/button-loader";
 import { ScorecareBrandAnimation } from "@/components/auth/scorecare-brand-animation";
 import { apiRequest } from "@/lib/api";
 import { cn } from "@/lib/utils";
+
+type LegalPopup = "terms" | "privacy" | "consent";
+
+type LegalContent = {
+  termsAndConditions?: string;
+  privacyPolicy?: string;
+  consent?: string;
+  updatedAt?: string;
+};
 
 export function LoginFlow() {
   const router = useRouter();
@@ -29,11 +37,16 @@ export function LoginFlow() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [showDashboardTransition, setShowDashboardTransition] = useState(false);
   const [otpSeconds, setOtpSeconds] = useState(0);
+  const [signupConsent, setSignupConsent] = useState(false);
+  const [legalPopup, setLegalPopup] = useState<LegalPopup | null>(null);
+  const [legalContent, setLegalContent] = useState<LegalContent | null>(null);
+  const [isLoadingLegalContent, setIsLoadingLegalContent] = useState(false);
+  const [legalContentError, setLegalContentError] = useState("");
 
   const cleanMobile = mobile.replace(/\D/g, "").slice(0, 10);
   const cleanOtp = otpDigits.join("");
   const cleanPan = pan.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
-  const canProceed = cleanMobile.length === 10;
+  const canProceed = cleanMobile.length === 10 && signupConsent;
   const canVerifyOtp = cleanOtp.length === 6;
   const canSubmit =
     /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(cleanPan) &&
@@ -41,12 +54,11 @@ export function LoginFlow() {
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
     Boolean(dateOfBirth) &&
     consent;
+
   const otpTimerText = `00:${String(otpSeconds).padStart(2, "0")}`;
 
   useEffect(() => {
-    if (step !== "otp" || otpSeconds === 0) {
-      return;
-    }
+    if (step !== "otp" || otpSeconds === 0) return;
 
     const timer = window.setTimeout(() => {
       setOtpSeconds((seconds) => Math.max(seconds - 1, 0));
@@ -63,9 +75,7 @@ export function LoginFlow() {
   }
 
   async function sendOtp() {
-    if (!canProceed || isSendingOtp) {
-      return;
-    }
+    if (!canProceed || isSendingOtp) return;
 
     setOtpError("");
     setIsSendingOtp(true);
@@ -73,14 +83,10 @@ export function LoginFlow() {
     try {
       const response = await apiRequest("/auth/send-otp", {
         method: "POST",
-        body: {
-          mobileNumber: cleanMobile,
-        },
+        body: { mobileNumber: cleanMobile },
       });
 
-      if (!response.ok) {
-        throw new Error("Unable to send OTP");
-      }
+      if (!response.ok) throw new Error("Unable to send OTP");
 
       setOtpDigits(["", "", "", "", "", ""]);
       setOtpSeconds(45);
@@ -93,9 +99,7 @@ export function LoginFlow() {
   }
 
   async function verifyOtp() {
-    if (!canVerifyOtp || isVerifyingOtp) {
-      return;
-    }
+    if (!canVerifyOtp || isVerifyingOtp) return;
 
     setOtpError("");
     setIsVerifyingOtp(true);
@@ -109,9 +113,7 @@ export function LoginFlow() {
         },
       });
 
-      if (!response.ok) {
-        throw new Error("Unable to verify OTP");
-      }
+      if (!response.ok) throw new Error("Unable to verify OTP");
 
       const result = await response.json();
       const session = result?.data;
@@ -130,7 +132,11 @@ export function LoginFlow() {
         sessionStorage.setItem("scorecare_date_of_birth", session.user.dateOfBirth ?? "");
       }
 
-      if (session?.nextStep === "dashboard" || session?.profileComplete || session?.shouldShowPanDetailsForm === false) {
+      if (
+        session?.nextStep === "dashboard" ||
+        session?.profileComplete ||
+        session?.shouldShowPanDetailsForm === false
+      ) {
         goToDashboardWithAnimation();
         return;
       }
@@ -144,9 +150,7 @@ export function LoginFlow() {
   }
 
   async function updateProfile() {
-    if (!canSubmit || isSavingProfile) {
-      return;
-    }
+    if (!canSubmit || isSavingProfile) return;
 
     const token = sessionStorage.getItem("scorecare_token");
 
@@ -162,9 +166,7 @@ export function LoginFlow() {
     try {
       const response = await apiRequest("/users/me/profile", {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: {
           panNumber: cleanPan,
           fullName: name.trim(),
@@ -174,14 +176,13 @@ export function LoginFlow() {
         },
       });
 
-      if (!response.ok) {
-        throw new Error("Unable to save profile");
-      }
+      if (!response.ok) throw new Error("Unable to save profile");
 
       sessionStorage.setItem("scorecare_pan_number", cleanPan);
       sessionStorage.setItem("scorecare_full_name", name.trim());
       sessionStorage.setItem("scorecare_email", email.trim());
       sessionStorage.setItem("scorecare_date_of_birth", dateOfBirth);
+
       goToDashboardWithAnimation();
     } catch {
       setProfileError("Could not save PAN details. Please try again.");
@@ -196,11 +197,13 @@ export function LoginFlow() {
 
     if (digits.length > 1) {
       const nextDigits = [...otpDigits];
+
       digits.forEach((digit, offset) => {
         if (index + offset < nextDigits.length) {
           nextDigits[index + offset] = digit;
         }
       });
+
       setOtpDigits(nextDigits);
       document.getElementById(`otp-${Math.min(index + digits.length, 5)}`)?.focus();
       return;
@@ -216,12 +219,65 @@ export function LoginFlow() {
   }
 
   function handleOtpKeyDown(index: number, key: string) {
-    if (key !== "Backspace" || otpDigits[index]) {
-      return;
-    }
-
+    if (key !== "Backspace" || otpDigits[index]) return;
     document.getElementById(`otp-${Math.max(index - 1, 0)}`)?.focus();
   }
+
+  const primaryButton =
+    "relative h-14 w-full rounded-[20px] text-[14px] font-semibold transition shadow-[0_14px_30px_rgba(34,242,194,0.18)]";
+
+  const activeButton = "bg-[linear-gradient(135deg,#22F2C2,#18E870)] text-[#031711]";
+  const disabledButton = "bg-[#263447] text-[#64748B] shadow-none";
+
+  const inputClass =
+    "mt-2.5 h-14 w-full rounded-2xl border border-white/10 bg-[#071626] px-4 text-[14px] font-medium text-white outline-none transition placeholder:font-normal placeholder:text-[#64748B] focus:border-[#22F2C2] focus:ring-2 focus:ring-[#22F2C2]/20";
+
+  const labelClass =
+    "text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8F9BAA]";
+
+  const legalMeta = {
+    terms: {
+      title: "Terms & Conditions",
+      eyebrow: "ScoreCare Terms",
+      key: "termsAndConditions",
+    },
+    privacy: {
+      title: "Privacy Policy",
+      eyebrow: "Data Privacy",
+      key: "privacyPolicy",
+    },
+    consent: {
+      title: "Credit Report Consent",
+      eyebrow: "PAN Consent",
+      key: "consent",
+    },
+  } satisfies Record<LegalPopup, { title: string; eyebrow: string; key: keyof LegalContent }>;
+
+  const fetchLegalContent = useCallback(async () => {
+    if (legalContent || isLoadingLegalContent) return;
+
+    setLegalContentError("");
+    setIsLoadingLegalContent(true);
+
+    try {
+      const response = await apiRequest("/legal-content");
+      if (!response.ok) throw new Error("Unable to load legal content");
+
+      const result = await response.json();
+      if (!result?.data) throw new Error("Missing legal content");
+
+      setLegalContent(result.data);
+    } catch {
+      setLegalContentError("Could not load legal content. Please try again.");
+    } finally {
+      setIsLoadingLegalContent(false);
+    }
+  }, [isLoadingLegalContent, legalContent]);
+
+  const openLegalPopup = useCallback((type: LegalPopup) => {
+    setLegalPopup(type);
+    void fetchLegalContent();
+  }, [fetchLegalContent]);
 
   const content = useMemo(() => {
     if (step === "pan") {
@@ -232,129 +288,157 @@ export function LoginFlow() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -24 }}
           transition={{ duration: 0.28, ease: "easeOut" }}
-          className="flex min-h-[calc(100dvh-2.5rem)] flex-col"
+          className="flex min-h-dvh flex-col bg-[#020B18] px-5 py-5 text-white"
         >
-          <button
-            type="button"
-            onClick={() => setStep("otp")}
-            className="mb-8 grid size-10 place-items-center rounded-full border border-[#e2e5ea] text-[#172033]"
-            aria-label="Back"
-          >
-            <ArrowLeft className="size-5" />
-          </button>
+          <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,#183A5A_0%,transparent_38%),radial-gradient(circle_at_80%_10%,rgba(34,242,194,0.16),transparent_28%)]" />
 
-          <div className="flex-1">
-            <h1 className="text-[1.7rem] font-black tracking-tight text-[#172033]">Enter your PAN details</h1>
+          <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col">
+            <button
+              type="button"
+              onClick={() => setStep("otp")}
+              className="mb-6 grid size-10 place-items-center rounded-full border border-white/10 bg-white/5 text-white shadow-[0_10px_25px_rgba(0,0,0,0.22)]"
+              aria-label="Back"
+            >
+              <ArrowLeft className="size-4" />
+            </button>
 
-            <div className="mt-10 grid gap-5">
-              <label className="text-base font-bold text-[#5f6878]">
-                PAN number
-                <input
-                  value={cleanPan}
-                  onChange={(event) => {
-                    setProfileError("");
-                    setPan(event.target.value);
-                  }}
-                  className="mt-2.5 h-14 w-full rounded-xl border border-[#cfd6df] bg-white px-4 text-base font-bold uppercase text-[#172033] outline-none transition placeholder:font-medium placeholder:text-[#a6adb8] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
-                  placeholder="ABCDE1234F"
-                  inputMode="text"
-                />
-              </label>
-
-              <div className="flex items-center gap-2 text-sm font-semibold text-[#667085]">
-                <BadgeCheck className="size-5 text-[#ff6d00]" />
-                PAN is used only to fetch your credit report securely.
+            <div className="rounded-[28px] border border-white/10 bg-[#0F1B2D]/95 p-5 shadow-[0_22px_54px_rgba(0,0,0,0.42)]">
+              <div className="mb-6">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#22F2C2]">
+                  Secure profile
+                </p>
+                <h1 className="mt-2 text-[1.4rem] font-bold leading-tight tracking-tight text-white">
+                  Enter your PAN details
+                </h1>
+                <p className="mt-2 text-[13px] font-medium leading-6 text-[#8F9BAA]">
+                  This helps us fetch your credit insights securely.
+                </p>
               </div>
 
-              <label className="text-base font-bold text-[#5f6878]">
-                Full name <span className="font-semibold text-[#98a2b3]">(as per PAN)</span>
-                <input
-                  value={name}
-                  onChange={(event) => {
-                    setProfileError("");
-                    setName(event.target.value);
-                  }}
-                  className="mt-2.5 h-14 w-full rounded-xl border border-[#cfd6df] bg-white px-4 text-base font-semibold text-[#172033] outline-none transition placeholder:font-medium placeholder:text-[#a6adb8] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
-                  placeholder="Your name as per PAN"
-                />
-              </label>
+              <div className="grid gap-4">
+                <label className={labelClass}>
+                  PAN number
+                  <input
+                    value={cleanPan}
+                    onChange={(event) => {
+                      setProfileError("");
+                      setPan(event.target.value);
+                    }}
+                    className={cn(inputClass, "uppercase")}
+                    placeholder="ABCDE1234F"
+                    inputMode="text"
+                  />
+                </label>
 
-              <label className="text-base font-bold text-[#5f6878]">
-                Email address
-                <input
-                  value={email}
-                  onChange={(event) => {
-                    setProfileError("");
-                    setEmail(event.target.value);
-                  }}
-                  className="mt-2.5 h-14 w-full rounded-xl border border-[#cfd6df] bg-white px-4 text-base font-semibold text-[#172033] outline-none transition placeholder:font-medium placeholder:text-[#a6adb8] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
-                  placeholder="rahul@example.com"
-                  inputMode="email"
-                  type="email"
-                />
-              </label>
+                <div className="flex items-center gap-2 rounded-2xl border border-[#22F2C2]/15 bg-[#22F2C2]/8 px-3 py-3 text-xs font-medium leading-5 text-[#B8FFF0]">
+                  <BadgeCheck className="size-4 shrink-0 text-[#22F2C2]" />
+                  PAN is used only to fetch your credit report securely.
+                </div>
 
-              <label className="text-base font-bold text-[#5f6878]">
-                Date of birth
-                <input
-                  value={dateOfBirth}
-                  onChange={(event) => {
-                    setProfileError("");
-                    setDateOfBirth(event.target.value);
-                  }}
-                  className="mt-2.5 h-14 w-full rounded-xl border border-[#cfd6df] bg-white px-4 text-base font-semibold text-[#172033] outline-none transition placeholder:text-[#a6adb8] focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
-                  type="date"
-                />
-              </label>
+                <label className={labelClass}>
+                  Full name <span className="tracking-normal text-[#64748B]">(as per PAN)</span>
+                  <input
+                    value={name}
+                    onChange={(event) => {
+                      setProfileError("");
+                      setName(event.target.value);
+                    }}
+                    className={inputClass}
+                    placeholder="Your name as per PAN"
+                  />
+                </label>
 
-              <label className="flex gap-3 text-base font-semibold leading-6 text-[#344054]">
-                <input
-                  checked={consent}
-                  onChange={(event) => {
-                    setProfileError("");
-                    setConsent(event.target.checked);
-                  }}
-                  type="checkbox"
-                  className="mt-1 size-5 rounded border-[#98a2b3]"
-                />
-                <span>
-                  I consent to ScoreCare retrieving my credit report for analysis.{" "}
-                  <Link href="/terms" className="font-black text-[#1677ff]">
-                    Read more
-                  </Link>
-                </span>
-              </label>
+                <label className={labelClass}>
+                  Email address
+                  <input
+                    value={email}
+                    onChange={(event) => {
+                      setProfileError("");
+                      setEmail(event.target.value);
+                    }}
+                    className={inputClass}
+                    placeholder="rahul@example.com"
+                    inputMode="email"
+                    type="email"
+                  />
+                </label>
 
-              <div className="mt-4 overflow-hidden rounded-2xl bg-[#f8fafc]">
-                <Image
-                  src={panDetailsImage}
-                  alt="Where to find PAN details"
-                  className="h-auto w-full"
-                  priority
-                />
+                <label className={labelClass}>
+                  Date of birth
+                  <input
+                    value={dateOfBirth}
+                    onChange={(event) => {
+                      setProfileError("");
+                      setDateOfBirth(event.target.value);
+                    }}
+                    className={cn(inputClass, "scheme-dark")}
+                    type="date"
+                     max={new Date().toISOString().split("T")[0]}
+                  />
+                </label>
+
+                <label className="flex gap-3 text-[13px] font-medium leading-6 text-[#AAB6C8]">
+                  <input
+                    checked={consent}
+                    onChange={(event) => {
+                      setProfileError("");
+                      setConsent(event.target.checked);
+                    }}
+                    type="checkbox"
+                    className="mt-1 size-5 rounded border-white/20 bg-[#071626] accent-[#22F2C2]"
+                  />
+                  <span>
+                  I consent to Scorecare accessing my credit report.{" "}
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        openLegalPopup("consent");
+                      }}
+                      className="font-semibold text-[#22F2C2] underline underline-offset-4"
+                    >
+                      Read more
+                    </button>
+                  </span>
+                </label>
+
+                <div className="mt-2 overflow-hidden rounded-[22px] border border-white/10 bg-[#071626]">
+                  <Image
+                    src={panDetailsImage}
+                    alt="Where to find PAN details"
+                    className="h-auto w-full opacity-90"
+                    priority
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          <button
-            type="button"
-            disabled={!canSubmit || isSavingProfile}
-            onClick={updateProfile}
-            className={cn(
-              "relative mb-2 mt-8 inline-flex h-14 w-full items-center justify-center rounded-2xl text-base font-black text-white transition",
-              canSubmit ? "bg-[#ff6d00]" : "bg-[#98a2b3]",
-            )}
-          >
-            {isSavingProfile ? (
-              <>
-                <span className="invisible">Submit</span>
-                <ButtonLoader className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
-              </>
-            ) : (
-              "Submit"
-            )}
-          </button>
-          {profileError ? <p className="mb-2 text-center text-sm font-bold text-red-500">{profileError}</p> : null}
+            <button
+              type="button"
+              disabled={!canSubmit || isSavingProfile}
+              onClick={updateProfile}
+              className={cn(
+                primaryButton,
+                "mt-5",
+                canSubmit && !isSavingProfile ? activeButton : disabledButton,
+              )}
+            >
+              {isSavingProfile ? (
+                <>
+                  <span className="invisible">Submit</span>
+                  <ButtonLoader className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+                </>
+              ) : (
+                "Submit"
+              )}
+            </button>
+
+            {profileError ? (
+              <p className="mt-3 text-center text-sm font-semibold text-[#FF5C8A]">
+                {profileError}
+              </p>
+            ) : null}
+          </div>
         </motion.div>
       );
     }
@@ -367,68 +451,85 @@ export function LoginFlow() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -24 }}
           transition={{ duration: 0.28, ease: "easeOut" }}
-          className="flex min-h-[calc(100dvh-2.5rem)] flex-col"
+          className="flex min-h-dvh flex-col bg-[#020B18] px-5 py-5 text-white"
         >
-          <button
-            type="button"
-            onClick={() => setStep("mobile")}
-            className="mb-8 grid size-10 place-items-center rounded-full border border-[#e2e5ea] text-[#172033]"
-            aria-label="Back"
-          >
-            <ArrowLeft className="size-5" />
-          </button>
+          <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,#183A5A_0%,transparent_38%),radial-gradient(circle_at_80%_10%,rgba(34,242,194,0.16),transparent_28%)]" />
 
-          <div className="flex-1 pt-8">
-            <h1 className="max-w-sm text-[2rem] font-black leading-tight tracking-tight text-[#172033]">
-              Enter OTP
-            </h1>
-            <p className="mt-4 text-base font-semibold leading-7 text-[#667085]">
-              We sent a verification code to +91 {cleanMobile}.
-            </p>
-
-            <div className="mt-10 text-base font-bold text-[#5f6878]">
-              Verification code
-              <div className="mt-3 grid grid-cols-6 gap-2.5">
-                {otpDigits.map((digit, index) => (
-                  <input
-                    key={index}
-                    id={`otp-${index}`}
-                    value={digit}
-                    onChange={(event) => updateOtpDigit(index, event.target.value)}
-                    onKeyDown={(event) => handleOtpKeyDown(index, event.key)}
-                    className="aspect-square w-full rounded-xl border border-[#cfd6df] bg-white text-center text-xl font-black text-[#172033] outline-none transition focus:border-[#1677ff] focus:ring-2 focus:ring-[#eef6ff]"
-                    inputMode="numeric"
-                    type="tel"
-                    maxLength={1}
-                    aria-label={`OTP digit ${index + 1}`}
-                  />
-                ))}
-              </div>
-            </div>
-
+          <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col">
             <button
               type="button"
-              className={cn(
-                "mt-5 text-sm font-black transition",
-                otpSeconds === 0 && !isSendingOtp ? "text-[#1677ff]" : "text-[#98a2b3]",
-              )}
-              disabled={isSendingOtp || otpSeconds > 0}
-              onClick={sendOtp}
+              onClick={() => setStep("mobile")}
+              className="mb-6 grid size-10 place-items-center rounded-full border border-white/10 bg-white/5 text-white shadow-[0_10px_25px_rgba(0,0,0,0.22)]"
+              aria-label="Back"
             >
-              {isSendingOtp ? "Sending..." : "Resend OTP"}
+              <ArrowLeft className="size-4" />
             </button>
-            {otpSeconds > 0 ? <p className="mt-2 text-sm font-bold text-[#667085]">Resend available in {otpTimerText}</p> : null}
-            {otpError ? <p className="mt-3 text-sm font-bold text-red-500">{otpError}</p> : null}
-          </div>
 
-          <div className="mb-2">
+            <div className="flex-1 rounded-[28px] border border-white/10 bg-[#0F1B2D]/95 p-5 shadow-[0_22px_54px_rgba(0,0,0,0.42)]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#22F2C2]">
+                Verification
+              </p>
+
+              <h1 className="mt-2 max-w-sm text-[1.6rem] font-bold leading-tight tracking-tight text-white">
+                Enter OTP
+              </h1>
+
+              <p className="mt-3 text-[13px] font-medium leading-6 text-[#8F9BAA]">
+                We sent a verification code to{" "}
+                <span className="font-semibold text-white">+91 {cleanMobile}</span>.
+              </p>
+
+              <div className="mt-9 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8F9BAA]">
+                Verification code
+                <div className="mt-3 grid grid-cols-6 gap-2">
+                  {otpDigits.map((digit, index) => (
+                    <input
+                      key={index}
+                      id={`otp-${index}`}
+                      value={digit}
+                      onChange={(event) => updateOtpDigit(index, event.target.value)}
+                      onKeyDown={(event) => handleOtpKeyDown(index, event.key)}
+                      className="aspect-square w-full rounded-2xl border border-white/10 bg-[#071626] text-center text-[18px] font-semibold text-white outline-none transition placeholder:text-[#64748B] focus:border-[#22F2C2] focus:ring-2 focus:ring-[#22F2C2]/20"
+                      inputMode="numeric"
+                      type="tel"
+                      maxLength={1}
+                      aria-label={`OTP digit ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className={cn(
+                  "mt-5 text-sm font-semibold transition",
+                  otpSeconds === 0 && !isSendingOtp ? "text-[#22F2C2]" : "text-[#64748B]",
+                )}
+                disabled={isSendingOtp || otpSeconds > 0}
+                onClick={sendOtp}
+              >
+                {isSendingOtp ? "Sending..." : "Resend OTP"}
+              </button>
+
+              {otpSeconds > 0 ? (
+                <p className="mt-2 text-[13px] font-medium text-[#8F9BAA]">
+                  Resend available in {otpTimerText}
+                </p>
+              ) : null}
+
+              {otpError ? (
+                <p className="mt-3 text-sm font-semibold text-[#FF5C8A]">{otpError}</p>
+              ) : null}
+            </div>
+
             <button
               type="button"
               disabled={!canVerifyOtp || isVerifyingOtp}
               onClick={verifyOtp}
               className={cn(
-                "relative h-14 w-full rounded-2xl text-base font-black text-white transition",
-                canVerifyOtp && !isVerifyingOtp ? "bg-[#ff6d00]" : "bg-[#98a2b3]",
+                primaryButton,
+                "mt-5",
+                canVerifyOtp && !isVerifyingOtp ? activeButton : disabledButton,
               )}
             >
               {isVerifyingOtp ? (
@@ -452,60 +553,106 @@ export function LoginFlow() {
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 24 }}
         transition={{ duration: 0.28, ease: "easeOut" }}
-        className="flex min-h-[calc(100dvh-2.5rem)] flex-col"
+        className="flex min-h-dvh flex-col bg-[#020B18] px-5 py-5 text-white"
       >
-        <div className="flex-1 pt-14">
-          <h1 className="max-w-sm text-[2.35rem] font-black leading-tight tracking-tight text-[#172033]">
-            Enter your mobile number
-          </h1>
+        <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,#183A5A_0%,transparent_38%),radial-gradient(circle_at_80%_10%,rgba(34,242,194,0.16),transparent_28%)]" />
 
-          <label className="mt-9 flex h-14 items-center rounded-xl border border-[#c3cad5] bg-white px-4 focus-within:border-[#1677ff] focus-within:ring-2 focus-within:ring-[#eef6ff]">
-            <span className="border-r border-[#dfe4ea] pr-3 text-xl font-bold text-[#344054]">+91</span>
-            <input
-              value={cleanMobile}
-              onChange={(event) => setMobile(event.target.value)}
-              className="min-w-0 flex-1 bg-transparent px-3 text-xl font-semibold text-[#172033] outline-none placeholder:text-[#667085]"
-              placeholder="Mobile number"
-              inputMode="numeric"
-              type="tel"
-              suppressHydrationWarning
-            />
-          </label>
+        <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col">
+          <div className="pt-7">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 shadow-[0_10px_25px_rgba(0,0,0,0.22)]">
+              <ShieldCheck className="size-4 text-[#22F2C2]" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#B8FFF0]">
+                ScoreCare
+              </span>
+            </div>
 
-          <p className="mt-5 text-lg font-semibold text-[#98a2b3]">We do not spam you with calls or messages.</p>
-          <p className="mt-5 text-base font-semibold leading-7 text-[#667085]">
-            By signing up, I agree to the{" "}
-            <Link href="/terms" className="font-black text-[#1677ff] underline underline-offset-4">
-              T&C
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy-policy" className="font-black text-[#1677ff] underline underline-offset-4">
-              Privacy Policy
-            </Link>
-            .
-          </p>
-        </div>
+            <h1 className="mt-7 max-w-sm text-[1.75rem] font-bold leading-tight tracking-tight text-white">
+              Enter your mobile number
+            </h1>
 
-        <div className="mb-2">
-          <button
-            type="button"
-            disabled={!canProceed || isSendingOtp}
-            onClick={sendOtp}
-            className={cn(
-              "relative h-14 w-full rounded-2xl text-base font-black text-white transition",
-              canProceed && !isSendingOtp ? "bg-[#ff6d00]" : "bg-[#98a2b3]",
-            )}
-          >
-            {isSendingOtp ? (
-              <>
-                <span className="invisible">Proceed</span>
-                <ButtonLoader className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
-              </>
-            ) : (
-              "Proceed"
-            )}
-          </button>
-          {otpError ? <p className="mt-3 text-center text-sm font-bold text-red-500">{otpError}</p> : null}
+            <p className="mt-3 text-[13px] font-medium leading-6 text-[#8F9BAA]">
+              Track your score, reports, offers and EMIs in one secure place.
+            </p>
+          </div>
+
+          <div className="mt-9 rounded-[28px] border border-white/10 bg-[#0F1B2D]/95 p-5 shadow-[0_22px_54px_rgba(0,0,0,0.42)]">
+            <label className="flex h-14 items-center rounded-2xl border border-white/10 bg-[#071626] px-4 transition focus-within:border-[#22F2C2] focus-within:ring-2 focus-within:ring-[#22F2C2]/20">
+              <span className="border-r border-white/10 pr-3 text-base font-semibold text-[#22F2C2]">
+                +91
+              </span>
+              <input
+                value={cleanMobile}
+                onChange={(event) => setMobile(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent px-3 text-base font-medium text-white outline-none placeholder:text-[#64748B]"
+                placeholder="Mobile number"
+                inputMode="numeric"
+                type="tel"
+                suppressHydrationWarning
+              />
+            </label>
+
+            <p className="mt-4 text-[13px] font-medium leading-6 text-[#8F9BAA]">
+              We do not spam you with calls or messages.
+            </p>
+
+            <label className="mt-4 flex gap-3 text-[13px] font-medium leading-6 text-[#8F9BAA]">
+              <input
+                checked={signupConsent}
+                onChange={(event) => setSignupConsent(event.target.checked)}
+                type="checkbox"
+                className="mt-1 size-5 rounded border-white/20 bg-[#071626] accent-[#22F2C2]"
+              />
+              <span>
+                By signing up, I agree to the{" "}
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    openLegalPopup("terms");
+                  }}
+                  className="font-semibold text-[#22F2C2] underline underline-offset-4"
+                >
+                  T&C
+                </button>{" "}
+                and{" "}
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    openLegalPopup("privacy");
+                  }}
+                  className="font-semibold text-[#22F2C2] underline underline-offset-4"
+                >
+                  Privacy Policy
+                </button>
+                .
+              </span>
+            </label>
+          </div>
+
+          <div className="mt-auto pb-2 pt-6">
+            <button
+              type="button"
+              disabled={!canProceed || isSendingOtp}
+              onClick={sendOtp}
+              className={cn(primaryButton, canProceed && !isSendingOtp ? activeButton : disabledButton)}
+            >
+              {isSendingOtp ? (
+                <>
+                  <span className="invisible">Proceed</span>
+                  <ButtonLoader className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+                </>
+              ) : (
+                "Proceed"
+              )}
+            </button>
+
+            {otpError ? (
+              <p className="mt-3 text-center text-sm font-semibold text-[#FF5C8A]">
+                {otpError}
+              </p>
+            ) : null}
+          </div>
         </div>
       </motion.div>
     );
@@ -523,19 +670,122 @@ export function LoginFlow() {
     isSavingProfile,
     isVerifyingOtp,
     name,
+    openLegalPopup,
     otpDigits,
     otpError,
     otpSeconds,
     otpTimerText,
     profileError,
-    router,
     step,
   ]);
 
   return (
     <>
-      <AnimatePresence>{showDashboardTransition ? <ScorecareBrandAnimation message="Preparing your dashboard" /> : null}</AnimatePresence>
+      <AnimatePresence>
+        {showDashboardTransition ? (
+          <ScorecareBrandAnimation message="Preparing your dashboard" />
+        ) : null}
+      </AnimatePresence>
       <AnimatePresence mode="wait">{content}</AnimatePresence>
+      <AnimatePresence>
+        {legalPopup ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex bg-[#020B18]/90 p-3 backdrop-blur-md sm:p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="relative mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-[30px] border border-white/10 bg-[#0F1B2D] text-white shadow-[0_24px_70px_rgba(0,0,0,0.48)]"
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="legal-popup-title"
+            >
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,242,194,0.2),transparent_32%),radial-gradient(circle_at_12%_0%,rgba(24,58,90,0.65),transparent_36%)]" />
+
+              <div className="relative border-b border-white/10 px-5 py-5 sm:px-8 sm:py-7">
+                <div className="flex items-start justify-between gap-5">
+                  <div className="max-w-2xl">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#22F2C2]">
+                      {legalMeta[legalPopup].eyebrow}
+                    </p>
+                    <h2
+                      id="legal-popup-title"
+                      className="mt-2 text-[1.7rem] font-bold leading-tight text-white sm:text-[2.2rem]"
+                    >
+                      {legalMeta[legalPopup].title}
+                    </h2>
+                    {/* <p className="mt-3 text-[13px] font-medium leading-6 text-[#AAB6C8] sm:text-sm">
+                      Please review the details below before continuing with ScoreCare.
+                    </p> */}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setLegalPopup(null)}
+                    className="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-[#B8FFF0]"
+                    aria-label="Close"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-8 sm:py-7">
+                {isLoadingLegalContent ? (
+                  <div className="grid min-h-64 place-items-center rounded-[24px] border border-white/10 bg-[#071626]/92 p-6 text-center text-sm font-semibold text-[#AAB6C8]">
+                    Loading legal content...
+                  </div>
+                ) : legalContentError ? (
+                  <div className="grid min-h-64 place-items-center rounded-[24px] border border-white/10 bg-[#071626]/92 p-6 text-center">
+                    <div>
+                      <p className="text-sm font-semibold text-[#FF5C8A]">{legalContentError}</p>
+                      <button
+                        type="button"
+                        onClick={fetchLegalContent}
+                        className="mt-4 text-sm font-semibold text-[#22F2C2] underline underline-offset-4"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="rounded-[24px] border border-white/10 bg-[#071626]/92 p-5 text-[13px] font-medium leading-7 text-[#AAB6C8] shadow-[0_14px_32px_rgba(0,0,0,0.2)] sm:p-7 sm:text-sm [&_a]:font-semibold [&_a]:text-[#22F2C2] [&_h1]:mb-4 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-white [&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-white [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-white [&_li]:mb-2 [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-4 [&_strong]:text-white [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-5"
+                    dangerouslySetInnerHTML={{
+                      __html: legalContent?.[legalMeta[legalPopup].key] ?? "",
+                    }}
+                  />
+                )}
+                {legalContent?.updatedAt ? (
+                  <p className="mt-4 text-xs font-medium text-[#64748B]">
+                    Last updated:{" "}
+                    {new Date(legalContent.updatedAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="relative border-t border-white/10 bg-[#071626]/80 p-4 sm:px-8">
+                <button
+                  type="button"
+                  onClick={() => setLegalPopup(null)}
+                  className={cn(primaryButton, activeButton)}
+                >
+                  I Understand
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }
