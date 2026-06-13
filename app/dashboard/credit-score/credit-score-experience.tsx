@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ProfilePanel, type UserProfile } from "@/app/dashboard/home-dashboard";
 import {
   AppCard,
   PageContent,
@@ -381,6 +382,9 @@ export function CreditScoreExperience() {
   const [repairStatus, setRepairStatus] = useState<CibilRepairStatus | null>(null);
   const [repairRequestsLoading, setRepairRequestsLoading] = useState(false);
   const [repairSubmitting, setRepairSubmitting] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
+  const [, setIsLanguageLoading] = useState(false);
   const [toast, setToast] = useState("");
   const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
@@ -389,6 +393,8 @@ export function CreditScoreExperience() {
   const lastChecked = readLastChecked(displayData);
   const accounts = displayData?.data?.display?.accounts ?? [];
   const enquiries = displayData?.data?.display?.enquiries ?? [];
+  const storedProfileName = typeof window !== "undefined" ? sessionStorage.getItem("scorecare_full_name")?.trim() : "";
+  const profileName = profile?.fullName?.trim() || displayData?.data?.display?.profile?.name?.trim() || storedProfileName || "there";
   const baseScore = score ?? 300;
   const predictedScore = useMemo(() => {
     const impact = predictorActions
@@ -727,13 +733,14 @@ export function CreditScoreExperience() {
         <PageContent className="px-4 py-5">
           <div className="mx-auto max-w-md">
             <div className="mb-5 flex items-center justify-between">
-              <Link
-                href="/dashboard"
-                aria-label="Go to dashboard home"
+              <button
+                type="button"
+                aria-label="Open profile menu"
                 className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
+                onClick={() => setShowProfile(true)}
               >
                 <Menu className="size-5" strokeWidth={1.8} />
-              </Link>
+              </button>
               <Link
                 href="/pricing"
                 aria-label="Premium benefits"
@@ -838,6 +845,16 @@ export function CreditScoreExperience() {
         <div className="fixed left-4 right-4 top-4 z-[10000] mx-auto max-w-sm rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700 shadow-[0_14px_34px_rgba(16,185,129,0.22)]">
           {toast}
         </div>
+      ) : null}
+      {showProfile ? (
+        <ProfilePanel
+          profile={profile}
+          name={profileName}
+          onClose={() => setShowProfile(false)}
+          onHelp={() => router.push("/help-center")}
+          onLanguageLoadingChange={setIsLanguageLoading}
+          onProfileUpdate={setProfile}
+        />
       ) : null}
       <SubscribePromptOverlay onClose={closeSubscribePrompt} show={showSubscribePrompt} />
       {showScoreInfo ? (

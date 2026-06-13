@@ -79,7 +79,7 @@ type DashboardData = {
   coachTime: string;
 };
 
-type UserProfile = {
+export type UserProfile = {
   accessType?: string | null;
   mobileNumber?: string;
   panNumber?: string;
@@ -844,7 +844,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
           {isFaqLoading ? (
             <FaqSkeleton />
           ) : filteredData.length === 0 ? (
-            <div className="rounded-[26px] bg-[#111821] px-5 py-10 text-center">
+            <div className="mb-5 rounded-[26px] bg-[#111821] px-5 py-10 text-center">
               <Search className="mx-auto mb-3 size-9 text-[#6F7B8E]" strokeWidth={1.7} />
               <p className="mb-2 text-[16px] font-semibold text-white">
                 No results found
@@ -913,7 +913,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
               Contact SCORECARE support for profile, report, subscription, and score queries.
             </p>
 
-            <div className="mt-4 flex gap-2.5">
+            <div className="mt-4 grid grid-cols-3 gap-2.5">
               <ContactCard
                 Icon={MessageCircle}
                 label="Live Chat"
@@ -1145,7 +1145,7 @@ function toDialNumber(value: string) {
 
 function ContactCard({ color, Icon, label, onClick, sub }: { color: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; label: string; onClick: () => void; sub: string }) {
   return (
-    <button type="button" className="flex-1 rounded-[18px] bg-white/[0.06] px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]" onClick={onClick}>
+    <button type="button" className="min-w-0 rounded-[18px] bg-white/[0.06] px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]" onClick={onClick}>
       <span className="mx-auto grid size-9 place-items-center rounded-[13px]" style={{ backgroundColor: `${color}22`, color }}>
         <Icon className="size-5" strokeWidth={1.8} />
       </span>
@@ -1762,7 +1762,7 @@ function LanguageSettingsPopup({
   );
 }
 
-function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, onProfileUpdate, profile }: { name: string; onClose: () => void; onHelp: () => void; onLanguageLoadingChange: (loading: boolean) => void; onProfileUpdate: (profile: UserProfile | null) => void; profile: UserProfile | null }) {
+export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, onProfileUpdate, profile }: { name: string; onClose: () => void; onHelp: () => void; onLanguageLoadingChange: (loading: boolean) => void; onProfileUpdate: (profile: UserProfile | null) => void; profile: UserProfile | null }) {
   const phone = profile?.mobileNumber || sessionStorage.getItem("scorecare_mobile_number") || "--";
   const completion = calculateProfileCompletion(profile);
   const [notificationError, setNotificationError] = useState("");

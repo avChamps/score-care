@@ -1,7 +1,7 @@
 import { Capacitor, CapacitorHttp, type HttpOptions } from "@capacitor/core";
 
-export const API_BASE_URL = 'http://localhost:5000';
-// export const API_BASE_URL = "https://scorecareapp.com/api";
+// export const API_BASE_URL = 'http://localhost:5000';
+export const API_BASE_URL = "https://scorecareapp.com/api";
 
 export function apiUrl(path: string) {
   return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
