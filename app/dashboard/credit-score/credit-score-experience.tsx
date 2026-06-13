@@ -5,9 +5,14 @@ import {
   CheckCircle2,
   Clock3,
   CreditCard,
+  Crown,
   Download,
+  FileText,
+  Gift,
   Gauge,
+  Home,
   Info,
+  Menu,
   ReceiptText,
   RotateCcw,
   Sparkles,
@@ -16,6 +21,7 @@ import {
   WalletCards,
   XCircle,
 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -109,6 +115,26 @@ type ReportEnquiryItem = {
 type AiAnswerBlock = {
   text: string;
   type: "heading" | "paragraph" | "list";
+};
+
+type CibilRepairContent = {
+  plans: {
+    id: string;
+    planName: string;
+    amount: number;
+    currency: string;
+    billingCycle: string;
+    buttonLabel: string;
+    displayOrder: number;
+    isActive: boolean;
+  }[];
+  timelines: {
+    id: string;
+    title: string;
+    description: string;
+    displayOrder: number;
+    isActive: boolean;
+  }[];
 };
 
 const predictorActions = [
@@ -205,13 +231,34 @@ const fallbackReportEnquiries: ReportEnquiryItem[] = [
   { date: "09 Apr 2026", id: "fallback-enquiry-axis", kind: "Hard", lender: "Axis Bank", loanType: "Credit Card", pointsImpact: "-3 pts impact" },
 ];
 
-const repairTimelineSteps = ["Report Analysis", "Error Detection", "Dispute Filing", "Lender Negotiation", "Score Verification"];
-const repairTimelineCopy = [
-  "Review accounts, enquiries, balances, and negative signals.",
-  "Find wrong ownership, duplicate entries, late marks, and closure gaps.",
-  "Prepare bureau-ready disputes with supporting documents.",
-  "Coordinate lender follow-up until account correction is confirmed.",
-  "Verify bureau update and score movement after resolution.",
+const fallbackRepairContent: CibilRepairContent = {
+  plans: [
+    {
+      id: "cibil-full-repair-monthly",
+      planName: "Full Repair",
+      amount: 499,
+      currency: "INR",
+      billingCycle: "monthly",
+      buttonLabel: "Start Full Repair",
+      displayOrder: 1,
+      isActive: true,
+    },
+  ],
+  timelines: [
+    { id: "report-analysis", title: "Report Analysis", description: "Review accounts, enquiries, balances, and negative signals.", displayOrder: 1, isActive: true },
+    { id: "error-detection", title: "Error Detection", description: "Find wrong ownership, duplicate entries, late marks, and closure gaps.", displayOrder: 2, isActive: true },
+    { id: "dispute-filing", title: "Dispute Filing", description: "Prepare bureau-ready disputes with supporting documents.", displayOrder: 3, isActive: true },
+    { id: "lender-negotiation", title: "Lender Negotiation", description: "Coordinate lender follow-up until account correction is confirmed.", displayOrder: 4, isActive: true },
+    { id: "score-verification", title: "Score Verification", description: "Verify bureau update and score movement after resolution.", displayOrder: 5, isActive: true },
+  ],
+};
+
+const reportBottomNav = [
+  { label: "Home", href: "/dashboard", Icon: Home },
+  { label: "Report", href: "/dashboard/credit-score", Icon: FileText },
+  { label: "Improve", href: "/dashboard/score-fix", Icon: TrendingUp },
+  { label: "Offers", href: "/pricing", Icon: Gift },
+  { label: "Loans", href: "/dashboard/loans", Icon: ReceiptText },
 ];
 
 export function CreditScoreExperience() {
@@ -226,6 +273,7 @@ export function CreditScoreExperience() {
   const [scoreHelpAnswer, setScoreHelpAnswer] = useState("");
   const [scoreHelpError, setScoreHelpError] = useState("");
   const [scoreHelpLoading, setScoreHelpLoading] = useState(false);
+  const [repairContent, setRepairContent] = useState<CibilRepairContent>(fallbackRepairContent);
   const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
@@ -285,6 +333,24 @@ export function CreditScoreExperience() {
     }
   }, [accessLoading, isFreeTier, router]);
 
+  const loadRepairContent = useCallback(async () => {
+    try {
+      const response = await apiRequest("/cibil-repair-content");
+      const result = await response.json();
+
+      if (!response.ok || result?.status !== "success") {
+        return;
+      }
+
+      setRepairContent({
+        plans: (result.data?.plans ?? []).filter((plan: CibilRepairContent["plans"][number]) => plan.isActive),
+        timelines: (result.data?.timelines ?? []).filter((timeline: CibilRepairContent["timelines"][number]) => timeline.isActive),
+      });
+    } catch {
+      setRepairContent(fallbackRepairContent);
+    }
+  }, []);
+
   useEffect(() => {
     function handleDisplayUpdate(event: Event) {
       if (isFreeTier) {
@@ -301,13 +367,14 @@ export function CreditScoreExperience() {
     window.addEventListener("scorecare:cibil-display-updated", handleDisplayUpdate);
     const loadTimer = window.setTimeout(() => {
       void loadDisplayData();
+      void loadRepairContent();
     }, 0);
 
     return () => {
       window.clearTimeout(loadTimer);
       window.removeEventListener("scorecare:cibil-display-updated", handleDisplayUpdate);
     };
-  }, [isFreeTier, loadDisplayData]);
+  }, [isFreeTier, loadDisplayData, loadRepairContent]);
 
   async function downloadReport() {
     if (downloading) return;
@@ -434,10 +501,28 @@ export function CreditScoreExperience() {
 
   return (
     <PortalShell active="score">
-      <PortalTopBar title="Credit Report" />
-      <PageContent className="bg-[#eef4f8]">
-        <div className="mx-auto max-w-md">
-          <div className="rounded-[2rem] bg-[#081625] p-4 text-white shadow-[0_24px_60px_rgba(8,22,37,0.22)]">
+      <div className="min-h-screen bg-[#050912] pb-28 text-white">
+        <PortalTopBar title="Credit Report" />
+        <PageContent className="px-4 py-5">
+          <div className="mx-auto max-w-md">
+            <div className="mb-5 flex items-center justify-between">
+              <Link
+                href="/dashboard"
+                aria-label="Go to dashboard home"
+                className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
+              >
+                <Menu className="size-5" strokeWidth={1.8} />
+              </Link>
+              <Link
+                href="/pricing"
+                aria-label="Premium benefits"
+                className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
+              >
+                <Crown className="size-6 fill-[#FFD34D]/20" strokeWidth={1.8} />
+              </Link>
+            </div>
+
+            <div className="rounded-[2rem] bg-[radial-gradient(circle_at_84%_0%,rgba(94,242,194,0.14),transparent_34%),linear-gradient(145deg,#111821,#151E2A)] p-4 text-white shadow-[0_18px_38px_rgba(0,0,0,0.2)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#4EE6D2]">Credit Report</p>
@@ -450,7 +535,7 @@ export function CreditScoreExperience() {
                 className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#ff4d7d] px-3 text-[0.7rem] font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)] disabled:opacity-55"
                 type="button"
                 onClick={downloadReport}
-                disabled={downloading || !displayData?.data?.report?.has_pdf}
+                disabled={downloading || (!isFreeTier && !displayData?.data?.report?.has_pdf)}
               >
                 <Download className="size-3.5" />
                 {downloading ? "Loading" : "PDF"}
@@ -474,11 +559,34 @@ export function CreditScoreExperience() {
             ) : activeTab === "enquiries" ? (
               <ReportEnquiriesTab enquiries={enquiries} loading={loading} />
             ) : (
-              <ReportRepairTab accounts={accounts} />
+              <ReportRepairTab accounts={accounts} repairContent={repairContent} />
             )}
           </div>
         </div>
-      </PageContent>
+        </PageContent>
+
+        <div className="fixed bottom-4 left-0 right-0 z-30 px-4 pb-[env(safe-area-inset-bottom)]">
+          <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-full border border-white/12 bg-[#171F29]/88 px-2 py-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.42)] backdrop-blur-2xl">
+            {reportBottomNav.map(({ label, href, Icon }) => {
+              const active = label === "Report";
+
+              return (
+                <Link
+                  key={label}
+                  href={href}
+                  data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
+                  className={cn("flex flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-1 text-[11px] font-normal text-[#B9C0CC]", active && "text-[#FF9D28]")}
+                >
+                  <span className={cn("grid size-8 place-items-center rounded-full", active && "bg-[#9B5C18]/74 shadow-[0_0_18px_rgba(255,122,0,0.4)]")}>
+                    <Icon className="size-4" strokeWidth={active ? 2 : 1.65} />
+                  </span>
+                  <span>{label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
       <SubscribePromptOverlay onClose={closeSubscribePrompt} show={showSubscribePrompt} />
       {showScoreInfo ? (
         <ScoreInfoDialog
@@ -669,19 +777,27 @@ function ReportEnquiriesTab({ enquiries, loading }: { enquiries: CreditEnquiry[]
   );
 }
 
-function ReportRepairTab({ accounts }: { accounts: CreditAccount[] }) {
+function ReportRepairTab({ accounts, repairContent }: { accounts: CreditAccount[]; repairContent: CibilRepairContent }) {
   const disputeStats = buildDisputeStats(accounts);
   const disputes = buildDisputeCards(accounts);
+  const plan = [...repairContent.plans].sort((a, b) => a.displayOrder - b.displayOrder)[0] ?? fallbackRepairContent.plans[0];
+  const timelines = repairContent.timelines.length ? [...repairContent.timelines].sort((a, b) => a.displayOrder - b.displayOrder) : fallbackRepairContent.timelines;
+  const amountLabel = new Intl.NumberFormat("en-IN", {
+    currency: plan.currency,
+    maximumFractionDigits: 0,
+    style: "currency",
+  }).format(plan.amount);
+  const billingCycleLabel = plan.billingCycle === "monthly" ? "mo" : plan.billingCycle;
 
   return (
     <div className="space-y-4">
       <section className="overflow-hidden rounded-[1.75rem] bg-[#081625] text-white shadow-[0_18px_40px_rgba(8,22,37,0.2)]">
         <div className="bg-[radial-gradient(circle_at_85%_0%,rgba(78,230,210,0.28),transparent_34%),linear-gradient(160deg,#10243a,#081625)] px-4 py-5">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#4EE6D2]">Credit Repair Service</p>
-          <h2 className="mt-2 text-base font-semibold">Repair negative report signals</h2>
+          <h2 className="mt-2 text-base font-semibold">{plan.planName}</h2>
           <p className="mt-2 text-[0.72rem] leading-5 text-[#9fb2c6]">Expert review, disputes, lender follow-up, and score verification in one guided flow.</p>
           <button className="mt-4 h-11 w-full rounded-2xl bg-[#ff4d7d] text-xs font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)]" type="button">
-            Start Full Repair — ₹499/mo
+            {plan.buttonLabel} — {amountLabel}/{billingCycleLabel}
           </button>
         </div>
       </section>
@@ -689,12 +805,12 @@ function ReportRepairTab({ accounts }: { accounts: CreditAccount[] }) {
       <section className="rounded-[1.75rem] bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold text-[#0f172a]">Repair timeline</h2>
         <div className="mt-4 space-y-3">
-          {repairTimelineSteps.map((step, index) => (
-            <div key={step} className="flex gap-3">
+          {timelines.map((step, index) => (
+            <div key={step.id} className="flex gap-3">
               <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#e8fbf8] text-[0.68rem] font-semibold text-[#089981]">{index + 1}</span>
               <div className="border-b border-slate-100 pb-3 last:border-b-0">
-                <p className="text-xs font-semibold text-[#172033]">{step}</p>
-                <p className="mt-1 text-[0.68rem] text-[#64748b]">{repairTimelineCopy[index]}</p>
+                <p className="text-xs font-semibold text-[#172033]">{step.title}</p>
+                <p className="mt-1 text-[0.68rem] text-[#64748b]">{step.description}</p>
               </div>
             </div>
           ))}
