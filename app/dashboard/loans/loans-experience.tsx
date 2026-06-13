@@ -32,9 +32,11 @@ import { useSubscriptionAccess } from "@/lib/subscription-access";
 import { cn } from "@/lib/utils";
 
 type LoanFilter = "All Loans" | "Your Applications";
+type LoanStatusFilter = "All" | "Active Loans" | "Closed Loans";
 type DisplayDataResponse = {
   fetchedAt?: string | null;
   data?: {
+    name?: string | null;
     report?: {
       credit_score?: string | number | null;
     };
@@ -49,9 +51,31 @@ type DisplayDataResponse = {
       };
       accounts?: CreditAccount[] | null;
     };
+    credit_report?: {
+      CAIS_Account?: {
+        CAIS_Account_DETAILS?: CreditAccount[] | null;
+      };
+    };
   };
 };
 type CreditAccount = {
+  Account_Type?: string | number | null;
+  Account_Number?: string | number | null;
+  Amount_Past_Due?: string | number | null;
+  Current_Balance?: string | number | null;
+  Date_Closed?: string | null;
+  Date_Reported?: string | null;
+  Highest_Credit_or_Original_Loan_Amount?: string | number | null;
+  Identification_Number?: string | number | null;
+  Open_Date?: string | null;
+  Payment_Frequency?: string | null;
+  Portfolio_Type?: string | null;
+  Repayment_Tenure?: string | number | null;
+  Scheduled_Monthly_Payment_Amount?: string | number | null;
+  Subscriber_Name?: string | null;
+  Terms_Duration?: string | number | null;
+  Terms_Frequency?: string | null;
+  Date_of_Last_Payment?: string | number | null;
   account_closed?: string | null;
   amount_overdue?: string | number | null;
   current_balance?: string | number | null;
@@ -146,6 +170,7 @@ export function LoansExperience() {
   const router = useRouter();
   const [applyOpen, setApplyOpen] = useState(false);
   const [filter, setFilter] = useState<LoanFilter>("All Loans");
+  const [loanStatusFilter, setLoanStatusFilter] = useState<LoanStatusFilter>("All");
   const [loanType, setLoanType] = useState("personal");
   const [employmentType, setEmploymentType] = useState("salaried");
   const [displayData, setDisplayData] = useState<DisplayDataResponse | null>(null);
@@ -169,8 +194,16 @@ export function LoansExperience() {
       return [];
     }
 
+    if (loanStatusFilter === "Active Loans") {
+      return loans.filter((loan) => loan.status === "Active" || loan.status === "Overdue");
+    }
+
+    if (loanStatusFilter === "Closed Loans") {
+      return loans.filter((loan) => loan.status === "Completed");
+    }
+
     return loans;
-  }, [filter, isFreeTier, loans]);
+  }, [filter, isFreeTier, loanStatusFilter, loans]);
 
   const openBenefitsPrompt = useCallback(() => {
     setShowBenefitsPrompt(true);
@@ -305,6 +338,7 @@ export function LoansExperience() {
             applicationLoading={applicationLoading}
             filter={filter}
             lastChecked={lastChecked}
+            loanStatusFilter={loanStatusFilter}
             loading={loading}
             loans={visibleLoans}
             onApply={() => setApplyOpen(true)}
@@ -323,6 +357,7 @@ export function LoansExperience() {
               }
             }}
             onRefresh={loadLoans}
+            onLoanStatusFilterChange={setLoanStatusFilter}
             onSubscribePrompt={openBenefitsPrompt}
             score={score}
             summary={summary}
@@ -375,12 +410,14 @@ function RepaymentsView({
   error,
   filter,
   lastChecked,
+  loanStatusFilter,
   loading,
   loans,
   onApplicationsRefresh,
   onApply,
   onBack,
   onFilterChange,
+  onLoanStatusFilterChange,
   onRefresh,
   onSubscribePrompt,
   score,
@@ -393,12 +430,14 @@ function RepaymentsView({
   error: string;
   filter: LoanFilter;
   lastChecked: string | null;
+  loanStatusFilter: LoanStatusFilter;
   loading: boolean;
   loans: Loan[];
   onApplicationsRefresh: () => void;
   onApply: () => void;
   onBack: () => void;
   onFilterChange: (filter: LoanFilter) => void;
+  onLoanStatusFilterChange: (filter: LoanStatusFilter) => void;
   onRefresh: () => void;
   onSubscribePrompt: () => void;
   score: number | null;
@@ -492,6 +531,24 @@ function RepaymentsView({
           </button>
         ))}
       </div>
+
+      {filter === "All Loans" ? (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {(["All", "Active Loans", "Closed Loans"] as LoanStatusFilter[]).map((tab) => (
+            <button
+              key={tab}
+              className={cn(
+                "shrink-0 rounded-full border px-3 py-1.5 text-[0.68rem] font-semibold transition",
+                loanStatusFilter === tab ? "border-[#22F2C2] bg-[#22F2C2]/10 text-[#5EF2C2]" : "border-white/10 bg-white/[0.05] text-[#94A3B8]",
+              )}
+              type="button"
+              onClick={() => onLoanStatusFilterChange(tab)}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <div className="grid gap-3">
         {filter === "Your Applications" ? (
@@ -769,6 +826,7 @@ function SummaryCard({
 
 function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
   const overdue = loan.status === "Overdue";
+  const completed = loan.status === "Completed";
 
   return (
     <AppCard
@@ -778,19 +836,19 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
       )}
       style={{ animationDelay: `${index * 70}ms` }}
     >
-      <div className="flex items-start justify-between gap-4 border-b border-white/10 px-4 py-4 sm:px-5">
+      <div className="flex items-start justify-between gap-3 border-b border-white/10 px-3.5 py-3 sm:px-4">
         <div>
-          <h3 className="text-base font-semibold text-white">{loan.bank}</h3>
+          <h3 className="text-sm font-semibold text-white">{loan.bank}</h3>
           <p className="mt-0.5 text-xs text-[#94A3B8]">{loan.borrower}</p>
         </div>
-        <span className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold", overdue ? "border-[#FF5C8A]/25 bg-[#FF5C8A]/10 text-[#FF8AAB]" : "border-[#22F2C2]/20 bg-[#22F2C2]/10 text-[#22F2C2]")}>
+        <span className={cn("rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold", overdue ? "border-[#FF5C8A]/25 bg-[#FF5C8A]/10 text-[#FF8AAB]" : "border-[#22F2C2]/20 bg-[#22F2C2]/10 text-[#22F2C2]")}>
           {loan.status}
         </span>
       </div>
 
-      <div className="px-4 py-4 sm:px-5">
+      <div className="px-3.5 py-3 sm:px-4">
         <p className="text-xs font-medium text-[#94A3B8]">Loan Amount</p>
-        <p className="mt-1 text-2xl font-semibold text-white">{loan.amount}</p>
+        <p className="mt-1 text-xl font-semibold text-white">{loan.amount}</p>
       </div>
 
       <div className="grid grid-cols-2 border-y border-white/10">
@@ -804,24 +862,27 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-3 gap-3 px-4 py-4 text-xs text-[#94A3B8] sm:px-5">
+      <div className="grid grid-cols-3 gap-2.5 px-3.5 py-3 text-[0.7rem] text-[#94A3B8] sm:px-4">
         <MetaCell label="Sanctioned" value={loan.sanctioned} />
         <MetaCell label="Disbursed" value={loan.disbursed} />
         <MetaCell align="right" label="EMIs" value={loan.tenure} />
       </div>
 
-      <div className="border-t border-white/10 bg-white/[0.06] px-4 py-3 sm:px-5">
-        <PrimaryPortalButton
-          disabled
-          className={cn(
-            "h-11 w-full rounded-xl text-sm",
-            overdue && "border-[#FF5C8A] bg-[#FF5C8A] shadow-none hover:bg-[#FF5C8A]"
-          )}
-        >
-          <CreditCard className="size-5" />
-          Pay EMI {loan.emi}
-        </PrimaryPortalButton>
-      </div>
+      {!completed ? (
+        <div className="border-t border-white/10 bg-white/[0.06] px-3.5 py-2.5 sm:px-4">
+          <PrimaryPortalButton
+            disabled
+            className={cn(
+              "h-9 w-full rounded-xl text-xs",
+              overdue && "border-[#FF5C8A] bg-[#FF5C8A] shadow-none hover:bg-[#FF5C8A]"
+            )}
+          >
+            <CreditCard className="size-4" />
+            {/* Pay EMI {loan.emi} */}
+               Pay EMI
+          </PrimaryPortalButton>
+        </div>
+      ) : null}
     </AppCard>
   );
 }
@@ -1394,29 +1455,31 @@ function normalizeLoanOptions(options: LoanOption[] | null | undefined, fallback
 }
 
 function buildLoans(result: DisplayDataResponse | null): Loan[] {
-  const borrower = result?.data?.display?.profile?.name || "Borrower";
-  const accounts = result?.data?.display?.accounts ?? [];
+  const borrower = result?.data?.display?.profile?.name || result?.data?.name || "Borrower";
+  const accounts = readLoanAccounts(result);
 
   return accounts.map((account, index) => {
-    const overdueAmount = readNumericValue(account.amount_overdue);
-    const closed = Boolean(account.account_closed);
+    const overdueAmount = readNumericValue(account.amount_overdue ?? account.Amount_Past_Due);
+    const closed = isLoanClosed(account);
     const status = overdueAmount > 0 ? "Overdue" : closed ? "Completed" : "Active";
-    const emi = formatRupees(account.emi);
-    const amount = readNumericValue(account.high_credit_amount) || readNumericValue(account.current_balance);
+    const emi = formatOptionalRupees(account.emi ?? account.Scheduled_Monthly_Payment_Amount);
+    const currentBalance = readNumericValue(account.current_balance ?? account.Current_Balance);
+    const originalAmount = readNumericValue(account.high_credit_amount ?? account.Highest_Credit_or_Original_Loan_Amount);
+    const amount = currentBalance || originalAmount;
 
     return {
       amount: formatRupees(amount),
-      bank: account.member_name || "Credit lender",
+      bank: account.member_name || account.Subscriber_Name || formatAccountType(account.Account_Type) || "Credit lender",
       borrower,
-      disbursed: formatCompactDate(account.reported_and_certified || account.opened),
+      disbursed: formatCompactDate(account.opened || account.Open_Date),
       emi,
-      id: `${account.member_name || "loan"}-${account.type || "account"}-${index}`,
-      nextEmi: account.last_payment ? formatCompactDate(account.last_payment) : "--",
+      id: `${account.Identification_Number ?? account.Account_Number ?? account.member_name ?? account.Subscriber_Name ?? "loan"}-${account.type ?? account.Account_Type ?? "account"}-${index}`,
+      nextEmi: formatCompactDate(account.last_payment ?? account.Date_of_Last_Payment),
       overdue: overdueAmount > 0 ? `${formatRupees(overdueAmount)} overdue - Affects CIBIL` : "",
-      paymentFrequency: formatPaymentFrequency(account.payment_frequency),
-      sanctioned: formatCompactDate(account.opened),
+      paymentFrequency: formatPaymentFrequency(account.payment_frequency ?? account.Payment_Frequency ?? account.Terms_Frequency),
+      sanctioned: formatCompactDate(account.opened || account.Open_Date),
       status,
-      tenure: account.repayment_tenure ? String(account.repayment_tenure) : "--",
+      tenure: account.repayment_tenure || account.Repayment_Tenure || account.Terms_Duration ? String(account.repayment_tenure ?? account.Repayment_Tenure ?? account.Terms_Duration) : "--",
     };
   });
 }
@@ -1424,11 +1487,11 @@ function buildLoans(result: DisplayDataResponse | null): Loan[] {
 function buildLoanSummary(loans: Loan[], result: DisplayDataResponse | null): LoanSummary {
   const activeLoans = loans.filter((loan) => loan.status === "Active" || loan.status === "Overdue");
   const overdueLoans = loans.filter((loan) => loan.status === "Overdue");
-  const accounts = result?.data?.display?.accounts ?? [];
+  const accounts = readLoanAccounts(result);
   const activeAmount = accounts
-    .filter((account) => !account.account_closed)
-    .reduce((total, account) => total + (readNumericValue(account.high_credit_amount) || readNumericValue(account.current_balance)), 0);
-  const overdueAmount = accounts.reduce((total, account) => total + readNumericValue(account.amount_overdue), 0);
+    .filter((account) => !isLoanClosed(account))
+    .reduce((total, account) => total + readNumericValue(account.current_balance ?? account.Current_Balance), 0);
+  const overdueAmount = accounts.reduce((total, account) => total + readNumericValue(account.amount_overdue ?? account.Amount_Past_Due), 0);
 
   return {
     activeAmount: formatRupees(activeAmount),
@@ -1437,6 +1500,22 @@ function buildLoanSummary(loans: Loan[], result: DisplayDataResponse | null): Lo
     overdueAmount: formatRupees(overdueAmount),
     overdueCount: overdueLoans.length,
   };
+}
+
+function readLoanAccounts(result: DisplayDataResponse | null) {
+  const reportAccounts = result?.data?.credit_report?.CAIS_Account?.CAIS_Account_DETAILS;
+
+  if (Array.isArray(reportAccounts)) {
+    return reportAccounts;
+  }
+
+  return result?.data?.display?.accounts ?? [];
+}
+
+function isLoanClosed(account: CreditAccount) {
+  const closedValue = String(account.account_closed ?? account.Date_Closed ?? "").trim();
+
+  return Boolean(closedValue && closedValue !== "00000000" && closedValue !== "11111111");
 }
 
 function readScore(result: DisplayDataResponse | null) {
@@ -1457,7 +1536,9 @@ function readLastChecked(result: DisplayDataResponse | null) {
 }
 
 function readNumericValue(value: unknown) {
-  const numericValue = typeof value === "number" ? value : Number(value);
+  if (value === null || value === undefined || value === "") return 0;
+
+  const numericValue = typeof value === "number" ? value : Number(String(value).replace(/[^\d.-]/g, ""));
 
   return Number.isFinite(numericValue) ? numericValue : 0;
 }
@@ -1474,6 +1555,23 @@ function formatRupees(value: unknown) {
   }).format(amount).replace("₹", "Rs. ");
 }
 
+function formatOptionalRupees(value: unknown) {
+  const amount = readNumericValue(value);
+
+  return amount ? formatRupees(amount) : "--";
+}
+
+function formatAccountType(value: unknown) {
+  const accountTypes: Record<string, string> = {
+    "5": "Personal Loan",
+    "6": "Consumer Loan",
+    "10": "Credit Card",
+  };
+  const key = String(value ?? "").trim();
+
+  return key ? accountTypes[key] ?? `Account ${key}` : "";
+}
+
 function formatDateTime(value: string) {
   const date = new Date(value);
 
@@ -1488,22 +1586,25 @@ function formatDateTime(value: string) {
   }).format(date);
 }
 
-function formatCompactDate(value?: string | null) {
-  if (!value) return "--";
+function formatCompactDate(value?: string | number | null) {
+  const raw = String(value ?? "").trim();
 
-  if (/^\d{8}$/.test(value)) {
-    const day = value.slice(0, 2);
-    const month = value.slice(2, 4);
-    const year = value.slice(4);
+  if (!raw) return "--";
 
-    if (value === "11111111" || value === "00000000") {
+  if (/^\d{8}$/.test(raw)) {
+    if (raw === "11111111" || raw === "00000000") {
       return "--";
     }
+
+    const firstFour = Number(raw.slice(0, 4));
+    const year = firstFour >= 1900 ? raw.slice(0, 4) : raw.slice(4);
+    const month = firstFour >= 1900 ? raw.slice(4, 6) : raw.slice(2, 4);
+    const day = firstFour >= 1900 ? raw.slice(6, 8) : raw.slice(0, 2);
 
     return `${day}/${month}/${year}`;
   }
 
-  return value;
+  return raw;
 }
 
 function formatPaymentFrequency(value?: string | null) {

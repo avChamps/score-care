@@ -2568,12 +2568,13 @@ function buildDashboardData(result: unknown, profile: UserProfile | null, active
   const enquiries = readEnquiries(result);
   const summary = readReportSummary(result);
   const disputeCount = activeDisputes;
-  const activeAccounts = summary.activeAccounts || accounts.filter(isActiveAccount).length;
   const utilization = calculateUtilization(accounts);
   const targetScore = getTargetScore(score);
   const recentEnquiries = summary.recentEnquiries;
   const paymentHistory = calculatePaymentHistory(accounts);
   const creditAge = calculateCreditAge(accounts);
+  const creditMix = calculateCreditMix(accounts, summary);
+  const newEnquiries = calculateNewEnquiries(recentEnquiries);
   const trend = buildScoreTrend(score, accounts);
   const hasReportData = accounts.length > 0 || enquiries.length > 0 || Boolean(summary.outstandingBalance || summary.activeAccounts || summary.defaultAccounts || summary.recentEnquiries);
   const improvement = calculateImprovement(score);
@@ -2598,8 +2599,8 @@ function buildDashboardData(result: unknown, profile: UserProfile | null, active
       { name: "Payment History", value: paymentHistory.value, meta: paymentHistory.meta, tone: paymentHistory.tone },
       { name: "Credit Utilization", value: utilization.strength, meta: utilization.label, tone: utilization.tone },
       { name: "Credit Age", value: creditAge.value, meta: creditAge.meta, tone: creditAge.tone },
-      { name: "Credit Mix", value: Math.min(90, activeAccounts * 18), meta: `${activeAccounts} active`, tone: activeAccounts > 1 ? "good" : "warn" },
-      { name: "New Enquiries", value: recentEnquiries > 2 ? 45 : 78, meta: `${recentEnquiries} recent`, tone: recentEnquiries > 2 ? "alert" : "good" },
+      { name: "Credit Mix", value: creditMix.value, meta: creditMix.meta, tone: creditMix.tone },
+      { name: "New Enquiries", value: newEnquiries.value, meta: newEnquiries.meta, tone: newEnquiries.tone },
     ],
     coach: buildCoachText(disputeCount, utilization.percent, recentEnquiries),
     coachGain: disputeCount ? disputeCount * 12 : utilization.percent > 30 ? 24 : 0,
@@ -2751,7 +2752,13 @@ function readEnquiries(result: unknown) {
 }
 
 function calculateUtilization(accounts: Array<Record<string, unknown>>) {
-  const cardAccounts = accounts.filter((account) => String(account.Portfolio_Type ?? account.portfolio_type ?? "").trim().toUpperCase() === "R");
+  const cardAccounts = accounts.filter((account) => {
+    const limit = readNumber(account.Credit_Limit_Amount ?? account.high_credit_amount);
+    const portfolioType = String(account.Portfolio_Type ?? account.portfolio_type ?? "").trim().toUpperCase();
+    const accountType = readNumber(account.Account_Type ?? account.account_type);
+
+    return limit > 0 && (portfolioType === "R" || accountType === 10);
+  });
   const totals = cardAccounts.reduce<{ balance: number; limit: number }>(
     (sum, account) => ({
       balance: sum.balance + readNumber(account.current_balance ?? account.Current_Balance),
@@ -2760,11 +2767,12 @@ function calculateUtilization(accounts: Array<Record<string, unknown>>) {
     { balance: 0, limit: 0 },
   );
   const percent = totals.limit ? Math.round((totals.balance / totals.limit) * 100) : 0;
+  const strength = Math.max(10, 100 - percent);
 
-  if (percent > 50) return { percent, strength: 45, label: `${percent}% - Reduce`, tone: "alert" as const };
-  if (percent > 30) return { percent, strength: 62, label: `${percent}% - Reduce`, tone: "warn" as const };
+  if (percent > 50) return { percent, strength, label: `${percent}% - High`, tone: "alert" as const };
+  if (percent > 30) return { percent, strength, label: `${percent}% - Fair`, tone: "warn" as const };
 
-  return { percent, strength: percent, label: `${percent}% - Good`, tone: "good" as const };
+  return { percent, strength, label: `${percent}% - Good`, tone: "good" as const };
 }
 
 function isActiveAccount(account: Record<string, unknown>) {
@@ -2797,6 +2805,8 @@ function readReportSummary(result: unknown) {
             };
             Total_Outstanding_Balance?: {
               Outstanding_Balance_All?: unknown;
+              Outstanding_Balance_Secured_Percentage?: unknown;
+              Outstanding_Balance_UnSecured_Percentage?: unknown;
             };
           };
         };
@@ -2812,6 +2822,8 @@ function readReportSummary(result: unknown) {
     closedAccounts: readNumber(creditAccount?.CreditAccountClosed),
     defaultAccounts: readNumber(creditAccount?.CreditAccountDefault),
     outstandingBalance: readNumber(outstanding?.Outstanding_Balance_All),
+    securedPercentage: readNumber(outstanding?.Outstanding_Balance_Secured_Percentage),
+    unsecuredPercentage: readNumber(outstanding?.Outstanding_Balance_UnSecured_Percentage),
     recentEnquiries: readNumber(data?.data?.credit_report?.CAPS?.CAPS_Summary?.CAPSLast90Days),
   };
 }
@@ -2829,7 +2841,7 @@ function calculatePaymentHistory(accounts: Array<Record<string, unknown>>) {
     return { value: 58, meta: "Needs attention", tone: "alert" as const };
   }
 
-  return { value: 94, meta: "Excellent", tone: "good" as const };
+  return { value: 100, meta: "Excellent", tone: "good" as const };
 }
 
 function calculateCreditAge(accounts: Array<Record<string, unknown>>) {
@@ -2850,13 +2862,43 @@ function calculateCreditAge(accounts: Array<Record<string, unknown>>) {
   }
 
   const oldest = openDates.reduce((min, date) => (date < min ? date : min), openDates[0]);
-  const years = Math.max(0, (Date.now() - oldest.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  const today = new Date();
+  const months = Math.max(0, (today.getFullYear() - oldest.getFullYear()) * 12 + today.getMonth() - oldest.getMonth() - (today.getDate() < oldest.getDate() ? 1 : 0));
+  const years = months / 12;
 
   return {
-    value: Math.min(95, Math.round((years / 10) * 100)),
+    value: years >= 5 ? 100 : years >= 3 ? 75 : years >= 1 ? 50 : 25,
     meta: `${years.toFixed(1)} yrs`,
-    tone: years >= 3 ? "good" as const : "warn" as const,
+    tone: years >= 3 ? "good" as const : years >= 1 ? "warn" as const : "alert" as const,
   };
+}
+
+function calculateCreditMix(accounts: Array<Record<string, unknown>>, summary: ReturnType<typeof readReportSummary>) {
+  const hasRevolving = accounts.some((account) => String(account.Portfolio_Type ?? account.portfolio_type ?? "").trim().toUpperCase() === "R");
+  const hasInstallment = accounts.some((account) => String(account.Portfolio_Type ?? account.portfolio_type ?? "").trim().toUpperCase() === "I");
+  const hasSecuredAndUnsecured = summary.securedPercentage > 0 && summary.unsecuredPercentage > 0;
+
+  if ((hasRevolving && hasInstallment) || hasSecuredAndUnsecured) {
+    return { value: 90, meta: "Good mix", tone: "good" as const };
+  }
+
+  if (hasRevolving || hasInstallment || summary.securedPercentage > 0 || summary.unsecuredPercentage > 0) {
+    return { value: 55, meta: "Needs variety", tone: "warn" as const };
+  }
+
+  return { value: 25, meta: "Needs variety", tone: "alert" as const };
+}
+
+function calculateNewEnquiries(recentEnquiries: number) {
+  if (recentEnquiries === 0) {
+    return { value: 100, meta: "0 recent", tone: "good" as const };
+  }
+
+  if (recentEnquiries <= 2) {
+    return { value: 70, meta: `${recentEnquiries} recent`, tone: "warn" as const };
+  }
+
+  return { value: 35, meta: `${recentEnquiries} recent`, tone: "alert" as const };
 }
 
 function buildScoreTrend(score: number | null, accounts: Array<Record<string, unknown>>) {
@@ -2930,11 +2972,16 @@ function parseExperianDate(value: unknown) {
 
   const date = new Date(yyyy, mm - 1, dd);
 
-  return Number.isNaN(date.getTime()) ? null : date;
+  if (Number.isNaN(date.getTime())) return null;
+  if (date.getFullYear() !== yyyy || date.getMonth() !== mm - 1 || date.getDate() !== dd) return null;
+
+  return date;
 }
 
 function readNumber(value: unknown) {
-  const number = typeof value === "number" ? value : Number(String(value ?? "").replace(/[^\d.-]/g, ""));
+  if (value === null || value === undefined || value === "") return 0;
+
+  const number = typeof value === "number" ? value : Number(String(value).trim().replace(/[^\d.-]/g, ""));
 
   return Number.isFinite(number) ? number : 0;
 }
