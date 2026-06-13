@@ -134,7 +134,7 @@ const bottomNav = [
   { label: "Report", href: "/dashboard/credit-score", Icon: FileText },
   { label: "Improve", href: "/dashboard/score-fix", Icon: TrendingUp },
   { label: "Offers", href: "/pricing", Icon: Gift },
-{ label: "Bills", href: "/dashboard/loans", Icon: BadgeIndianRupee }
+{ label: "Loans", href: "/dashboard/loans", Icon: BadgeIndianRupee }
 ];
 const appTiles = [
   { href: "/dashboard/score-fix", Icon: Wrench, title: "Dispute Centre", value: "0", meta: "active", alert: true },
@@ -408,7 +408,7 @@ export function HomeDashboard() {
                       cy="110"
                       r="86"
                       fill="none"
-                      stroke={score >= 700 ? "#08DB69" : "#FF5C8A"}
+                      stroke={score >= 700 ? "#08DB69" : "#EF4444"}
                       strokeLinecap="round"
                       strokeWidth="14"
                       pathLength="100"
@@ -546,11 +546,11 @@ export function HomeDashboard() {
                   <div key={factor.name}>
                     <div className="flex items-center justify-between gap-3 text-[12px]">
                       <p className="font-normal text-[13px] text-white">{factor.name}</p>
-                      <p className={cn("font-normal", factor.tone === "good" && "text-[#1F756B]", factor.tone === "warn" && "text-[#FFD34D]", factor.tone === "alert" && "text-[#FF5C8A]")}>{factor.meta}</p>
+                      <p className={cn("font-normal", factor.tone === "good" && "text-[#1F756B]", factor.tone === "warn" && "text-[#FFD34D]", factor.tone === "alert" && "text-[#EF4444]")}>{factor.meta}</p>
                     </div>
                     <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-white/8">
                       <div
-                        className={cn("h-full rounded-full", factor.tone === "good" && "bg-[#1F756B]", factor.tone === "warn" && "bg-[#FFD34D]", factor.tone === "alert" && "bg-[#FF5C8A]")}
+                        className={cn("h-full rounded-full", factor.tone === "good" && "bg-[#08DB69]", factor.tone === "warn" && "bg-[#FFD34D]", factor.tone === "alert" && "bg-[#EF4444]")}
                         style={{ width: `${factor.value}%` }}
                       />
                     </div>
@@ -565,15 +565,15 @@ export function HomeDashboard() {
                   <Lightbulb className="size-7" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-medium text-[#1F756B]">AI Credit Coach</p>
+                  <p className="text-[11px] font-bold text-[#22D3EE]">AI Credit Coach</p>
                   <h2 className="mt-2 text-[13px] font-normal leading-5 tracking-normal">{visibleDashboard.coach}</h2>
                   <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-medium">
-                    <span className="rounded-full bg-[#1F756B]/18 px-3 py-1 text-[#1F756B]">+{visibleDashboard.coachGain} points</span>
-                    <span className="rounded-full bg-white/8 px-3 py-1 text-[#AAB6C8]">{visibleDashboard.coachTime}</span>
+                    <span className="rounded-full bg-[#1F756B]/18 px-3 py-1 text-[#22D3EE]">+{visibleDashboard.coachGain} points</span>
+                    <span className="rounded-full bg-white/8 px-3 py-1 text-[#22D3EE]">{visibleDashboard.coachTime}</span>
                   </div>
                 </div>
               </div>
-              <button className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#1F756B] text-[12px] font-medium text-white shadow-[0_12px_24px_rgba(31,117,107,0.18)]" type="button" onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : () => setShowActionPlan(true)}>
+              <button className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#08DB69] text-[12px] font-medium text-white shadow-[0_12px_24px_rgba(31,117,107,0.18)]" type="button" onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : () => setShowActionPlan(true)}>
                 View Action Plan <ArrowUpRight className="size-5" />
               </button>
             </section>
@@ -1051,7 +1051,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
                 type="button"
                 disabled={feedbackLoading}
                 onClick={() => submitHelpFeedback(false)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#FF5C8A]/12 p-2.5 text-[12px] font-semibold text-[#FF5C8A]"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#EF4444]/12 p-2.5 text-[12px] font-semibold text-[#EF4444]"
               >
                 <ThumbsDown className="size-4" strokeWidth={1.8} /> No
               </button>
@@ -1243,7 +1243,7 @@ function SummaryTile({
       <p
         className={cn(
           "flex items-center justify-center gap-1 text-[16px] font-black leading-none tracking-[-0.02em] sm:text-[18px]",
-          target ? "text-[#FFD21F]" : "text-[#00F0C8]"
+          target ? "text-[#08DB69]" : "text-[#08DB69]"
         )}
       >
         {!target && positive ? (
@@ -1375,10 +1375,10 @@ function QuickCardContent({ Icon, alert, meta, offer, title, value }: { Icon: Co
   className={cn(
     "mt-1 text-[11px] font-lighter tracking-normal",
     alert
-      ? "text-[#FF5C8A]"
+      ? "text-[#EF4444]"
       : offer
       ? "text-[#FFD34D]"
-      : "text-[#21E6C1]"
+      : "text-[#08DB69]"
   )}
 >
   {value} {meta}
@@ -1392,7 +1392,7 @@ function JourneyStat({ label, onClick, value, gold = false }: { label: string; o
   return (
     <button className={cn("rounded-[20px] bg-white/[0.06] p-3 text-left", onClick && "cursor-pointer")} type="button" onClick={onClick}>
       <p className="text-[10px] font-normal text-[#AAB6C8]">{label}</p>
-      <p className={cn("mt-1 text-[11px] font-medium", gold ? "text-[#FFD34D]" : "text-white")}>{value}</p>
+      <p className={cn("mt-1 text-[11px] font-medium", gold ? "text-[#08DB69]" : "text-white")}>{value}</p>
     </button>
   );
 }
@@ -1461,7 +1461,7 @@ function ActionPlanPopup({ dashboard, onClose }: { dashboard: DashboardData; onC
           <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/10 text-white backdrop-blur" type="button" aria-label="Close action plan" onClick={onClose}>
             <X className="size-5" />
           </button>
-          <p className="mt-3 text-[11px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">AI Credit Coach</p>
+          <p className="mt-3 text-[11px] font-bold uppercase tracking-[3px] text-[#22D3EE]">AI Credit Coach</p>
           <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Your action plan</h2>
           <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-medium">
             <span className="rounded-full bg-[#5EF2C2]/14 px-3 py-1 text-[#5EF2C2]">+{dashboard.coachGain} points</span>
@@ -1473,7 +1473,7 @@ function ActionPlanPopup({ dashboard, onClose }: { dashboard: DashboardData; onC
           {aiPlanLoading ? (
             <ActionPlanSkeleton />
           ) : null}
-          {aiPlanError ? <p className="rounded-2xl bg-[#FF5C8A]/10 px-4 py-3 text-[13px] font-medium leading-5 text-[#FF8AAB]">{aiPlanError}</p> : null}
+          {aiPlanError ? <p className="rounded-2xl bg-[#EF4444]/10 px-4 py-3 text-[13px] font-medium leading-5 text-[#FF8AAB]">{aiPlanError}</p> : null}
           {(!aiPlanLoading && aiPoints.length ? aiPoints : !aiPlanLoading && !aiPlan ? points : []).map(({ Icon, text, title, tone }) => (
             <div key={text} className="flex gap-3 rounded-2xl bg-white/[0.06] px-4 py-3">
               <span className={cn("mt-0.5 grid size-8 shrink-0 place-items-center rounded-full", tone === "mint" ? "bg-[#5EF2C2]/14 text-[#5EF2C2]" : tone === "gold" ? "bg-[#FFD34D]/14 text-[#FFD34D]" : "bg-[#FF7A00]/14 text-[#FF9F45]")}>
@@ -2126,7 +2126,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
             ) : null}
 
             {ratingError ? (
-              <p className="mt-3 text-[12px] font-medium text-[#FF5C8A]">{ratingError}</p>
+              <p className="mt-3 text-[12px] font-medium text-[#EF4444]">{ratingError}</p>
             ) : null}
 
             <button
@@ -2210,7 +2210,7 @@ function NotificationsScreen({ error, loading, markingAll, notifications, onBack
         {loading ? (
           <NotificationScreenSkeleton />
         ) : error ? (
-          <p className="px-5 py-5 text-[11px] font-normal text-[#FF5C8A]">{error}</p>
+          <p className="px-5 py-5 text-[11px] font-normal text-[#EF4444]">{error}</p>
         ) : notifications.length ? (
           notifications.map((notification) => (
             <article key={notification.id} className={cn("border-b border-black/20 px-5 py-5", !notification.isRead && "bg-[#F2FFFA]")}>
@@ -2282,11 +2282,11 @@ function ProfileOption({
         <Icon
           className={cn(
             "size-5",
-            danger ? "text-[#FF5C8A]" : "text-[#AAB6C8]"
+            danger ? "text-[#EF4444]" : "text-[#AAB6C8]"
           )}
         />
         {badgeCount ? (
-          <span className="absolute -right-2.5 -top-2.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#FF5C8A] px-1 text-[9px] font-bold leading-none text-white">
+          <span className="absolute -right-2.5 -top-2.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#EF4444] px-1 text-[9px] font-bold leading-none text-white">
             {badgeCount > 99 ? "99+" : badgeCount}
           </span>
         ) : null}
@@ -2296,7 +2296,7 @@ function ProfileOption({
         <p
           className={cn(
             "text-[14px] font-medium",
-            danger ? "text-[#FF5C8A]" : "text-white"
+            danger ? "text-[#EF4444]" : "text-white"
           )}
         >
           {title}

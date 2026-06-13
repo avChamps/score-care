@@ -358,9 +358,10 @@ const fallbackRepairContent: CibilRepairContent = {
   ],
 };
 
-const reportCardClass = "border border-[#1F756B]/35 bg-[linear-gradient(135deg,rgba(8,33,24,0.98),rgba(8,17,31,0.98))] shadow-[0_18px_40px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.04)]";
-const reportHighlightCardClass = "border border-[#1F756B]/45 bg-[radial-gradient(circle_at_85%_0%,rgba(34,242,194,0.12),transparent_36%),linear-gradient(135deg,rgba(8,49,35,0.98),rgba(8,28,22,0.98))] shadow-[0_0_34px_rgba(34,242,194,0.08),0_18px_40px_rgba(0,0,0,0.30)]";
-const reportMiniCardClass = "border border-white/[0.06] bg-white/[0.045]";
+const reportCardClass =
+  "border border-[#103A2B]/50 bg-[linear-gradient(135deg,#06120E_0%,#081712_50%,#091813_100%)] shadow-[0_20px_45px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]";
+const reportHighlightCardClass = "border border-[#0F6C4B]/70 bg-[radial-gradient(circle_at_84%_0%,rgba(34,242,194,0.09),transparent_36%),linear-gradient(135deg,rgba(8,54,37,0.98),rgba(9,38,25,0.98))] shadow-[0_0_34px_rgba(34,242,194,0.07),0_18px_40px_rgba(0,0,0,0.32)]";
+const reportMiniCardClass = "border border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]";
 const reportSectionHeadingClass = "px-1 text-[0.72rem] font-extrabold uppercase tracking-[0.18em] text-[#B9C7D8]";
 
 const reportBottomNav = [
@@ -374,6 +375,7 @@ const reportBottomNav = [
 export function CreditScoreExperience() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("accounts");
+  const [activeAccountFilter, setActiveAccountFilter] = useState<AccountFilter>("accounts");
   const [displayData, setDisplayData] = useState<DisplayDataResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -399,6 +401,7 @@ export function CreditScoreExperience() {
   const lastChecked = readLastChecked(displayData);
   const accounts = displayData?.data?.display?.accounts ?? [];
   const enquiries = displayData?.data?.display?.enquiries ?? [];
+  const accountSummary = useMemo(() => buildAccountSummary(accounts), [accounts]);
   const storedProfileName = typeof window !== "undefined" ? sessionStorage.getItem("scorecare_full_name")?.trim() : "";
   const profileName = profile?.fullName?.trim() || displayData?.data?.display?.profile?.name?.trim() || storedProfileName || "there";
   const baseScore = score ?? 300;
@@ -766,7 +769,7 @@ export function CreditScoreExperience() {
                 </p>
               </div>
               <button
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#ff4d7d] px-3 text-[0.7rem] font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)] disabled:opacity-55"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#EF4444] px-3 text-[0.7rem] font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)] disabled:opacity-55"
                 type="button"
                 onClick={downloadReport}
                 disabled={downloading}
@@ -778,18 +781,39 @@ export function CreditScoreExperience() {
 
             {error ? <p className="mt-3 rounded-2xl bg-[#ff4d7d]/10 px-3 py-2 text-[0.72rem] font-medium text-[#ff8cab]">{error}</p> : null}
 
-            <div className="mt-5 grid grid-cols-3 gap-2 rounded-[1.35rem] border border-[#1F756B]/25 bg-[#0A1B16]/70 p-1.5">
+            <div className="mt-5 grid grid-cols-3 gap-2 rounded-[1.35rem] border border-[#0F5D43]/45 bg-[#102017]/70 p-1.5">
               {(["accounts", "enquiries", "repair"] as Tab[]).map((tab) => (
                 <TabButton key={tab} active={activeTab === tab} onClick={() => setActiveTab(tab)}>
                   {toTitleCase(tab)}
                 </TabButton>
               ))}
             </div>
+            <div className="mt-5 grid grid-cols-3 gap-3">
+              {accountSummary.map((item) => (
+                <button
+                  key={item.filter}
+                  className={cn(
+                    "min-h-[84px] rounded-[1.35rem] px-3 py-3 text-left transition",
+                    activeTab === "accounts" && activeAccountFilter === item.filter
+                      ? "border border-[#00CFA4]/55 bg-[linear-gradient(135deg,rgba(0,173,132,0.36),rgba(8,73,48,0.74))] text-[#00D5A7] shadow-[0_0_24px_rgba(34,242,194,0.10)]"
+                      : "border border-[#0F5D43]/35 bg-[rgba(21,38,27,0.82)] text-white",
+                  )}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("accounts");
+                    setActiveAccountFilter(item.filter);
+                  }}
+                >
+                  <p className="text-3xl font-black leading-none">{item.value}</p>
+                  <p className={cn("mt-2 text-[0.72rem] font-semibold", activeTab === "accounts" && activeAccountFilter === item.filter ? "text-[#8AF1D4]/75" : "text-[#8FA89F]")}>{item.label}</p>
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="mt-4 animate-[creditPanelIn_0.42s_ease-out]">
             {activeTab === "accounts" ? (
-              <ReportAccountsTab accounts={accounts} loading={loading} />
+              <ReportAccountsTab accounts={accounts} activeFilter={activeAccountFilter} loading={loading} />
             ) : activeTab === "enquiries" ? (
               <ReportEnquiriesTab enquiries={enquiries} loading={loading} />
             ) : (
@@ -811,7 +835,7 @@ export function CreditScoreExperience() {
           <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-[32px] border border-[#1F756B]/35 bg-[#07130F]/88 px-3 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.42),inset_0_0_28px_rgba(31,117,107,0.08)] backdrop-blur-2xl">
             {reportBottomNav.map(({ label, href, Icon }) => {
               const active = label === "Report";
-              const disabled = label !== "Home" && label !== "Report";
+              const disabled = label !== "Home" && label !== "Report" && label !== "Loans";
 
               if (disabled) {
                 return (
@@ -1004,7 +1028,7 @@ function TabButton({
     <button
       className={cn(
         "flex items-center justify-center rounded-full px-2.5 py-2 text-[0.7rem] font-semibold capitalize transition duration-300",
-        active ? "bg-[linear-gradient(135deg,#22F2C2,#14D9A8)] text-[#041B12] shadow-[0_10px_22px_rgba(34,242,194,0.18)]" : "border border-[#1F756B]/20 text-[#8FA89F] hover:bg-white/[0.08] hover:text-white",
+        active ? "bg-[linear-gradient(135deg,#00D5A7,#13B98F)] text-[#041B12] shadow-[0_10px_22px_rgba(34,242,194,0.16)]" : "border border-[#0F5D43]/45 bg-[rgba(21,38,27,0.58)] text-[#8FA89F] hover:bg-white/[0.08] hover:text-white",
       )}
       type="button"
       onClick={onClick}
@@ -1014,9 +1038,7 @@ function TabButton({
   );
 }
 
-function ReportAccountsTab({ accounts, loading }: { accounts: CreditAccount[]; loading: boolean }) {
-  const [activeFilter, setActiveFilter] = useState<AccountFilter>("accounts");
-  const accountSummary = buildAccountSummary(accounts);
+function ReportAccountsTab({ accounts, activeFilter, loading }: { accounts: CreditAccount[]; activeFilter: AccountFilter; loading: boolean }) {
   const filteredAccounts = filterAccountsByType(accounts, activeFilter);
   const openAccounts = filteredAccounts.filter((account) => !isClosedAccount(account));
   const closedAccounts = filteredAccounts.filter(isClosedAccount);
@@ -1029,24 +1051,6 @@ function ReportAccountsTab({ accounts, loading }: { accounts: CreditAccount[]; l
         <ReportAccountsSkeleton />
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-2">
-            {accountSummary.map((item) => (
-              <button
-                key={item.filter}
-                className={cn(
-                  "rounded-2xl px-3 py-2 text-left text-white transition",
-                  activeFilter === item.filter
-                    ? "bg-[linear-gradient(135deg,#22F2C2,#14D9A8)] text-[#041B12] shadow-[0_10px_22px_rgba(34,242,194,0.18)]"
-                    : "border border-[#1F756B]/20 bg-[#102017]/80",
-                )}
-                type="button"
-                onClick={() => setActiveFilter(item.filter)}
-              >
-                <p className="text-sm font-semibold">{item.value}</p>
-                <p className={cn("mt-1 text-[0.62rem] leading-3", activeFilter === item.filter ? "text-[#041B12]/70" : "text-[#8FA89F]")}>{item.label}</p>
-              </button>
-            ))}
-          </div>
           <ReportAccountSection items={openItems} title="Active Accounts" />
           <ReportAccountSection items={closedItems} title="Closed Accounts" />
         </>
@@ -1266,10 +1270,11 @@ function RepairRequestsTable({ loading, requests }: { loading: boolean; requests
 
 function ReportAccountCard({ account }: { account: ReportAccountItem }) {
   return (
-    <article className={cn("rounded-[1.65rem] p-4 text-white", reportCardClass)}>
+    <article className={cn("relative overflow-hidden rounded-[1.65rem] p-4 text-white", reportCardClass)}>
+      <div className="absolute inset-x-5 top-0 h-1 rounded-b-full bg-[linear-gradient(90deg,#00D5A7_0%,#20D4AA_45%,#C8B945_78%,#F4A51C_100%)]" />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="truncate text-sm font-semibold">{account.lender}</h2>
+          <h2 className="truncate text-xl font-bold">{account.lender}</h2>
           <p className="mt-1 text-[0.72rem] text-[#9fb2c6]">{account.loanType}</p>
         </div>
         <span className={cn("shrink-0 rounded-full px-3 py-1 text-[0.64rem] font-semibold", account.statusTone)}>
@@ -1288,7 +1293,7 @@ function ReportAccountCard({ account }: { account: ReportAccountItem }) {
           {account.details.map((detail) => (
             <div key={detail.label} className={cn("rounded-2xl px-3 py-2", reportMiniCardClass)}>
               <p className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#6f8399]">{detail.label}</p>
-              <p className="mt-1 truncate text-[0.72rem] font-semibold text-[#dbe7f4]">{detail.value}</p>
+              <p className="mt-1 truncate text-[0.8rem] font-semibold text-[#dbe7f4]">{detail.value}</p>
             </div>
           ))}
         </div>
