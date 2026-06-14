@@ -19,7 +19,7 @@ export function DashboardBottomNav() {
 
   return (
     <div className="fixed bottom-2 left-0 right-0 z-30 px-4 pb-[max(4px,env(safe-area-inset-bottom))]">
-      <nav className="floating-bottom-nav mx-auto grid max-w-[25rem] grid-cols-5 rounded-[26px] border border-[#1F756B]/35 bg-[#07130F]/88 px-2 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.35),inset_0_0_20px_rgba(31,117,107,0.06)] backdrop-blur-2xl">
+      <nav className="floating-bottom-nav mx-auto grid max-w-[25rem] grid-cols-5 overflow-hidden rounded-[26px] border border-[#1F756B]/35 bg-[#07130F]/88 px-2 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.35),inset_0_0_20px_rgba(31,117,107,0.06)] backdrop-blur-2xl">
         {dashboardTabs.map(({ label, href, Icon }) => {
           const active = pathname === href;
 
@@ -33,26 +33,26 @@ export function DashboardBottomNav() {
               data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
               data-dashboard-offers={href === "/dashboard/offers" ? "true" : undefined}
               className={cn(
-                "relative flex min-h-[48px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[16px] px-0.5 py-1 text-[11px] font-semibold tracking-normal transition duration-300",
+                "relative flex min-h-[46px] min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[16px] px-1 py-1 text-[11px] font-semibold tracking-normal transition duration-300",
                 active ? "text-[#18B98E]" : "text-[#5B716A]"
               )}
             >
-              {active ? (
-                <motion.span
-                  layoutId="dashboard-bottom-nav-active"
-                  className="absolute inset-1 rounded-[14px] border border-[#18B98E]/35 bg-[#18B98E]/14 shadow-[0_0_18px_rgba(24,185,142,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl"
-                  transition={{ type: "spring", stiffness: 420, damping: 34 }}
+              <span className="relative z-10 grid size-8 place-items-center">
+                {active ? (
+                  <motion.span
+                    layoutId="dashboard-bottom-nav-active"
+                    className="absolute inset-0 rounded-[14px] border border-[#22F2C2]/40 bg-[rgba(34,242,194,0.08)] shadow-[0_0_10px_rgba(34,242,194,0.16)]"
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  />
+                ) : null}
+
+                <Icon
+                  className={cn("relative z-10 size-3.5", active ? "text-[#18B98E]" : "text-[#5B716A]")}
+                  strokeWidth={active ? 2 : 1.75}
                 />
-              ) : null}
-              <span
-                className={cn(
-                  "relative z-10 grid size-7 place-items-center rounded-[12px]",
-                  active ? "text-[#18B98E]" : "text-[#5B716A]"
-                )}
-              >
-                <Icon className="size-3.5" strokeWidth={active ? 2 : 1.75} />
               </span>
-              <span className="relative z-10 leading-none">{label}</span>
+
+              <span className="relative z-10 max-w-full truncate leading-none">{label}</span>
             </Link>
           );
         })}
