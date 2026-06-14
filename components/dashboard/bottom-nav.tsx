@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { BadgeIndianRupee, FileText, Gift, Home, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,19 +30,26 @@ export function DashboardBottomNav() {
               data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
               data-dashboard-offers={href === "/dashboard/offers" ? "true" : undefined}
               className={cn(
-                "flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-[16px] px-0.5 py-1 text-[11px] font-semibold tracking-normal transition duration-300",
+                "relative flex min-h-[48px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[16px] px-0.5 py-1 text-[11px] font-semibold tracking-normal transition duration-300",
                 active ? "text-[#18B98E]" : "text-[#5B716A]"
               )}
             >
+              {active ? (
+                <motion.span
+                  layoutId="dashboard-bottom-nav-active"
+                  className="absolute inset-1 rounded-[14px] border border-[#18B98E]/35 bg-[#18B98E]/14 shadow-[0_0_18px_rgba(24,185,142,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl"
+                  transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                />
+              ) : null}
               <span
                 className={cn(
-                  "grid size-7 place-items-center rounded-[12px] text-[#5B716A]",
-                  active && "border border-[#18B98E]/45 bg-[#18B98E]/12 text-[#18B98E] shadow-[0_0_12px_rgba(24,185,142,0.15),inset_0_1px_0_rgba(255,255,255,0.06)]"
+                  "relative z-10 grid size-7 place-items-center rounded-[12px]",
+                  active ? "text-[#18B98E]" : "text-[#5B716A]"
                 )}
               >
                 <Icon className="size-3.5" strokeWidth={active ? 2 : 1.75} />
               </span>
-              <span className="leading-none">{label}</span>
+              <span className="relative z-10 leading-none">{label}</span>
             </Link>
           );
         })}
