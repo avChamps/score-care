@@ -142,13 +142,13 @@ type GeneralSettings = {
 const appTiles = [
   { href: "/dashboard/score-fix", Icon: Wrench, title: "Dispute Centre", value: "0", meta: "active", alert: true },
   { href: "/dashboard/loans", Icon: BadgeIndianRupee, title: "Pay EMIs", value: "-", meta: "-" },
-  { href: "/dashboard/credit-score?tab=repair", Icon: ChartNoAxesCombined, title: "Improve Score", value: "-", meta: "-" },
+  { href: "/dashboard/score-fix?tab=credit-improvement-plan", Icon: ChartNoAxesCombined, title: "Improve Score", value: "-", meta: "-" },
   { href: "/dashboard/offers", Icon: CreditCard, title: "Get Offers", value: "0", meta: "pre-approved", offer: true },
 ];
 const freeTierAppTiles = [
   { href: "/dashboard/credit-score", Icon: CreditCard, title: "Credit Score", value: "-", meta: "-" },
   { href: "/dashboard/loans", Icon: BadgeIndianRupee, title: "Pay EMIs", value: "-", meta: "-" },
-  { href: "/dashboard/credit-score?tab=repair", Icon: ChartNoAxesCombined, title: "Improve Score", value: "-", meta: "-" },
+  { href: "/dashboard/score-fix?tab=credit-improvement-plan", Icon: ChartNoAxesCombined, title: "Improve Score", value: "-", meta: "-" },
   { href: "/dashboard/offers", Icon: CreditCard, title: "Get Offers", value: "-", meta: "-", offer: true },
 ];
 const notificationsPageSize = 10;
