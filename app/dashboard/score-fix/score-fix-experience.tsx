@@ -41,14 +41,15 @@ type DisplayDataResponse = {
 
 type CibilRepairContent = {
   plans: {
-    id: string;
+    id?: string;
     planName: string;
-    amount: number;
-    currency: string;
+    amount?: number | null;
+    currency?: string;
+    offerTag?: string | null;
     billingCycle: string;
-    buttonLabel: string;
-    displayOrder: number;
-    isActive: boolean;
+    buttonLabel?: string | null;
+    displayOrder?: number;
+    isActive?: boolean;
   }[];
   timelines: {
     id: string;
@@ -112,6 +113,29 @@ const staticSimulatorActions: SimulatorAction[] = [
   { id: "fd-backed-card", impact: 21, subtitle: "Improves credit mix", title: "Get FD-backed credit card" },
 ];
 
+function parseDiscountPercent(offerTag?: string | null) {
+  const discountMatch = offerTag?.match(/(\d+(?:\.\d+)?)\s*%/);
+  return discountMatch ? Number(discountMatch[1]) : null;
+}
+
+function getOriginalAmount(amount?: number | null, offerTag?: string | null) {
+  const discountPercent = parseDiscountPercent(offerTag);
+
+  if (typeof amount !== "number" || !discountPercent || discountPercent >= 100) {
+    return null;
+  }
+
+  return amount / (1 - discountPercent / 100);
+}
+
+function formatINR(amount: number) {
+  return new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 0,
+    style: "currency",
+    currency: "INR",
+  }).format(Math.round(amount));
+}
+
 export function ScoreFixExperience() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ImproveTab>("Simulator");
@@ -126,11 +150,10 @@ export function ScoreFixExperience() {
   const [repairRequests, setRepairRequests] = useState<CibilRepairRequest[]>([]);
   const [repairStatus, setRepairStatus] = useState<CibilRepairStatus | null>(null);
   const [repairRequestsLoading, setRepairRequestsLoading] = useState(false);
-  const [repairSubmitting, setRepairSubmitting] = useState(false);
-  const [repairError, setRepairError] = useState("");
   const { isFreeTier, loading: subscriptionLoading } = useSubscriptionAccess();
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
   const initialTabHandledRef = useRef(false);
+  const visibleImproveTabs = isFreeTier ? improveTabs.filter((tab) => tab === "Simulator") : improveTabs;
 
   const actions = staticSimulatorActions;
   const currentScore = readScore(displayData);
@@ -212,7 +235,7 @@ export function ScoreFixExperience() {
       }
 
       setRepairContent({
-        plans: (result.data?.plans ?? []).filter((plan: CibilRepairContent["plans"][number]) => plan.isActive),
+        plans: (result.data?.plans ?? []).filter((plan: CibilRepairContent["plans"][number]) => plan.isActive !== false),
         timelines: (result.data?.timelines ?? []).filter((timeline: CibilRepairContent["timelines"][number]) => timeline.isActive),
       });
     } catch {
@@ -285,7 +308,7 @@ export function ScoreFixExperience() {
     if (!initialTabHandledRef.current) {
       initialTabHandledRef.current = true;
 
-      if (new URLSearchParams(window.location.search).get("tab") === "credit-improvement-plan" && !isFreeTier) {
+      if (!isFreeTier) {
         setActiveTab("Credit Improvement Plan");
         return;
       }
@@ -306,15 +329,7 @@ export function ScoreFixExperience() {
     setActiveTab(tab);
   }
 
-  function toggleAction(actionId: string) {
-    setSelectedActions((currentActions) =>
-      currentActions.includes(actionId) ? currentActions.filter((id) => id !== actionId) : [...currentActions, actionId],
-    );
-  }
-
-  async function submitRepairRequest(plan: CibilRepairContent["plans"][number]) {
-    if (repairSubmitting) return;
-
+  async function saveImproveToolAnalytics() {
     const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
@@ -323,42 +338,28 @@ export function ScoreFixExperience() {
       return;
     }
 
-    setRepairSubmitting(true);
-    setRepairError("");
+    const response = await apiRequest("/improve-tool-analytics", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: {},
+    });
 
-    try {
-      const response = await apiRequest("/cibil-repair-content/requests", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: {
-          planPublicId: plan.id,
-          planName: plan.planName,
-          amount: plan.amount,
-          currency: plan.currency,
-          paymentStatus: "pending",
-          repairStatus: "submitted",
-          remarks: "User selected CIBIL report repair",
-        },
-      });
-
-      if (response.status === 401 || response.status === 403) {
-        clearScorecareSession();
-        router.replace("/login");
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error("Unable to submit repair request");
-      }
-
-      void loadRepairRequests();
-    } catch {
-      setRepairError("Could not submit repair request. Please try again.");
-    } finally {
-      setRepairSubmitting(false);
+    if (response.status === 401 || response.status === 403) {
+      clearScorecareSession();
+      router.replace("/login");
     }
+  }
+
+  function toggleAction(actionId: string) {
+    const isSelected = selectedActions.includes(actionId);
+
+    if (!isSelected) {
+      void saveImproveToolAnalytics();
+    }
+
+    setSelectedActions((currentActions) => (isSelected ? currentActions.filter((id) => id !== actionId) : [...currentActions, actionId]));
   }
 
   return (
@@ -423,7 +424,7 @@ export function ScoreFixExperience() {
           </section>
 
           <div className="flex gap-2 overflow-x-auto border-b border-white/10 pb-3">
-            {improveTabs.map((tab) => (
+            {visibleImproveTabs.map((tab) => (
               <button
                 className={cn(
                   "shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition",
@@ -480,13 +481,10 @@ export function ScoreFixExperience() {
 
           {activeTab === "Credit Improvement Plan" ? (
             <CreditImprovementPlan
-              onStartRepair={submitRepairRequest}
               repairContent={repairContent}
-              repairError={repairError}
               repairRequests={repairRequests}
               repairRequestsLoading={repairRequestsLoading}
               repairStatus={repairStatus}
-              repairSubmitting={repairSubmitting}
             />
           ) : null}
         </PageContent>
@@ -531,44 +529,38 @@ function ActionRow({ action, checked, onChange }: { action: SimulatorAction; che
 }
 
 function CreditImprovementPlan({
-  onStartRepair,
   repairContent,
-  repairError,
   repairRequests,
   repairRequestsLoading,
   repairStatus,
-  repairSubmitting,
 }: {
-  onStartRepair: (plan: CibilRepairContent["plans"][number]) => void;
   repairContent: CibilRepairContent;
-  repairError: string;
   repairRequests: CibilRepairRequest[];
   repairRequestsLoading: boolean;
   repairStatus: CibilRepairStatus | null;
-  repairSubmitting: boolean;
 }) {
   const disputeStats = buildDisputeStats(repairStatus);
-  const plan = [...repairContent.plans].sort((a, b) => a.displayOrder - b.displayOrder)[0] ?? fallbackRepairContent.plans[0];
+  const plan = repairContent.plans[0] ?? fallbackRepairContent.plans[0];
+  const originalAmount = getOriginalAmount(plan.amount, plan.offerTag);
   const timelines = repairContent.timelines.length ? [...repairContent.timelines].sort((a, b) => a.displayOrder - b.displayOrder) : fallbackRepairContent.timelines;
-  const amountLabel = new Intl.NumberFormat("en-IN", {
-    currency: plan.currency,
-    maximumFractionDigits: 0,
-    style: "currency",
-  }).format(plan.amount);
-  const billingCycleLabel = plan.billingCycle === "monthly" ? "mo" : plan.billingCycle;
 
   return (
     <div className="space-y-4">
-      {repairError ? <p className="rounded-2xl bg-[#ff4d7d]/10 px-3 py-2 text-[12px] font-medium text-[#ff8cab]">{repairError}</p> : null}
-
       <section className={cn("overflow-hidden rounded-[1.75rem] text-white", reportCardClass)}>
         <div className="bg-[radial-gradient(circle_at_85%_0%,rgba(31,117,107,0.28),transparent_34%),linear-gradient(160deg,#10243a,#081625)] px-4 py-5">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#1F756B]">Credit Repair Service</p>
-          <h2 className="mt-2 text-base font-semibold">{plan.planName}</h2>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="whitespace-nowrap text-base font-bold uppercase leading-none">Credit Repair Service</h2>
+            <div className="shrink-0 text-right">
+              {typeof plan.amount === "number" ? (
+                <div>
+                  {originalAmount ? <p className="text-[14px] font-semibold leading-none text-[#9fb2c6] line-through">{formatINR(originalAmount)}</p> : null}
+                  {plan.offerTag ? <p className="mt-1 text-[12px] font-bold leading-none text-[#22F2C2]">Offer: {plan.offerTag}</p> : null}
+                  <p className="mt-2 text-[26px] font-black leading-none text-white">{formatINR(plan.amount)}</p>
+                </div>
+              ) : null}
+            </div>
+          </div>
           <p className="mt-2 text-[12px] leading-5 text-[#9fb2c6]">Expert review, disputes, lender follow-up, and score verification in one guided flow.</p>
-          <button className="mt-4 h-11 w-full rounded-2xl bg-[#EF4444] text-xs font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)] disabled:opacity-60" disabled={repairSubmitting} type="button" onClick={() => onStartRepair(plan)}>
-            {repairSubmitting ? "Submitting..." : `${plan.buttonLabel} — ${amountLabel}/${billingCycleLabel}`}
-          </button>
         </div>
       </section>
 
