@@ -4,6 +4,9 @@ const config: CapacitorConfig = {
   appId: "in.scorecare.app",
   appName: "ScoreCare",
   webDir: "out",
+  server: {
+    appStartPath: "/loading.html",
+  },
   plugins: {
     CapacitorHttp: {
       enabled: true,
