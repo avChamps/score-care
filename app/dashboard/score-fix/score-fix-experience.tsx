@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import {
   AppCard,
   PageContent,
@@ -75,6 +76,7 @@ export function ScoreFixExperience() {
 
         {view === "details" ? <DetailsView onBack={() => setView("overview")} /> : null}
       </PageContent>
+      <DashboardBottomNav />
       {requestOpen ? (
         <NewRequestDialog
           description={description}

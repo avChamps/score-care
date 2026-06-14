@@ -8,10 +8,7 @@ import {
   CreditCard,
   Crown,
   Download,
-  FileText,
-  Gift,
   Gauge,
-  Home,
   LoaderCircle,
   Menu,
   ReceiptText,
@@ -27,6 +24,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProfilePanel, type UserProfile } from "@/app/dashboard/home-dashboard";
+import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import {
   AppCard,
   PageContent,
@@ -379,14 +377,6 @@ const reportCardClass =
 const reportHighlightCardClass = "border border-[#0F6C4B]/70 bg-[radial-gradient(circle_at_84%_0%,rgba(34,242,194,0.09),transparent_36%),linear-gradient(135deg,rgba(8,54,37,0.98),rgba(9,38,25,0.98))] shadow-[0_0_34px_rgba(34,242,194,0.07),0_18px_40px_rgba(0,0,0,0.32)]";
 const reportMiniCardClass = "border border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]";
 const reportSectionHeadingClass = "px-1 text-[12px] font-extrabold uppercase tracking-[0.18em] text-[#B9C7D8]";
-
-const reportBottomNav = [
-  { label: "Home", href: "/dashboard", Icon: Home },
-  { label: "Report", href: "/dashboard/credit-score", Icon: FileText },
-  { label: "Improve", href: "/dashboard/score-fix", Icon: TrendingUp },
-  { label: "Offers", href: "/dashboard/offers", Icon: Gift },
-  { label: "Loans", href: "/dashboard/loans", Icon: ReceiptText },
-];
 
 export function CreditScoreExperience() {
   const router = useRouter();
@@ -884,46 +874,7 @@ export function CreditScoreExperience() {
         </div>
         </PageContent>
 
-        <div className="fixed bottom-3 left-0 right-0 z-30 px-4 pb-[env(safe-area-inset-bottom)]">
-          <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-[32px] border border-[#1F756B]/35 bg-[#07130F]/88 px-3 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.42),inset_0_0_28px_rgba(31,117,107,0.08)] backdrop-blur-2xl">
-            {reportBottomNav.map(({ label, href, Icon }) => {
-              const active = label === "Report";
-              const disabled = label !== "Home" && label !== "Report" && label !== "Offers" && label !== "Loans";
-
-              if (disabled) {
-                return (
-                  <button
-                    key={label}
-                    aria-disabled="true"
-                    className="flex min-h-[58px] cursor-not-allowed flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[12px] font-semibold text-[#5B716A] opacity-55"
-                    disabled
-                    type="button"
-                  >
-                    <span className="grid size-8 place-items-center rounded-[14px]">
-                      <Icon className="size-4" strokeWidth={1.75} />
-                    </span>
-                    <span>{label}</span>
-                  </button>
-                );
-              }
-
-              return (
-                <Link
-                  key={label}
-                  href={href}
-                  data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
-                  data-dashboard-offers={href === "/dashboard/offers" ? "true" : undefined}
-                  className={cn("flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[12px] font-semibold tracking-normal text-[#5B716A] transition duration-300", active ? "text-[#18B98E]" : "hover:text-[#88A39A]")}
-                >
-                  <span className={cn("grid size-8 place-items-center rounded-[14px] text-[#5B716A]", active && "border border-[#18B98E]/45 bg-[#18B98E]/12 text-[#18B98E] shadow-[0_0_16px_rgba(24,185,142,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]")}>
-                    <Icon className="size-4" strokeWidth={active ? 2.1 : 1.75} />
-                  </span>
-                  <span>{label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+        <DashboardBottomNav />
       </div>
       {toast ? (
         <div className="fixed left-4 right-4 top-4 z-[10000] mx-auto max-w-sm rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700 shadow-[0_14px_34px_rgba(16,185,129,0.22)]">

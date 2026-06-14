@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import {
   AppCard,
   PageContent,
@@ -366,6 +367,7 @@ export function LoansExperience() {
           />
         </PageContent>
       </div>
+      <DashboardBottomNav />
       {showBenefitsPrompt ? (
         <LoanBenefitsPrompt
           onClose={() => setShowBenefitsPrompt(false)}

@@ -16,8 +16,6 @@ import {
   CreditCard,
   Crown,
   FileText,
-  Gift,
-  Home,
   Lightbulb,
   Languages,
   Menu,
@@ -48,6 +46,7 @@ import {
   Receipt
 } from "lucide-react";
 
+import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
 import { SupportDrawer } from "@/components/dashboard/topbar-actions";
 import { SubscribePromptOverlay, getSubscriptionPlans, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
@@ -140,24 +139,17 @@ type GeneralSettings = {
   whatsappNumber: string;
 };
 
-const bottomNav = [
-  { label: "Home", href: "/dashboard", Icon: Home },
-  { label: "Report", href: "/dashboard/credit-score", Icon: FileText },
-  { label: "Improve", href: "/dashboard/score-fix", Icon: TrendingUp },
-  { label: "Offers", href: "/dashboard/offers", Icon: Gift },
-  { label: "Loans", href: "/dashboard/loans", Icon: BadgeIndianRupee }
-];
 const appTiles = [
   { href: "/dashboard/score-fix", Icon: Wrench, title: "Dispute Centre", value: "0", meta: "active", alert: true },
   { href: "/dashboard/loans", Icon: BadgeIndianRupee, title: "Pay EMIs", value: "-", meta: "-" },
   { href: "/dashboard/credit-score", Icon: ChartNoAxesCombined, title: "Improve Score", value: "-", meta: "-" },
-  { href: "/pricing", Icon: CreditCard, title: "Get Offers", value: "0", meta: "pre-approved", offer: true },
+  { href: "/dashboard/offers", Icon: CreditCard, title: "Get Offers", value: "0", meta: "pre-approved", offer: true },
 ];
 const freeTierAppTiles = [
   { href: "/dashboard/credit-score", Icon: CreditCard, title: "Credit Score", value: "-", meta: "-" },
   { href: "/dashboard/loans", Icon: BadgeIndianRupee, title: "Pay EMIs", value: "-", meta: "-" },
   { href: "/dashboard/credit-score", Icon: ChartNoAxesCombined, title: "Improve Score", value: "-", meta: "-" },
-  { href: "/pricing", Icon: CreditCard, title: "Get Offers", value: "-", meta: "-", offer: true },
+  { href: "/dashboard/offers", Icon: CreditCard, title: "Get Offers", value: "-", meta: "-", offer: true },
 ];
 const notificationsPageSize = 10;
 const actionPlanAiCache = new Map<string, Promise<string>>();
@@ -640,34 +632,7 @@ export function HomeDashboard() {
         )}
       </main>
 
-      <div className="fixed bottom-3 left-0 right-0 z-30 px-4 pb-[env(safe-area-inset-bottom)]">
-        <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-[32px] border border-[#1F756B]/35 bg-[#08110D]/88 px-3 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.42),inset_0_0_28px_rgba(31,117,107,0.08)] backdrop-blur-2xl">
-          {bottomNav.map(({ label, href, Icon }) => {
-            const active = label === "Home";
-            const enabled = active || label === "Report" || label === "Offers";
-
-            return (
-              <Link
-                key={label}
-                href={href}
-                data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
-                data-dashboard-offers={href === "/dashboard/offers" ? "true" : undefined}
-                aria-disabled={!enabled}
-                tabIndex={enabled ? 0 : -1}
-                className={cn("flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[12px] font-semibold tracking-normal text-[#5B716A] transition duration-300", active ? "text-[#18B98E]" : enabled ? "hover:text-[#88A39A]" : "pointer-events-none opacity-60")}
-                onClick={(event) => {
-                  if (!enabled) event.preventDefault();
-                }}
-              >
-                <span className={cn("grid size-8 place-items-center rounded-[14px] text-[#5B716A]", active && "border border-[#18B98E]/45 bg-[#18B98E]/12 text-[#18B98E] shadow-[0_0_16px_rgba(24,185,142,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]")}>
-                  <Icon className="size-4" strokeWidth={active ? 2.1 : 1.75} />
-                </span>
-                <span>{label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+      <DashboardBottomNav />
 
       {isLanguageLoading ? <LanguageApplyLoader /> : null}
       {showProfile ? <ProfilePanel profile={profile} name={name} onClose={() => setShowProfile(false)} onHelp={() => setShowHelp(true)} onLanguageLoadingChange={setIsLanguageLoading} onProfileUpdate={setProfile} /> : null}
@@ -1399,7 +1364,7 @@ function buildAppTiles(dashboard: DashboardData, unavailable: boolean) {
 function QuickCard({ disabled = false, href, Icon, title, value, meta, alert = false, locked = false, offer = false, onLockedClick }: { disabled?: boolean; href: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; title: string; value: string; meta: string; alert?: boolean; locked?: boolean; offer?: boolean; onLockedClick?: () => void }) {
   const className = "min-h-[122px] rounded-[20px] border border-white/10 bg-white/[0.07] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_36px_rgba(0,0,0,0.24)] backdrop-blur-xl transition hover:bg-white/[0.1]";
 
-  if (disabled || offer || title === "Dispute Centre") {
+  if (disabled || title === "Dispute Centre") {
     return (
       <div className={className}>
         <QuickCardContent Icon={Icon} alert={alert} meta={meta} offer={offer} title={title} value={value} />

@@ -2,18 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, FileText, Gift, Home, Menu, ReceiptText, TrendingUp } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import comingSoonImage from "@/assets/coming-soon.png";
+import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
-import { cn } from "@/lib/utils";
-
-const offersBottomNav = [
-  { label: "Home", href: "/dashboard", Icon: Home },
-  { label: "Report", href: "/dashboard/credit-score", Icon: FileText },
-  { label: "Improve", href: "/dashboard/score-fix", Icon: TrendingUp },
-  { label: "Offers", href: "/dashboard/offers", Icon: Gift },
-  { label: "Loans", href: "/dashboard/loans", Icon: ReceiptText },
-];
 
 export function OffersExperience() {
   return (
@@ -56,46 +48,7 @@ export function OffersExperience() {
           </div>
         </PageContent>
 
-        <div className="fixed bottom-3 left-0 right-0 z-30 px-4 pb-[env(safe-area-inset-bottom)]">
-          <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-[32px] border border-[#1F756B]/35 bg-[#07130F]/88 px-3 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.42),inset_0_0_28px_rgba(31,117,107,0.08)] backdrop-blur-2xl">
-            {offersBottomNav.map(({ label, href, Icon }) => {
-              const active = label === "Offers";
-              const disabled = label !== "Home" && label !== "Report" && label !== "Offers" && label !== "Loans";
-
-              if (disabled) {
-                return (
-                  <button
-                    key={label}
-                    aria-disabled="true"
-                    className="flex min-h-[58px] cursor-not-allowed flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[12px] font-semibold text-[#5B716A] opacity-55"
-                    disabled
-                    type="button"
-                  >
-                    <span className="grid size-8 place-items-center rounded-[14px]">
-                      <Icon className="size-4" strokeWidth={1.75} />
-                    </span>
-                    <span>{label}</span>
-                  </button>
-                );
-              }
-
-              return (
-                <Link
-                  key={label}
-                  href={href}
-                  data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
-                  data-dashboard-offers={href === "/dashboard/offers" ? "true" : undefined}
-                  className={cn("flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[12px] font-semibold tracking-normal text-[#5B716A] transition duration-300", active ? "text-[#18B98E]" : "hover:text-[#88A39A]")}
-                >
-                  <span className={cn("grid size-8 place-items-center rounded-[14px] text-[#5B716A]", active && "border border-[#18B98E]/45 bg-[#18B98E]/12 text-[#18B98E] shadow-[0_0_16px_rgba(24,185,142,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]")}>
-                    <Icon className="size-4" strokeWidth={active ? 2.1 : 1.75} />
-                  </span>
-                  <span>{label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+        <DashboardBottomNav />
       </div>
     </PortalShell>
   );
