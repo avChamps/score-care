@@ -583,6 +583,12 @@ export function CreditScoreExperience() {
   }, []);
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("tab") === "repair") {
+      setActiveTab("repair");
+    }
+  }, []);
+
+  useEffect(() => {
     if (activeTab !== "repair") {
       return;
     }
