@@ -2,12 +2,21 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 
 export default function LoadingPage() {
   const router = useRouter();
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
+      const token = localStorage.getItem("scorecare_token");
+
+      if (token && !isTokenExpired(token)) {
+        router.replace("/dashboard");
+        return;
+      }
+
+      clearScorecareSession();
       router.replace("/login");
     }, 1800);
 

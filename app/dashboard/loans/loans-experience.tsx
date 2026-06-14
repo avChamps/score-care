@@ -215,7 +215,7 @@ export function LoansExperience() {
       return;
     }
 
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -254,7 +254,7 @@ export function LoansExperience() {
   }, [accessLoading, isFreeTier, router]);
 
   const loadApplicationStatus = useCallback(async () => {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -1063,7 +1063,7 @@ function ApplyLoanDialog({
     event.preventDefault();
 
     const form = event.currentTarget;
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();

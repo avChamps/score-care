@@ -17,7 +17,7 @@ const SCORECARE_SESSION_KEYS = [
 ];
 
 export function clearScorecareSession() {
-  SCORECARE_SESSION_KEYS.forEach((key) => sessionStorage.removeItem(key));
+  SCORECARE_SESSION_KEYS.forEach((key) => localStorage.removeItem(key));
 }
 
 export function isTokenExpired(token: string) {

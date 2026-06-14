@@ -145,17 +145,17 @@ export function LoginFlow() {
       const session = result?.data;
 
       if (session?.token) {
-        sessionStorage.setItem("scorecare_token", session.token);
-        sessionStorage.setItem("scorecare_token_type", session.tokenType ?? "Bearer");
-        sessionStorage.setItem("scorecare_mobile_number", session.mobileNumber ?? cleanMobile);
+        localStorage.setItem("scorecare_token", session.token);
+        localStorage.setItem("scorecare_token_type", session.tokenType ?? "Bearer");
+        localStorage.setItem("scorecare_mobile_number", session.mobileNumber ?? cleanMobile);
       }
 
       if (session?.user) {
-        sessionStorage.setItem("scorecare_mobile_number", session.user.mobileNumber ?? session.mobileNumber ?? cleanMobile);
-        sessionStorage.setItem("scorecare_pan_number", session.user.panNumber ?? "");
-        sessionStorage.setItem("scorecare_full_name", session.user.fullName ?? "");
-        sessionStorage.setItem("scorecare_email", session.user.email ?? "");
-        sessionStorage.setItem("scorecare_date_of_birth", session.user.dateOfBirth ?? "");
+        localStorage.setItem("scorecare_mobile_number", session.user.mobileNumber ?? session.mobileNumber ?? cleanMobile);
+        localStorage.setItem("scorecare_pan_number", session.user.panNumber ?? "");
+        localStorage.setItem("scorecare_full_name", session.user.fullName ?? "");
+        localStorage.setItem("scorecare_email", session.user.email ?? "");
+        localStorage.setItem("scorecare_date_of_birth", session.user.dateOfBirth ?? "");
       }
 
       if (
@@ -178,7 +178,7 @@ export function LoginFlow() {
   async function updateProfile() {
     if (!canSubmit || isSavingProfile) return;
 
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token) {
       setProfileError("Session expired. Please verify OTP again.");
@@ -204,10 +204,10 @@ export function LoginFlow() {
 
       if (!response.ok) throw new Error("Unable to save profile");
 
-      sessionStorage.setItem("scorecare_pan_number", cleanPan);
-      sessionStorage.setItem("scorecare_full_name", name.trim());
-      sessionStorage.setItem("scorecare_email", email.trim());
-      sessionStorage.setItem("scorecare_date_of_birth", dateOfBirth);
+      localStorage.setItem("scorecare_pan_number", cleanPan);
+      localStorage.setItem("scorecare_full_name", name.trim());
+      localStorage.setItem("scorecare_email", email.trim());
+      localStorage.setItem("scorecare_date_of_birth", dateOfBirth);
 
       goToDashboard();
     } catch {

@@ -99,7 +99,7 @@ export function TopBarActions() {
   const [notificationCount, setNotificationCount] = useState(0);
 
   const loadNotificationCount = useCallback(async () => {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       return;
@@ -234,7 +234,7 @@ function NotificationsDrawer({ onClose, onUnreadCountChange }: { onClose: () => 
   const [unreadCount, setUnreadCount] = useState(0);
 
   const loadNotifications = useCallback(async ({ append = false, offset = 0 } = {}) => {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -323,7 +323,7 @@ function NotificationsDrawer({ onClose, onUnreadCountChange }: { onClose: () => 
   async function markNotificationRead(notification: NotificationApiItem) {
     if (notification.isRead) return;
 
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -369,7 +369,7 @@ function NotificationsDrawer({ onClose, onUnreadCountChange }: { onClose: () => 
   }
 
   async function markAllNotificationsRead() {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -587,7 +587,7 @@ export function SupportDrawer({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    sessionStorage.setItem(assistantMessagesCacheKey, JSON.stringify(messages));
+    localStorage.setItem(assistantMessagesCacheKey, JSON.stringify(messages));
   }, [messages]);
 
   useEffect(() => {
@@ -596,7 +596,7 @@ export function SupportDrawer({ onClose }: { onClose: () => void }) {
     }
 
     void Promise.resolve().then(() => {
-      sessionStorage.removeItem(assistantContextCacheKey);
+      localStorage.removeItem(assistantContextCacheKey);
     });
   }, [isFreeTier]);
 
@@ -628,7 +628,7 @@ export function SupportDrawer({ onClose }: { onClose: () => void }) {
 
     try {
       const context = await loadAssistantContext(isFreeTier);
-      const token = sessionStorage.getItem("scorecare_token");
+      const token = localStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) {
         clearScorecareSession();
@@ -636,7 +636,7 @@ export function SupportDrawer({ onClose }: { onClose: () => void }) {
         return;
       }
 
-      sessionStorage.setItem(assistantContextCacheKey, context);
+      localStorage.setItem(assistantContextCacheKey, context);
 
       const response = await fetch(apiUrl("/ai/gemini"), {
         method: "POST",
@@ -816,12 +816,12 @@ function buildAssistantPrompt(userMessage: string, context: string) {
 }
 
 function readCachedAssistantMessages() {
-  if (typeof sessionStorage === "undefined") {
+  if (typeof localStorage === "undefined") {
     return defaultAssistantMessages;
   }
 
   try {
-    const cachedMessages = JSON.parse(sessionStorage.getItem(assistantMessagesCacheKey) || "[]") as unknown;
+    const cachedMessages = JSON.parse(localStorage.getItem(assistantMessagesCacheKey) || "[]") as unknown;
 
     if (!Array.isArray(cachedMessages)) {
       return defaultAssistantMessages;
@@ -844,11 +844,11 @@ function readCachedAssistantMessages() {
 }
 
 async function loadAssistantContext(isFreeTier: boolean) {
-  const token = sessionStorage.getItem("scorecare_token");
+  const token = localStorage.getItem("scorecare_token");
   const sessionContext = [
-    `Name: ${sessionStorage.getItem("scorecare_full_name") || "Not available"}`,
-    `Mobile: ${sessionStorage.getItem("scorecare_mobile_number") || "Not available"}`,
-    `PAN available: ${sessionStorage.getItem("scorecare_pan_number") ? "Yes" : "No"}`,
+    `Name: ${localStorage.getItem("scorecare_full_name") || "Not available"}`,
+    `Mobile: ${localStorage.getItem("scorecare_mobile_number") || "Not available"}`,
+    `PAN available: ${localStorage.getItem("scorecare_pan_number") ? "Yes" : "No"}`,
   ];
 
   if (!token) {

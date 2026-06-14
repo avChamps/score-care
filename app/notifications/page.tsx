@@ -30,7 +30,7 @@ export default function NotificationsPage() {
   }, []);
 
   async function loadNotifications() {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       window.location.replace("/login");
@@ -65,7 +65,7 @@ export default function NotificationsPage() {
   }
 
   async function markAllRead() {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       window.location.replace("/login");

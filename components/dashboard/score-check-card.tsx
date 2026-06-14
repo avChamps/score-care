@@ -60,7 +60,7 @@ export function ScoreCheckCard() {
 
   useEffect(() => {
     async function loadProfile() {
-      const token = sessionStorage.getItem("scorecare_token");
+      const token = localStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) {
         clearScorecareSession();
@@ -101,23 +101,23 @@ export function ScoreCheckCard() {
         }
 
         if (profile?.mobileNumber) {
-          sessionStorage.setItem("scorecare_mobile_number", profile.mobileNumber);
+          localStorage.setItem("scorecare_mobile_number", profile.mobileNumber);
         }
 
         if (profile?.panNumber) {
-          sessionStorage.setItem("scorecare_pan_number", profile.panNumber);
+          localStorage.setItem("scorecare_pan_number", profile.panNumber);
         }
 
         if (profile?.fullName) {
-          sessionStorage.setItem("scorecare_full_name", profile.fullName);
+          localStorage.setItem("scorecare_full_name", profile.fullName);
         }
 
         if (profile?.email) {
-          sessionStorage.setItem("scorecare_email", profile.email);
+          localStorage.setItem("scorecare_email", profile.email);
         }
 
         if (profile?.dateOfBirth) {
-          sessionStorage.setItem("scorecare_date_of_birth", profile.dateOfBirth);
+          localStorage.setItem("scorecare_date_of_birth", profile.dateOfBirth);
         }
 
         if (!autoCheckStarted.current && profile?.panNumber && profile?.mobileNumber && profile?.fullName) {
@@ -137,7 +137,7 @@ export function ScoreCheckCard() {
   async function checkCibilScore(profile = user, tokenOverride?: string) {
     if (checking) return;
 
-    const token = tokenOverride ?? sessionStorage.getItem("scorecare_token");
+    const token = tokenOverride ?? localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -202,7 +202,7 @@ export function ScoreCheckCard() {
   async function refreshCachedCibilScore() {
     if (checking) return;
 
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -251,7 +251,7 @@ export function ScoreCheckCard() {
       return;
     }
 
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();

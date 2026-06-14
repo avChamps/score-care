@@ -45,7 +45,7 @@ export function AdminHome() {
 
   useEffect(() => {
     async function loadAdminHome() {
-      const token = sessionStorage.getItem("scorecare_token");
+      const token = localStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) {
         clearScorecareSession();
@@ -70,7 +70,7 @@ export function AdminHome() {
         const user = (profileResult?.data?.user ?? null) as UserProfile | null;
 
         if (!user?.isAdmin) {
-          sessionStorage.removeItem("scorecare_admin_view");
+          localStorage.removeItem("scorecare_admin_view");
           router.replace("/dashboard");
           return;
         }

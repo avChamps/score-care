@@ -145,7 +145,7 @@ const bottomNav = [
   { label: "Report", href: "/dashboard/credit-score", Icon: FileText },
   { label: "Improve", href: "/dashboard/score-fix", Icon: TrendingUp },
   { label: "Offers", href: "/pricing", Icon: Gift },
-{ label: "Loans", href: "/dashboard/loans", Icon: BadgeIndianRupee }
+  { label: "Loans", href: "/dashboard/loans", Icon: BadgeIndianRupee }
 ];
 const appTiles = [
   { href: "/dashboard/score-fix", Icon: Wrench, title: "Dispute Centre", value: "0", meta: "active", alert: true },
@@ -225,7 +225,7 @@ export function HomeDashboard() {
 
   useEffect(() => {
     async function loadDashboard() {
-      const token = sessionStorage.getItem("scorecare_token");
+      const token = localStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) {
         clearScorecareSession();
@@ -262,7 +262,7 @@ export function HomeDashboard() {
           return;
         }
 
-        setName(sessionStorage.getItem("scorecare_full_name")?.trim() || "there");
+        setName(localStorage.getItem("scorecare_full_name")?.trim() || "there");
         setDashboard(createEmptyDashboard());
         setError("Score data is unavailable right now.");
         setIsLanguageLoading(false);
@@ -286,7 +286,7 @@ export function HomeDashboard() {
 
   useEffect(() => {
     async function refreshNotifications() {
-      const token = sessionStorage.getItem("scorecare_token");
+      const token = localStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) return;
 
@@ -1428,20 +1428,20 @@ function QuickCardContent({ Icon, alert, meta, offer, title, value }: { Icon: Co
         <Icon className="size-5" strokeWidth={1.7} />
       </span>
       <p className="mt-4 text-[13px] font-black leading-5 text-white">{title}</p>
-     <p
-  className={cn(
-    "mt-1 text-[12px] font-lighter tracking-normal",
-    alert
-      ? "text-[#EF4444]"
-      : offer
-      ? "text-[#FFD34D]"
-      : "text-[#08DB69]"
-  )}
->
-  {value} {meta}
-</p>
-     
-     </>
+      <p
+        className={cn(
+          "mt-1 text-[12px] font-lighter tracking-normal",
+          alert
+            ? "text-[#EF4444]"
+            : offer
+              ? "text-[#FFD34D]"
+              : "text-[#08DB69]"
+        )}
+      >
+        {value} {meta}
+      </p>
+
+    </>
   );
 }
 
@@ -1465,7 +1465,7 @@ function ActionPlanPopup({ dashboard, onClose }: { dashboard: DashboardData; onC
     let active = true;
 
     async function loadAiActionPlan() {
-      const token = sessionStorage.getItem("scorecare_token");
+      const token = localStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) {
         clearScorecareSession();
@@ -1537,7 +1537,20 @@ function ActionPlanPopup({ dashboard, onClose }: { dashboard: DashboardData; onC
                 <Icon className="size-4" strokeWidth={2} />
               </span>
               <p className="text-[13px] font-medium leading-5 text-[#D7DEE9]">
-                {title ? <span className="font-semibold text-white">{title}: </span> : null}
+                {title ? (
+                  <span
+                    className={cn(
+                      "font-bold",
+                      tone === "mint"
+                        ? "text-[#4FD1FF]"
+                        : tone === "gold"
+                          ? "text-[#FFD34D]"
+                          : "text-[#FF9F45]"
+                    )}
+                  >
+                    {title}:{" "}
+                  </span>
+                ) : null}
                 {text}
               </p>
             </div>
@@ -1810,7 +1823,7 @@ function DownloadReportsPopup({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     async function loadDownloads() {
-      const token = sessionStorage.getItem("scorecare_token");
+      const token = localStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) {
         setError("Please login again to view downloads.");
@@ -1924,7 +1937,7 @@ function LanguageSettingsPopup({
 }
 
 export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, onProfileUpdate, profile }: { name: string; onClose: () => void; onHelp: () => void; onLanguageLoadingChange: (loading: boolean) => void; onProfileUpdate: (profile: UserProfile | null) => void; profile: UserProfile | null }) {
-  const phone = profile?.mobileNumber || sessionStorage.getItem("scorecare_mobile_number") || "--";
+  const phone = profile?.mobileNumber || localStorage.getItem("scorecare_mobile_number") || "--";
   const completion = calculateProfileCompletion(profile);
   const [notificationError, setNotificationError] = useState("");
   const [notificationLoading, setNotificationLoading] = useState(false);
@@ -1981,7 +1994,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
   }, [ratingSubmitted]);
 
   async function openNotifications() {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     setShowNotifications(true);
     setNotificationError("");
@@ -2005,7 +2018,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
   }
 
   async function refreshProfileNotifications() {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) return;
 
@@ -2019,7 +2032,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
   }
 
   async function markAllNotificationsRead() {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       setNotificationError("Please login again to update notifications.");
@@ -2044,7 +2057,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
   }
 
   async function updateSelectedLanguage(language: string) {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
     const selectedLanguageLabel = languageOptions.find((item) => item.code === language)?.label;
 
     if (!token || isTokenExpired(token) || !selectedLanguageLabel) return;
@@ -2087,7 +2100,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
         isDisliked: selectedRating <= 2,
       });
 
-      const token = sessionStorage.getItem("scorecare_token");
+      const token = localStorage.getItem("scorecare_token");
 
       if (token && !isTokenExpired(token)) {
         const result = await loadNotifications(token);
@@ -2568,11 +2581,11 @@ async function loadProfile(token: string) {
 
   const profile = readProfile(result);
 
-  if (profile?.fullName) sessionStorage.setItem("scorecare_full_name", profile.fullName);
-  if (profile?.mobileNumber) sessionStorage.setItem("scorecare_mobile_number", profile.mobileNumber);
-  if (profile?.panNumber) sessionStorage.setItem("scorecare_pan_number", profile.panNumber);
-  if (profile?.email) sessionStorage.setItem("scorecare_email", profile.email);
-  if (profile?.dateOfBirth) sessionStorage.setItem("scorecare_date_of_birth", profile.dateOfBirth);
+  if (profile?.fullName) localStorage.setItem("scorecare_full_name", profile.fullName);
+  if (profile?.mobileNumber) localStorage.setItem("scorecare_mobile_number", profile.mobileNumber);
+  if (profile?.panNumber) localStorage.setItem("scorecare_pan_number", profile.panNumber);
+  if (profile?.email) localStorage.setItem("scorecare_email", profile.email);
+  if (profile?.dateOfBirth) localStorage.setItem("scorecare_date_of_birth", profile.dateOfBirth);
   if (profile?.selectedLanguage) localStorage.setItem("scorecare_language", normalizeLanguageCode(profile.selectedLanguage) || profile.selectedLanguage);
 
   return profile;
@@ -3327,7 +3340,7 @@ function formatPhone(value: string) {
 }
 
 async function submitFeedback(payload: { rating: number; message: string; isLiked: boolean; isDisliked: boolean }) {
-  const token = sessionStorage.getItem("scorecare_token");
+  const token = localStorage.getItem("scorecare_token");
 
   if (!token || isTokenExpired(token)) {
     throw new Error("Please login again to submit feedback.");

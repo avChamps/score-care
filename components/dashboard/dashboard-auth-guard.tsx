@@ -8,7 +8,7 @@ export function DashboardAuthGuard() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();

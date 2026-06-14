@@ -20,11 +20,11 @@ export class CibilDisplayDataError extends Error {
 }
 
 export function clearCachedCibilDisplayData() {
-  sessionStorage.removeItem(cibilDisplayCacheKey);
-  sessionStorage.removeItem(cibilDisplayCacheTokenKey);
-  sessionStorage.removeItem(cibilScoreCheckCacheKey);
-  sessionStorage.removeItem(cibilScoreCheckCacheTokenKey);
-  sessionStorage.removeItem(cibilScoreCheckCachePayloadKey);
+  localStorage.removeItem(cibilDisplayCacheKey);
+  localStorage.removeItem(cibilDisplayCacheTokenKey);
+  localStorage.removeItem(cibilScoreCheckCacheKey);
+  localStorage.removeItem(cibilScoreCheckCacheTokenKey);
+  localStorage.removeItem(cibilScoreCheckCachePayloadKey);
   inFlightDisplayRequest = null;
   inFlightScoreCheckRequest = null;
 }
@@ -78,11 +78,11 @@ export function getStoredCibilScoreCheckData(token: string, payload: unknown) {
 
 export function getStoredLatestCibilScoreCheckData(token: string) {
   try {
-    if (sessionStorage.getItem(cibilScoreCheckCacheTokenKey) !== token) {
+    if (localStorage.getItem(cibilScoreCheckCacheTokenKey) !== token) {
       return null;
     }
 
-    const cachedValue = sessionStorage.getItem(cibilScoreCheckCacheKey);
+    const cachedValue = localStorage.getItem(cibilScoreCheckCacheKey);
 
     return cachedValue ? normalizeCibilDisplayData(JSON.parse(cachedValue)) : null;
   } catch {
@@ -92,12 +92,12 @@ export function getStoredLatestCibilScoreCheckData(token: string) {
 
 function readCachedCibilDisplayData(token: string) {
   try {
-    if (sessionStorage.getItem(cibilDisplayCacheTokenKey) !== token) {
+    if (localStorage.getItem(cibilDisplayCacheTokenKey) !== token) {
       clearCachedCibilDisplayData();
       return null;
     }
 
-    const cachedValue = sessionStorage.getItem(cibilDisplayCacheKey);
+    const cachedValue = localStorage.getItem(cibilDisplayCacheKey);
 
     return cachedValue ? normalizeCibilDisplayData(JSON.parse(cachedValue)) : null;
   } catch {
@@ -109,22 +109,22 @@ function readCachedCibilDisplayData(token: string) {
 function readCachedCibilScoreCheckData(token: string, payloadKey: string) {
   try {
     if (
-      sessionStorage.getItem(cibilScoreCheckCacheTokenKey) !== token ||
-      sessionStorage.getItem(cibilScoreCheckCachePayloadKey) !== payloadKey
+      localStorage.getItem(cibilScoreCheckCacheTokenKey) !== token ||
+      localStorage.getItem(cibilScoreCheckCachePayloadKey) !== payloadKey
     ) {
-      sessionStorage.removeItem(cibilScoreCheckCacheKey);
-      sessionStorage.removeItem(cibilScoreCheckCacheTokenKey);
-      sessionStorage.removeItem(cibilScoreCheckCachePayloadKey);
+      localStorage.removeItem(cibilScoreCheckCacheKey);
+      localStorage.removeItem(cibilScoreCheckCacheTokenKey);
+      localStorage.removeItem(cibilScoreCheckCachePayloadKey);
       return null;
     }
 
-    const cachedValue = sessionStorage.getItem(cibilScoreCheckCacheKey);
+    const cachedValue = localStorage.getItem(cibilScoreCheckCacheKey);
 
     return cachedValue ? JSON.parse(cachedValue) : null;
   } catch {
-    sessionStorage.removeItem(cibilScoreCheckCacheKey);
-    sessionStorage.removeItem(cibilScoreCheckCacheTokenKey);
-    sessionStorage.removeItem(cibilScoreCheckCachePayloadKey);
+    localStorage.removeItem(cibilScoreCheckCacheKey);
+    localStorage.removeItem(cibilScoreCheckCacheTokenKey);
+    localStorage.removeItem(cibilScoreCheckCachePayloadKey);
     return null;
   }
 }
@@ -143,9 +143,9 @@ async function fetchCibilScoreCheckData(token: string, payload: unknown, payload
     throw new CibilDisplayDataError(readApiMessage(result) || "Unable to fetch CIBIL score", response.status);
   }
 
-  sessionStorage.setItem(cibilScoreCheckCacheKey, JSON.stringify(result));
-  sessionStorage.setItem(cibilScoreCheckCacheTokenKey, token);
-  sessionStorage.setItem(cibilScoreCheckCachePayloadKey, payloadKey);
+  localStorage.setItem(cibilScoreCheckCacheKey, JSON.stringify(result));
+  localStorage.setItem(cibilScoreCheckCacheTokenKey, token);
+  localStorage.setItem(cibilScoreCheckCachePayloadKey, payloadKey);
 
   return result;
 }
@@ -162,8 +162,8 @@ async function fetchCibilDisplayData(token: string) {
     throw new CibilDisplayDataError(readApiMessage(result) || "Unable to load CIBIL display data", response.status);
   }
 
-  sessionStorage.setItem(cibilDisplayCacheKey, JSON.stringify(result));
-  sessionStorage.setItem(cibilDisplayCacheTokenKey, token);
+  localStorage.setItem(cibilDisplayCacheKey, JSON.stringify(result));
+  localStorage.setItem(cibilDisplayCacheTokenKey, token);
   window.dispatchEvent(new CustomEvent("scorecare:cibil-display-updated", { detail: result }));
 
   return result;

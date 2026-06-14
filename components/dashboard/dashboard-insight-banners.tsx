@@ -62,7 +62,7 @@ export function DashboardInsightBanners() {
     window.addEventListener("scorecare:cibil-display-updated", handleDisplayUpdate);
 
     async function loadInsights() {
-      const token = sessionStorage.getItem("scorecare_token");
+      const token = localStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) {
         clearScorecareSession();

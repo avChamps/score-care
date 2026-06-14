@@ -419,7 +419,7 @@ export function CreditScoreExperience() {
   const accounts = displayData?.data?.display?.accounts ?? [];
   const enquiries = displayData?.data?.display?.enquiries ?? [];
   const accountSummary = useMemo(() => buildAccountSummary(accounts), [accounts]);
-  const storedProfileName = typeof window !== "undefined" ? sessionStorage.getItem("scorecare_full_name")?.trim() : "";
+  const storedProfileName = typeof window !== "undefined" ? localStorage.getItem("scorecare_full_name")?.trim() : "";
   const profileName = profile?.fullName?.trim() || displayData?.data?.display?.profile?.name?.trim() || storedProfileName || "there";
   const baseScore = score ?? 300;
   const predictedScore = useMemo(() => {
@@ -435,7 +435,7 @@ export function CreditScoreExperience() {
       return;
     }
 
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -492,7 +492,7 @@ export function CreditScoreExperience() {
   }, []);
 
   const loadRepairRequests = useCallback(async () => {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -574,7 +574,7 @@ export function CreditScoreExperience() {
 
   useEffect(() => {
     async function refreshNotifications() {
-      const token = sessionStorage.getItem("scorecare_token");
+      const token = localStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) return;
 
@@ -608,7 +608,7 @@ export function CreditScoreExperience() {
       return;
     }
 
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -655,7 +655,7 @@ export function CreditScoreExperience() {
   async function refreshCachedScore() {
     if (loading) return;
 
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -682,7 +682,7 @@ export function CreditScoreExperience() {
       return;
     }
 
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -725,7 +725,7 @@ export function CreditScoreExperience() {
   async function submitRepairRequest(plan: CibilRepairContent["plans"][number]) {
     if (repairSubmitting) return;
 
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();

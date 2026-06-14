@@ -5,7 +5,7 @@ import { isTokenExpired } from "./auth-session";
 
 function isLoggedIn() {
 	if (typeof window === "undefined") return false;
-	const token = sessionStorage.getItem("scorecare_token");
+	const token = localStorage.getItem("scorecare_token");
 	if (!token) return false;
 	try {
 		return !isTokenExpired(token);

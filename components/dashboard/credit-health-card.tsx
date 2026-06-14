@@ -75,7 +75,7 @@ export function CreditHealthCard() {
     window.addEventListener("scorecare:cibil-display-updated", handleDisplayUpdate);
 
     async function loadCreditHealth() {
-      const token = sessionStorage.getItem("scorecare_token");
+      const token = localStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) {
         clearScorecareSession();

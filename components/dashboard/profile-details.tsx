@@ -41,7 +41,7 @@ export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean 
 
   useEffect(() => {
     async function loadProfile() {
-      const token = sessionStorage.getItem("scorecare_token");
+      const token = localStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) {
         clearScorecareSession();
@@ -85,14 +85,14 @@ export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean 
 
   function openAdminView() {
     setLaunchingAdmin(true);
-    sessionStorage.setItem("scorecare_admin_view", "true");
+    localStorage.setItem("scorecare_admin_view", "true");
     window.setTimeout(() => {
       router.push("/dashboard/admin");
     }, 5000);
   }
 
   function openUserView() {
-    sessionStorage.removeItem("scorecare_admin_view");
+    localStorage.removeItem("scorecare_admin_view");
     router.push("/dashboard");
   }
 

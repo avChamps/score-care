@@ -44,7 +44,7 @@ export function AdminDataTable({ columns, description, emptyMessage, endpoint, e
   const [search, setSearch] = useState("");
 
   const loadRows = useCallback(async () => {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -108,7 +108,7 @@ export function AdminDataTable({ columns, description, emptyMessage, endpoint, e
     }
 
     if (exportEndpoint) {
-      const token = sessionStorage.getItem("scorecare_token");
+      const token = localStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) {
         clearScorecareSession();

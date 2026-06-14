@@ -51,7 +51,7 @@ export function AdminSubscriptions() {
   const [updating, setUpdating] = useState(false);
 
   const loadUsers = useCallback(async () => {
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
@@ -118,7 +118,7 @@ export function AdminSubscriptions() {
       return;
     }
 
-    const token = sessionStorage.getItem("scorecare_token");
+    const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
       clearScorecareSession();
