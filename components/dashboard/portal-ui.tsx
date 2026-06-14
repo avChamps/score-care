@@ -2,24 +2,71 @@
 
 import Link from "next/link";
 import { type ComponentPropsWithoutRef } from "react";
-import { CreditCard, Plus, ReceiptText } from "lucide-react";
+import { CreditCard, Headphones, Home, MessageCircle, Plus, ReceiptText, Users, WalletCards } from "lucide-react";
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
 import { useDashboardActionsDisabled } from "@/lib/dashboard-lock";
 import { cn } from "@/lib/utils";
 
 type PortalShellProps = {
-  active: "home" | "score" | "loans" | "fix" | "bills" | "users" | "subscriptions" | "chats" | "help";
+  active: "home" | "score" | "offers" | "loans" | "fix" | "bills" | "users" | "subscriptions" | "chats" | "help";
   children: React.ReactNode;
   variant?: "user" | "admin";
 };
 
-export function PortalShell({ children }: PortalShellProps) {
+const adminSidebarItems = [
+  { active: "home", label: "Home", href: "/dashboard/admin", Icon: Home },
+  { active: "users", label: "Users", href: "/dashboard/admin/users", Icon: Users },
+  { active: "loans", label: "Loans", href: "/dashboard/admin/loans", Icon: CreditCard },
+  { active: "subscriptions", label: "Subscriptions", href: "/dashboard/admin/subscriptions", Icon: WalletCards },
+  { active: "chats", label: "Chats", href: "/dashboard/admin/chats", Icon: MessageCircle },
+  { active: "help", label: "Help", href: "/dashboard/admin/help", Icon: Headphones },
+] satisfies Array<{ active: PortalShellProps["active"]; label: string; href: string; Icon: typeof Home }>;
+
+const userSidebarItems = [
+  { active: "home", label: "Home", href: "/dashboard", Icon: Home },
+  { active: "score", label: "Report", href: "/dashboard/credit-score", Icon: ReceiptText },
+  { active: "fix", label: "Improve", href: "/dashboard/score-fix", Icon: Plus },
+  { active: "offers", label: "Offers", href: "/dashboard/offers", Icon: WalletCards },
+  { active: "loans", label: "Loans", href: "/dashboard/loans", Icon: CreditCard },
+] satisfies Array<{ active: PortalShellProps["active"]; label: string; href: string; Icon: typeof Home }>;
+
+export function PortalShell({ active, children, variant = "user" }: PortalShellProps) {
   const dashboardActionsDisabled = useDashboardActionsDisabled();
+  const sidebarItems = variant === "admin" ? adminSidebarItems : userSidebarItems;
 
   return (
     <section className={cn("portal-theme relative min-h-screen overflow-hidden text-[var(--portal-ink)] lg:h-screen", dashboardActionsDisabled && "dashboard-actions-disabled")}>
       <DashboardAuthGuard />
-      <div className="relative z-10 mx-auto grid min-h-screen max-w-7xl lg:h-screen">
+      <div className="relative z-10 mx-auto grid min-h-screen max-w-7xl lg:h-screen lg:grid-cols-[16rem_minmax(0,1fr)]">
+        {sidebarItems.length ? (
+          <aside className="hidden border-r border-[var(--portal-border)] bg-white/92 px-4 py-6 lg:block">
+            <p className="px-3 text-[11px] font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">{variant === "admin" ? "Admin" : "Scorecare"}</p>
+            <nav className="mt-5 space-y-1">
+              {sidebarItems.map(({ active: itemActive, label, href, Icon }) => {
+                const isActive = active === itemActive;
+
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    data-dashboard-home={itemActive === "home" ? "true" : undefined}
+                    data-dashboard-score={itemActive === "score" ? "true" : undefined}
+                    data-dashboard-offers={itemActive === "offers" ? "true" : undefined}
+                    data-dashboard-loans={itemActive === "loans" ? "true" : undefined}
+                    data-dashboard-admin={variant === "admin" ? "true" : undefined}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-black transition",
+                      isActive ? "bg-[var(--portal-orange-soft)] text-[var(--portal-orange)]" : "text-[var(--portal-muted)] hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)]",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                    <span>{label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </aside>
+        ) : null}
         <div className="min-w-0 lg:h-screen lg:overflow-y-auto">
           {children}
         </div>

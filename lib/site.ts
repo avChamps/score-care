@@ -27,7 +27,7 @@ import {
 
 export const navItems = [
   { label: "Credit Score", href: "/credit-score" },
-  { label: "Reports", href: "/report" },
+  { label: "Reports", href: "/dashboard/credit-score" },
   { label: "AI Analysis", href: "/ai-analysis" },
   { label: "Repair", href: "/cibil-repair" },
   { label: "Pricing", href: "/pricing" },
@@ -39,7 +39,7 @@ export const footerGroups = [
     title: "Platform",
     links: [
       { label: "Free Credit Score", href: "/credit-score" },
-      { label: "Credit Reports", href: "/report" },
+      { label: "Credit Reports", href: "/dashboard/credit-score" },
       { label: "AI Analysis", href: "/ai-analysis" },
       { label: "CIBIL Repair", href: "/cibil-repair" },
     ],
@@ -230,7 +230,7 @@ export const securityBadges = [
 export const sidebarItems = [
   { icon: BarChart3, label: "Overview", href: "/dashboard" },
   { icon: CreditCard, label: "Credit", href: "/credit-score" },
-  { icon: PieChart, label: "Reports", href: "/report" },
+  { icon: PieChart, label: "Reports", href: "/dashboard/credit-score" },
   { icon: Sparkles, label: "AI Insights", href: "/ai-analysis" },
   { icon: BriefcaseBusiness, label: "Profile", href: "/profile" },
   { icon: Bell, label: "Notifications", href: "/notifications" },

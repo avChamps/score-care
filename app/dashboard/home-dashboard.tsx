@@ -47,7 +47,7 @@ import {
 } from "lucide-react";
 
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
-import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
+import { PortalShell } from "@/components/dashboard/portal-ui";
 import { SupportDrawer } from "@/components/dashboard/topbar-actions";
 import { SubscribePromptOverlay, getSubscriptionPlans, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -352,8 +352,8 @@ export function HomeDashboard() {
   const dashboardTiles = isFreeTier ? freeTierAppTiles : buildAppTiles(visibleDashboard, reportUnavailable);
 
   return (
+    <PortalShell active="home">
     <div className="page min-h-screen overflow-x-hidden bg-[#050912] pb-32 text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
-      <DashboardAuthGuard />
       <div id="google_translate_element" className="hidden" />
       <section
         className="hero-header fixed inset-x-0 top-0 z-0 min-h-[340px] bg-cover bg-center px-5 pb-16 pt-6 shadow-[0_26px_58px_rgba(94,99,235,0.34)] sm:min-h-[430px] sm:px-8 sm:pb-28 sm:pt-7"
@@ -669,6 +669,7 @@ export function HomeDashboard() {
       {showActionPlan ? <ActionPlanPopup dashboard={visibleDashboard} onClose={() => setShowActionPlan(false)} /> : null}
       <SubscribePromptOverlay show={showSubscribePrompt} onClose={closeSubscribePrompt} />
     </div>
+    </PortalShell>
   );
 }
 

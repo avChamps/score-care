@@ -9,7 +9,7 @@ import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/p
 
 export function OffersExperience() {
   return (
-    <PortalShell active="score">
+    <PortalShell active="offers">
       <div className="min-h-screen bg-[#050912] pb-28 text-white">
         <PortalTopBar title="Offers" />
         <PageContent className="px-4 py-5">

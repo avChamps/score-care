@@ -27,6 +27,9 @@ export function DashboardBottomNav() {
             <Link
               key={label}
               href={href}
+              data-dashboard-home={href === "/dashboard" ? "true" : undefined}
+              data-dashboard-score={href === "/dashboard/credit-score" ? "true" : undefined}
+              data-dashboard-score-fix={href === "/dashboard/score-fix" ? "true" : undefined}
               data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
               data-dashboard-offers={href === "/dashboard/offers" ? "true" : undefined}
               className={cn(

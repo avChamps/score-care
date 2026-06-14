@@ -1,173 +1,317 @@
 "use client";
 
-import {
-  CalendarDays,
-  Check,
-  ChevronDown,
-  Clock3,
-  Download,
-  FileText,
-  Info,
-  MessageSquare,
-  Plus,
-  User,
-  X,
-} from "lucide-react";
-import { useState } from "react";
+import { AlertTriangle, Bell, CreditCard, Crown, LoaderCircle, Menu, TrendingDown, TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
-import {
-  AppCard,
-  PageContent,
-  PortalShell,
-  PortalTopBar,
-  PrimaryPortalButton,
-} from "@/components/dashboard/portal-ui";
+import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
+import { apiRequest } from "@/lib/api";
+import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
+import { useSubscriptionAccess } from "@/lib/subscription-access";
 import { cn } from "@/lib/utils";
 
-type View = "overview" | "details";
-type RequestTab = "active" | "resolved";
-type Urgency = "Low" | "Medium" | "High" | "Critical";
+type SimulatorTab = "simulator" | "plan" | "checklist";
 
-const activeRequest = {
-  id: "#RR001",
-  status: "Under Review",
-  date: "20/1/2026",
-  priority: "Low priority",
-  expected: "28 Jan 2025",
-  summary: "My home loan was closed in december 2024 but it still shows as active in my CIBIL...",
-  description:
-    "My home loan was closed in december 2024 but it still shows as active in my CIBIL report. This is affecting my loan eligibility for a new car loan application.",
+type CreditAccount = {
+  account_closed?: string | null;
+  account_status?: string | number | null;
+  amount_overdue?: string | number | null;
+  current_balance?: string | number | null;
+  high_credit_amount?: string | number | null;
+  member_name?: string | null;
+  payment_history?: string[] | null;
+  payment_history_details?: PaymentHistoryItem[] | null;
+  type?: string | number | null;
 };
 
-const urgencyOptions: Array<{ title: Urgency; subtitle: string }> = [
-  { title: "Low", subtitle: "Informational correction" },
-  { title: "Medium", subtitle: "Impacting score slowly" },
-  { title: "High", subtitle: "Affecting loan eligibility" },
-  { title: "Critical", subtitle: "Immediate rejection risk" },
-];
+type PaymentHistoryItem = {
+  Days_Past_Due?: string | number | null;
+};
 
-const timeline = [
-  { title: "Request submitted", body: "Your resolution request was successfully submitted.", date: "7 Jan 2026", done: true },
-  { title: "Under Review", body: "Team started reviewing your case.", date: "9 Jan 2026", done: true },
-  { title: "Additional info required", body: "We may ask for supporting evidence if needed.", date: "Pending", done: true },
-  { title: "Settlement progress", body: "Settlement or bureau correction progress begins.", date: "Pending", done: false },
-  { title: "Resolved", body: "Final resolution update will appear here.", date: "Pending", done: false },
-];
+type DisplayDataResponse = {
+  data?: {
+    credit_score?: string | number | null;
+    report?: {
+      credit_score?: string | number | null;
+    };
+    display?: {
+      score?: {
+        value?: string | number | null;
+      };
+      accounts?: CreditAccount[] | null;
+    };
+  };
+};
+
+type CardAccount = {
+  id: string;
+  bankName: string;
+  balance: number;
+  creditLimit: number;
+  utilization: number;
+};
+
+type SimulatorAction = {
+  id: string;
+  title: string;
+  subtitle: string;
+  impact: number;
+};
+
+const creditCardTypes = new Set(["10", "31", "35", "36"]);
+const notificationsPageSize = 10;
 
 export function ScoreFixExperience() {
-  const [view, setView] = useState<View>("overview");
-  const [requestOpen, setRequestOpen] = useState(false);
-  const [tab, setTab] = useState<RequestTab>("active");
-  const [urgency, setUrgency] = useState<Urgency>("Low");
-  const [description, setDescription] = useState("");
+  const router = useRouter();
+  const [displayData, setDisplayData] = useState<DisplayDataResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<SimulatorTab>("simulator");
+  const [utilizationValue, setUtilizationValue] = useState(0);
+  const [selectedActions, setSelectedActions] = useState<string[]>([]);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  const { isFreeTier } = useSubscriptionAccess();
+
+  const score = readScore(displayData);
+  const accounts = useMemo(() => displayData?.data?.display?.accounts ?? [], [displayData]);
+  const cardAccounts = useMemo(() => getCreditCardAccounts(accounts), [accounts]);
+  const topCard = cardAccounts[0] ?? null;
+  const actions = useMemo(() => buildSimulatorActions(accounts, cardAccounts), [accounts, cardAccounts]);
+  const currentScore = score ?? 300;
+  const sliderImpact = topCard ? getUtilizationImpact(utilizationValue) : 0;
+  const actionImpact = actions
+    .filter((action) => selectedActions.includes(action.id))
+    .reduce((total, action) => total + action.impact, 0);
+  const projectedScore = clampScore(currentScore + sliderImpact + actionImpact);
+  const difference = projectedScore - currentScore;
+  const scoreStatus = getScoreStatus(projectedScore);
+
+  const loadDisplayData = useCallback(async () => {
+    const token = localStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const result = (await getCachedCibilDisplayData(token)) as DisplayDataResponse;
+
+      setDisplayData(result);
+    } catch (loadError) {
+      if (loadError instanceof CibilDisplayDataError && (loadError.status === 401 || loadError.status === 403)) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
+      }
+
+      const cachedResult = getStoredLatestCibilScoreCheckData(token) as DisplayDataResponse | null;
+
+      setDisplayData(cachedResult);
+      setError(cachedResult ? "" : "Could not load your report data.");
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    void loadDisplayData();
+  }, [loadDisplayData]);
+
+  useEffect(() => {
+    setUtilizationValue(Math.round(topCard?.utilization ?? 0));
+  }, [topCard?.id, topCard?.utilization]);
+
+  useEffect(() => {
+    setSelectedActions((currentActions) => currentActions.filter((actionId) => actions.some((action) => action.id === actionId)));
+  }, [actions]);
+
+  useEffect(() => {
+    async function refreshNotifications() {
+      const token = localStorage.getItem("scorecare_token");
+
+      if (!token || isTokenExpired(token)) return;
+
+      try {
+        const result = await loadNotifications(token);
+        setNotificationUnreadCount(result.unreadCount);
+      } catch {
+        setNotificationUnreadCount(0);
+      }
+    }
+
+    void refreshNotifications();
+    window.addEventListener("scorecare:notifications-updated", refreshNotifications);
+
+    return () => window.removeEventListener("scorecare:notifications-updated", refreshNotifications);
+  }, []);
+
+  function toggleAction(actionId: string) {
+    setSelectedActions((currentActions) =>
+      currentActions.includes(actionId) ? currentActions.filter((id) => id !== actionId) : [...currentActions, actionId],
+    );
+  }
 
   return (
     <PortalShell active="fix">
-      <PortalTopBar title={view === "overview" ? "Fix your score" : "Request Details"} />
-      <PageContent>
-        {view === "overview" ? (
-          <OverviewView
-            activeTab={tab}
-            onNew={() => setRequestOpen(true)}
-            onOpenDetails={() => setView("details")}
-            onTabChange={setTab}
-          />
-        ) : null}
+      <PortalTopBar title="Improve" />
+      <div className="min-h-screen bg-[#050912] pb-28 text-white">
+        <PageContent className="max-w-md space-y-5">
+          <div className="flex items-center justify-between">
+            <Link
+              href="/profile"
+              aria-label="Open profile menu"
+              data-dashboard-profile="true"
+              className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
+            >
+              <Menu className="size-5" strokeWidth={1.8} />
+            </Link>
+            <div className="flex items-center gap-3">
+              {isFreeTier ? (
+                <Link
+                  href="/pricing"
+                  aria-label="Premium benefits"
+                  className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
+                >
+                  <Crown className="size-6 fill-[#FFD34D]/20" strokeWidth={1.8} />
+                </Link>
+              ) : null}
+              <Link
+                aria-label="Open notifications"
+                className="relative grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
+                href="/notifications"
+              >
+                <Bell className="size-6" strokeWidth={1.8} />
+                {notificationUnreadCount > 0 ? (
+                  <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-[12px] font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
+                    {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
+                  </span>
+                ) : null}
+              </Link>
+            </div>
+          </div>
+          <div className="space-y-1 pt-2">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#22F2C2]">Score Simulator</p>
+            <h1 className="text-2xl font-black tracking-normal text-white">Improve</h1>
+          </div>
 
-        {view === "details" ? <DetailsView onBack={() => setView("overview")} /> : null}
-      </PageContent>
+          <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(145deg,#071522,#0A1725)] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+            <div className="grid grid-cols-2 gap-3">
+              <ScoreMetric label="Current Score" value={score ? String(score) : "--"} />
+              <ScoreMetric label="Projected Score" value={String(projectedScore)} tone={scoreStatus.tone} />
+            </div>
+            <div className="mt-5 flex items-end justify-between gap-4">
+              <div>
+                <p className={cn("text-3xl font-black", difference > 0 && "text-[#22F2C2]", difference < 0 && "text-rose-400", difference === 0 && "text-slate-300")}>
+                  {formatSigned(difference)} pts
+                </p>
+                <p className="mt-1 text-xs font-semibold text-slate-400">{scoreStatus.label}</p>
+              </div>
+              <div className={cn("grid size-12 place-items-center rounded-2xl border", difference >= 0 ? "border-[#22F2C2]/25 bg-[#22F2C2]/10 text-[#22F2C2]" : "border-rose-400/25 bg-rose-400/10 text-rose-300")}>
+                {difference >= 0 ? <TrendingUp className="size-6" /> : <TrendingDown className="size-6" />}
+              </div>
+            </div>
+          </section>
+
+          <div className="grid grid-cols-3 rounded-2xl border border-white/10 bg-white/[0.04] p-1">
+            <TabButton active={activeTab === "simulator"} onClick={() => setActiveTab("simulator")}>Simulator</TabButton>
+            <TabButton active={activeTab === "plan"} onClick={() => setActiveTab("plan")}>30-Day Plan</TabButton>
+            <TabButton active={activeTab === "checklist"} onClick={() => setActiveTab("checklist")}>Checklist</TabButton>
+          </div>
+
+          {activeTab === "simulator" ? (
+            <section className="space-y-5 rounded-[24px] border border-white/10 bg-[#111821] p-5">
+              {loading ? (
+                <div className="flex items-center gap-3 text-sm font-semibold text-slate-300">
+                  <LoaderCircle className="size-5 animate-spin text-[#22F2C2]" /> Reading your report data...
+                </div>
+              ) : null}
+
+              {error ? <p className="rounded-2xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs font-semibold text-rose-200">{error}</p> : null}
+
+              {topCard ? (
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-2 text-sm font-bold text-white">
+                        <CreditCard className="size-4 text-[#22F2C2]" /> {topCard.bankName}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        {formatRupees(topCard.balance)} used of {formatRupees(topCard.creditLimit)}
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black text-[#22F2C2]">
+                      {utilizationValue}%
+                    </span>
+                  </div>
+
+                  <input
+                    aria-label="Credit card utilization"
+                    className="h-2 w-full cursor-pointer accent-[#22F2C2]"
+                    max={100}
+                    min={0}
+                    type="range"
+                    value={utilizationValue}
+                    onChange={(event) => setUtilizationValue(Number(event.target.value))}
+                  />
+                  <div className="flex justify-between text-[11px] font-bold text-slate-500">
+                    <span>5% Ideal</span>
+                    <span>90% Danger</span>
+                  </div>
+                </div>
+              ) : (
+                <EmptyState icon={<CreditCard className="size-5" />} text="No credit card utilization found" />
+              )}
+
+              <div className="space-y-1">
+                {actions.length ? (
+                  actions.map((action) => (
+                    <ActionRow
+                      action={action}
+                      checked={selectedActions.includes(action.id)}
+                      key={action.id}
+                      onChange={() => toggleAction(action.id)}
+                    />
+                  ))
+                ) : (
+                  <EmptyState icon={<AlertTriangle className="size-5" />} text="No simulator actions available from your current report" />
+                )}
+              </div>
+
+              <p className="text-[11px] leading-5 text-slate-500">
+                This is an estimated simulator based on your report data. Actual bureau score changes may vary.
+              </p>
+            </section>
+          ) : null}
+
+          {activeTab === "plan" ? <Placeholder text="No plan available yet" /> : null}
+          {activeTab === "checklist" ? <Placeholder text="Checklist coming soon" /> : null}
+        </PageContent>
+      </div>
       <DashboardBottomNav />
-      {requestOpen ? (
-        <NewRequestDialog
-          description={description}
-          onClose={() => setRequestOpen(false)}
-          onDescriptionChange={setDescription}
-          onUrgencyChange={setUrgency}
-          urgency={urgency}
-        />
-      ) : null}
     </PortalShell>
   );
 }
 
-function OverviewView({
-  activeTab,
-  onNew,
-  onOpenDetails,
-  onTabChange,
-}: {
-  activeTab: RequestTab;
-  onNew: () => void;
-  onOpenDetails: () => void;
-  onTabChange: (tab: RequestTab) => void;
-}) {
+function ScoreMetric({ label, tone = "text-white", value }: { label: string; tone?: string; value: string }) {
   return (
-    <div className="space-y-5 animate-[creditPanelIn_0.42s_ease-out]">
-      <div>
-        <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-cyan-600">Score repair desk</p>
-        <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-950">Fix your score</h2>
-      </div>
-
-      <button
-        className="group relative w-full overflow-hidden rounded-[var(--portal-radius)] border border-slate-200 bg-white p-4 text-left shadow-[var(--portal-shadow-soft)] transition hover:border-cyan-200 hover:shadow-[var(--portal-shadow)]"
-        type="button"
-        onClick={onNew}
-      >
-        <div className="absolute inset-y-0 left-0 w-1.5 bg-[var(--portal-blue)]" />
-        <div className="relative flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-cyan-50 text-cyan-700">
-              <Plus className="size-6" />
-            </span>
-            <span>
-              <span className="block text-sm font-bold text-slate-950">Raise New Request</span>
-              <span className="mt-1 block text-xs font-medium text-slate-500">Report CIBIL issues or initiate settlement.</span>
-            </span>
-          </div>
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-cyan-50 text-xl text-cyan-700 transition group-hover:translate-x-1">
-            &rsaquo;
-          </span>
-        </div>
-      </button>
-
-      <div className="flex items-start gap-3 rounded-2xl border border-amber-100 bg-amber-50 p-3.5 text-amber-800">
-        <Info className="mt-0.5 size-4 shrink-0" />
-        <p className="text-xs leading-5">
-          Behaviour insights are derived from credit bureau data and may vary based on reporting cycles.
-        </p>
-      </div>
-
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-base font-bold text-slate-950">{activeTab === "active" ? "Active Requests" : "Resolved Requests"}</h3>
-        <div className="flex rounded-full border border-slate-200 bg-white p-1 shadow-sm">
-          <RequestTabButton active={activeTab === "active"} onClick={() => onTabChange("active")}>
-            Active
-          </RequestTabButton>
-          <RequestTabButton active={activeTab === "resolved"} onClick={() => onTabChange("resolved")}>
-            Resolved
-          </RequestTabButton>
-        </div>
-      </div>
-
-      {activeTab === "active" ? (
-        <RequestCard onOpen={onOpenDetails} />
-      ) : (
-        <AppCard>
-          <p className="text-sm font-bold text-slate-800">No resolved requests yet</p>
-          <p className="mt-1 text-xs text-slate-500">Completed score-fix requests will appear here.</p>
-        </AppCard>
-      )}
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+      <p className={cn("mt-2 text-3xl font-black", tone)}>{value}</p>
     </div>
   );
 }
 
-function RequestTabButton({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
+function TabButton({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
   return (
     <button
-      className={cn(
-        "rounded-full px-3.5 py-1.5 text-[0.7rem] font-bold transition",
-        active ? "bg-cyan-50 text-cyan-700" : "text-slate-500 hover:text-slate-900",
-      )}
+      className={cn("min-h-10 rounded-xl px-2 text-xs font-black transition", active ? "bg-[#22F2C2] text-[#03100D]" : "text-slate-400")}
       type="button"
       onClick={onClick}
     >
@@ -176,284 +320,173 @@ function RequestTabButton({ active, children, onClick }: { active: boolean; chil
   );
 }
 
-function RequestCard({ onOpen }: { onOpen: () => void }) {
+function ActionRow({ action, checked, onChange }: { action: SimulatorAction; checked: boolean; onChange: () => void }) {
+  const positive = action.impact > 0;
+
   return (
-    <button
-      className="group w-full rounded-[var(--portal-radius)] border border-slate-200 bg-white p-4 text-left shadow-[var(--portal-shadow-soft)] transition hover:border-cyan-200 hover:shadow-[var(--portal-shadow)]"
-      type="button"
-      onClick={onOpen}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-xs font-black text-slate-950">{activeRequest.id}</p>
-            <StatusPill>{activeRequest.status}</StatusPill>
-          </div>
-          <p className="mt-3 text-xs leading-5 text-slate-700">{activeRequest.summary}</p>
-        </div>
-        <span className="text-2xl leading-none text-slate-300 transition group-hover:translate-x-1 group-hover:text-cyan-500">&rsaquo;</span>
-      </div>
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <span className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600">
-          <Clock3 className="size-4 text-slate-500" /> {activeRequest.date}
+    <button className="flex w-full items-center justify-between gap-4 border-b border-white/10 py-4 text-left last:border-b-0" type="button" onClick={onChange}>
+      <span className="min-w-0">
+        <span className="block text-sm font-bold text-white">{action.title}</span>
+        <span className={cn("mt-1 block text-xs font-semibold", positive ? "text-[#22F2C2]" : "text-rose-300")}>
+          {action.subtitle} ({formatSigned(action.impact)} pts)
         </span>
-        <span className="rounded-full bg-amber-50 px-3 py-1.5 text-[0.7rem] font-bold text-amber-700">{activeRequest.priority}</span>
-      </div>
-      <p className="mt-3 text-xs text-slate-500">
-        Expected resolution: <span className="font-bold text-slate-700">{activeRequest.expected}</span>
-      </p>
+      </span>
+      <span className={cn("relative h-7 w-12 shrink-0 rounded-full border transition", checked ? "border-[#22F2C2]/60 bg-[#22F2C2]/30" : "border-white/10 bg-slate-800")}>
+        <span className={cn("absolute top-1 size-5 rounded-full bg-white transition", checked ? "left-6" : "left-1")} />
+      </span>
     </button>
   );
 }
 
-function DetailsView({ onBack }: { onBack: () => void }) {
+function EmptyState({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <div className="space-y-5 animate-[creditPanelIn_0.42s_ease-out]">
-      <BackHeader title="Score Fix Request Details" onBack={onBack} />
-
-      <AppCard className="relative overflow-hidden">
-        <div className="absolute inset-y-0 left-0 w-1 bg-[var(--portal-blue)]" />
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold text-slate-500">Request ID</p>
-            <p className="mt-1 text-base font-black text-slate-950">{activeRequest.id}</p>
-          </div>
-          <StatusPill>{activeRequest.status}</StatusPill>
-        </div>
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs leading-5 text-slate-700">Our team is actively analyzing your case and reviewing your CIBIL report.</p>
-        </div>
-      </AppCard>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <InfoTile icon={<User className="size-6" />} title="Applicant" value="Rajesh sharma" />
-        <InfoTile icon={<Info className="size-6" />} title="Urgency" value={activeRequest.priority} warning />
-      </div>
-
-      <AppCard>
-        <div className="flex items-center gap-3">
-          <MessageSquare className="size-5 text-cyan-600" />
-          <h3 className="text-sm font-bold text-slate-950">Issue Description</h3>
-        </div>
-        <p className="mt-3 text-xs leading-5 text-slate-700">{activeRequest.description}</p>
-      </AppCard>
-
-      <AppCard>
-        <div className="flex items-center gap-3">
-          <FileText className="size-5 text-cyan-600" />
-          <h3 className="text-sm font-bold text-slate-950">Attached CIBIL Report</h3>
-        </div>
-        <div className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-rose-50 text-rose-500">
-              <FileText className="size-6" />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-xs font-bold text-slate-950">CIBIL Report</p>
-              <p className="text-xs text-slate-500">PDF uploaded on 1/12/2025</p>
-            </div>
-          </div>
-          <button aria-label="Download CIBIL report" className="grid size-10 place-items-center rounded-full bg-white text-slate-600 shadow-sm transition hover:text-cyan-700" type="button">
-            <Download className="size-5" />
-          </button>
-        </div>
-      </AppCard>
-
-      <AppCard>
-        <div className="flex items-center gap-3">
-          <Clock3 className="size-5 text-cyan-600" />
-          <h3 className="text-sm font-bold text-slate-950">Request Timeline</h3>
-        </div>
-        <div className="mt-5 space-y-0">
-          {timeline.map((item, index) => (
-            <TimelineItem key={item.title} item={item} last={index === timeline.length - 1} />
-          ))}
-        </div>
-      </AppCard>
+    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm font-semibold text-slate-400">
+      <span className="text-[#22F2C2]">{icon}</span>
+      {text}
     </div>
   );
 }
 
-function NewRequestDialog({
-  description,
-  onClose,
-  onDescriptionChange,
-  onUrgencyChange,
-  urgency,
-}: {
-  description: string;
-  onClose: () => void;
-  onDescriptionChange: (value: string) => void;
-  onUrgencyChange: (urgency: Urgency) => void;
-  urgency: Urgency;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 bg-slate-950/45 px-4 py-5 backdrop-blur-sm animate-[creditPanelIn_0.2s_ease-out] sm:px-6">
-      <div className="mx-auto flex h-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.24)]">
-        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 bg-white px-4 py-4 sm:px-5">
-          <div>
-            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-cyan-600">Score Fix</p>
-            <h2 className="mt-1 text-base font-bold tracking-tight text-slate-950">Score Fix Request</h2>
-            <p className="mt-1 text-xs text-slate-500">Report bureau issues with clear details and urgency.</p>
-          </div>
-          <button
-            aria-label="Close score fix request"
-            className="grid size-9 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:text-slate-900"
-            type="button"
-            onClick={onClose}
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5">
-          <form className="grid gap-5" onSubmit={(event) => event.preventDefault()}>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <FormField label="Full name As per (PAN)" required>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-                  <p className="text-sm font-bold text-slate-950">Rajesh sharma</p>
-                  <p className="mt-1 text-xs text-slate-500">Auto-fetched from PAN-verified profile</p>
-                </div>
-              </FormField>
-
-              <FormField label="Select Your Card" required>
-                <button className="flex h-[4.65rem] w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-400 shadow-sm" type="button">
-                  Select your card <ChevronDown className="size-5" />
-                </button>
-              </FormField>
-            </div>
-
-            <FormField label="Issue Description" required>
-              <textarea
-                className="min-h-40 w-full resize-none rounded-2xl border border-slate-200 bg-white p-4 text-sm font-medium text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-100"
-                maxLength={1000}
-                onChange={(event) => onDescriptionChange(event.target.value)}
-                placeholder="Describe the issue you are facing in simple words..."
-                value={description}
-              />
-              <div className="mt-2 flex justify-between text-xs text-slate-500">
-                <span>Min 50, Max 1000 characters</span>
-                <span>{description.length}/1000</span>
-              </div>
-            </FormField>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <h3 className="text-sm font-bold text-slate-950">Examples</h3>
-              <ul className="mt-3 list-disc space-y-2 pl-5 text-xs leading-5 text-slate-600">
-                <li>Loan closed but still showing active.</li>
-                <li>Late payment wrongly marked even though EMI was paid.</li>
-              </ul>
-            </div>
-
-            <FormField label="Type of Urgency" required>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {urgencyOptions.map((option) => {
-                  const selected = urgency === option.title;
-                  return (
-                    <button
-                      key={option.title}
-                      className={cn(
-                        "rounded-2xl border p-3.5 text-left transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-sm",
-                        selected ? "border-cyan-200 bg-cyan-50 text-cyan-800" : "border-slate-200 bg-white text-slate-700",
-                      )}
-                      type="button"
-                      onClick={() => onUrgencyChange(option.title)}
-                    >
-                      <span className="flex items-center justify-between gap-3 text-xs font-bold">
-                        {option.title}
-                        {selected ? <span className="size-2.5 rounded-full bg-cyan-500" /> : null}
-                      </span>
-                      <span className="mt-2 block text-xs text-slate-500">{option.subtitle}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </FormField>
-
-            <div className="sticky bottom-0 -mx-4 bg-white/95 px-4 py-4 backdrop-blur sm:-mx-5 sm:px-5">
-              <div className="grid gap-3 sm:grid-cols-[0.7fr_1fr]">
-                <button
-                  className="h-11 rounded-full border border-slate-200 bg-white text-xs font-bold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300"
-                  type="button"
-                  onClick={onClose}
-                >
-                  Cancel
-                </button>
-                <PrimaryPortalButton className="h-11 rounded-full text-xs">
-                  Submit Request
-                </PrimaryPortalButton>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
+function Placeholder({ text }: { text: string }) {
+  return <div className="rounded-[24px] border border-white/10 bg-[#111821] p-5 text-sm font-semibold text-slate-400">{text}</div>;
 }
 
-function BackHeader({ onBack, title }: { onBack: () => void; title: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <button
-        aria-label="Back"
-        className="grid size-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300"
-        type="button"
-        onClick={onBack}
-      >
-        <span className="text-2xl leading-none">&lsaquo;</span>
-      </button>
-      <h2 className="text-base font-bold tracking-tight text-slate-950">{title}</h2>
-    </div>
-  );
+function getCreditCardAccounts(accounts: CreditAccount[]) {
+  return accounts
+    .map((account, index): CardAccount | null => {
+      if (!creditCardTypes.has(String(account.type ?? "")) || !isActiveAccount(account)) {
+        return null;
+      }
+
+      const creditLimit = readNumericValue(account.high_credit_amount);
+      const balance = readNumericValue(account.current_balance);
+
+      if (creditLimit <= 0) {
+        return null;
+      }
+
+      return {
+        balance,
+        bankName: account.member_name?.trim() || "Credit card",
+        creditLimit,
+        id: `${account.member_name ?? "card"}-${index}`,
+        utilization: Math.min(100, Math.max(0, (balance / creditLimit) * 100)),
+      };
+    })
+    .filter((account): account is CardAccount => Boolean(account))
+    .sort((first, second) => second.utilization - first.utilization);
 }
 
-function StatusPill({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[0.7rem] font-bold text-amber-700">
-      <span className="size-2 rounded-full bg-amber-500" /> {children}
-    </span>
-  );
+function buildSimulatorActions(accounts: CreditAccount[], cardAccounts: CardAccount[]) {
+  const actions: SimulatorAction[] = [];
+  const hasActiveLoan = accounts.some((account) => !creditCardTypes.has(String(account.type ?? "")) && isActiveAccount(account));
+  const hasOverdue = accounts.some((account) => readNumericValue(account.amount_overdue) > 0 || hasDpd(account));
+  const hasInactiveCard = accounts.some((account) => creditCardTypes.has(String(account.type ?? "")) && !isActiveAccount(account));
+  const hasHighUtilizationCard = cardAccounts.some((account) => account.utilization > 30);
+
+  if (hasActiveLoan) {
+    actions.push({ id: "miss-emi", impact: -58, subtitle: "Late payment risk", title: "Miss EMI this month" });
+  }
+
+  if (hasOverdue) {
+    actions.push({ id: "pay-overdue", impact: 25, subtitle: "Clears overdue pressure", title: "Pay overdue amount" });
+  }
+
+  if (hasInactiveCard) {
+    actions.push({ id: "close-inactive-card", impact: -10, subtitle: "May reduce age or available limit", title: "Close inactive card" });
+  }
+
+  if (hasHighUtilizationCard) {
+    actions.push({ id: "pay-card-below-30", impact: 20, subtitle: "Lower utilization improves profile", title: "Pay credit card dues below 30%" });
+  }
+
+  if (!cardAccounts.length || accounts.length <= 2) {
+    actions.push({ id: "secured-card", impact: 15, subtitle: "Can improve thin credit mix", title: "Get secured/FD-backed credit card" });
+  }
+
+  return actions;
 }
 
-function InfoTile({ icon, title, value, warning }: { icon: React.ReactNode; title: string; value: string; warning?: boolean }) {
-  return (
-    <AppCard>
-      <div className="flex items-center gap-3">
-        <span className={cn("text-cyan-600", warning && "text-amber-600")}>{icon}</span>
-        <p className="text-xs font-bold text-slate-700">{title}</p>
-      </div>
-      <p className={cn("mt-5 rounded-full px-4 py-2 text-xs font-bold", warning ? "bg-amber-50 text-amber-700" : "bg-slate-50 text-slate-700")}>
-        {value}
-      </p>
-    </AppCard>
-  );
+function readScore(result: DisplayDataResponse | null) {
+  const score = result?.data?.display?.score?.value ?? result?.data?.credit_score ?? result?.data?.report?.credit_score;
+  const numericScore = readNumericValue(score);
+
+  return numericScore > 0 ? numericScore : null;
 }
 
-function TimelineItem({ item, last }: { item: (typeof timeline)[number]; last: boolean }) {
-  return (
-    <div className="relative flex gap-4 pb-6 last:pb-0">
-      {!last ? <div className="absolute left-[0.85rem] top-8 h-full border-l border-dashed border-slate-200" /> : null}
-      <span className={cn("relative z-10 grid size-7 shrink-0 place-items-center rounded-full border", item.done ? "border-emerald-200 bg-emerald-50 text-emerald-600" : "border-slate-200 bg-slate-50 text-slate-300")}>
-        <Check className="size-4" />
-      </span>
-      <div className={cn(!item.done && "opacity-55")}>
-        <p className="text-xs font-bold text-slate-950">{item.title}</p>
-        <p className="mt-1 text-xs leading-5 text-slate-500">{item.body}</p>
-        <p className="mt-2 inline-flex items-center gap-2 text-xs text-slate-400">
-          <CalendarDays className="size-4" /> {item.date}
-        </p>
-      </div>
-    </div>
-  );
+function readNumericValue(value: unknown) {
+  const numericValue = typeof value === "number" ? value : Number(String(value ?? "").replace(/[^\d.-]/g, ""));
+
+  return Number.isFinite(numericValue) ? numericValue : 0;
 }
 
-function FormField({ children, label, required }: { children: React.ReactNode; label: string; required?: boolean }) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-xs font-bold text-slate-900">
-        {label} {required ? <span className="text-rose-500">*</span> : null}
-      </span>
-      {children}
-    </label>
-  );
+function isActiveAccount(account: CreditAccount) {
+  const status = String(account.account_status ?? "").toLowerCase();
+
+  return !account.account_closed && !/(closed|inactive|settled|written|suit filed)/i.test(status);
+}
+
+function hasDpd(account: CreditAccount) {
+  const details = account.payment_history_details ?? [];
+  const detailDpd = details.some((history) => readNumericValue(history.Days_Past_Due) > 0);
+  const profileDpd = (account.payment_history ?? []).some((history) => /\b(0*[1-9]\d*|sub|sma|dbt|lss)\b/i.test(history));
+
+  return detailDpd || profileDpd;
+}
+
+function getUtilizationImpact(utilization: number) {
+  if (utilization <= 10) return 20;
+  if (utilization <= 30) return 12;
+  if (utilization <= 50) return -8;
+  if (utilization <= 75) return -20;
+  if (utilization <= 90) return -35;
+
+  return -50;
+}
+
+function clampScore(score: number) {
+  return Math.min(900, Math.max(300, Math.round(score)));
+}
+
+function getScoreStatus(score: number) {
+  if (score >= 750) return { label: "Excellent", tone: "text-[#22F2C2]" };
+  if (score >= 700) return { label: "Good", tone: "text-emerald-300" };
+  if (score >= 650) return { label: "Fair", tone: "text-amber-300" };
+
+  return { label: "Poor", tone: "text-rose-300" };
+}
+
+function formatSigned(value: number) {
+  return value > 0 ? `+${value}` : String(value);
+}
+
+async function loadNotifications(token: string) {
+  const response = await apiRequest(`/notifications?limit=${notificationsPageSize}&unreadOnly=false`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to load notifications.");
+  }
+
+  const result = (await response.json()) as {
+    status?: string;
+    data?: {
+      unreadCount?: number | null;
+    };
+  };
+
+  return {
+    unreadCount: result.status === "success" ? result.data?.unreadCount ?? 0 : 0,
+  };
+}
+
+function formatRupees(value: number) {
+  return new Intl.NumberFormat("en-IN", {
+    currency: "INR",
+    maximumFractionDigits: 0,
+    style: "currency",
+  }).format(value);
 }
