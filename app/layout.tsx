@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AppErrorBoundary } from "@/components/app-error-boundary";
+import { AppErrorGuards } from "@/components/app-error-guards";
 import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 
@@ -58,7 +60,10 @@ export default function RootLayout({
         />
       </head>
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        <AppShell>{children}</AppShell>
+        <AppErrorBoundary>
+          <AppErrorGuards />
+          <AppShell>{children}</AppShell>
+        </AppErrorBoundary>
       </body>
     </html>
   );
