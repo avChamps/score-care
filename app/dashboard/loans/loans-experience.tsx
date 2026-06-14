@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 
 type LoanFilter = "All Loans" | "Your Applications";
 type LoanStatusFilter = "All" | "Loans" | "Credit Cards";
+const notificationsPageSize = 10;
 const LOAN_ACCOUNT_TYPES = new Set([
   "1","2","3","4","5","6","7","8","9",
   "13","17","37","51","52","53","54",
@@ -204,6 +205,7 @@ export function LoansExperience() {
   const [, setIsLanguageLoading] = useState(false);
   const [showBenefitsPrompt, setShowBenefitsPrompt] = useState(false);
   const [toast, setToast] = useState<LoanToast | null>(null);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
@@ -318,6 +320,24 @@ export function LoansExperience() {
     }
   }, [router]);
 
+  const refreshNotifications = useCallback(async () => {
+    const token = localStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
+    try {
+      const result = await loadNotifications(token);
+
+      setNotificationUnreadCount(result.unreadCount);
+    } catch {
+      setNotificationUnreadCount(0);
+    }
+  }, [router]);
+
   useEffect(() => {
     const loadTimer = window.setTimeout(() => {
       void loadLoans();
@@ -327,6 +347,13 @@ export function LoansExperience() {
       window.clearTimeout(loadTimer);
     };
   }, [loadLoans]);
+
+  useEffect(() => {
+    void refreshNotifications();
+    window.addEventListener("scorecare:notifications-updated", refreshNotifications);
+
+    return () => window.removeEventListener("scorecare:notifications-updated", refreshNotifications);
+  }, [refreshNotifications]);
 
   useEffect(() => {
     if (!toast) return;
@@ -383,6 +410,7 @@ export function LoansExperience() {
               }}
               onRefresh={loadLoans}
               onLoanStatusFilterChange={setLoanStatusFilter}
+              notificationUnreadCount={notificationUnreadCount}
               onProfileOpen={() => setShowProfile(true)}
               score={score}
               summary={summary}
@@ -453,6 +481,7 @@ function RepaymentsView({
   onApply,
   onFilterChange,
   onLoanStatusFilterChange,
+  notificationUnreadCount,
   onProfileOpen,
   onRefresh,
   score,
@@ -471,6 +500,7 @@ function RepaymentsView({
   onApply: () => void;
   onFilterChange: (filter: LoanFilter) => void;
   onLoanStatusFilterChange: (filter: LoanStatusFilter) => void;
+  notificationUnreadCount: number;
   onProfileOpen: () => void;
   onRefresh: () => void;
   score: number | null;
@@ -497,6 +527,11 @@ function RepaymentsView({
           href="/notifications"
         >
           <Bell className="size-6" strokeWidth={1.8} />
+          {notificationUnreadCount > 0 ? (
+            <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-[12px] font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
+              {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
+            </span>
+          ) : null}
         </Link>
       </div>
 
@@ -1669,6 +1704,29 @@ function readScore(result: DisplayDataResponse | null) {
   const numericScore = typeof score === "number" ? score : Number(score);
 
   return Number.isFinite(numericScore) && numericScore > 0 ? numericScore : null;
+}
+
+async function loadNotifications(token: string) {
+  const response = await apiRequest(`/notifications?limit=${notificationsPageSize}&unreadOnly=false`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to load notifications.");
+  }
+
+  const result = (await response.json()) as {
+    status?: string;
+    data?: {
+      unreadCount?: number | null;
+    };
+  };
+
+  return {
+    unreadCount: result.status === "success" ? result.data?.unreadCount ?? 0 : 0,
+  };
 }
 
 function wait(ms: number) {
