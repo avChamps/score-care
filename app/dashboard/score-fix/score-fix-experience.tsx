@@ -425,7 +425,7 @@ export function ScoreFixExperience() {
         requestsResponse.json(),
       ]);
 
-      setRepairStatus(statusResult?.data && typeof statusResult.data === "object" ? statusResult.data : null);
+      setRepairStatus(readRepairStatus(requestsResult?.data) ?? readRepairStatus(statusResult?.data));
       setRepairRequests(Array.isArray(requestsResult?.data?.requests) ? requestsResult.data.requests : []);
     } catch {
       setRepairStatus(null);
@@ -750,7 +750,7 @@ function CreditImprovementPlan({
           ))}
         </div>
 
-        <RepairRequestsTable loading={repairRequestsLoading} requests={repairRequests} />
+        <RepairRequestsTable loading={repairRequestsLoading} requests={repairRequests} status={repairStatus} />
         <RepairDisputeCards loading={repairRequestsLoading} requests={repairRequests} />
       </section>
 
@@ -783,60 +783,60 @@ function RepairIssueCards({ cards, selectedIds, onToggle }: { cards: RepairIssue
     );
   }
 
-  return (
-    <div className="mt-4 space-y-3">
-      {cards.map((card) => {
-        const selected = selectedIds.includes(card.id);
+  // return (
+  //   <div className="mt-4 space-y-3">
+  //     {cards.map((card) => {
+  //       const selected = selectedIds.includes(card.id);
 
-        return (
-          <button
-            className={cn(
-              "w-full rounded-2xl border p-4 text-left transition",
-              selected ? "border-[#22F2C2] bg-[#0B2B23] shadow-[0_0_22px_rgba(34,242,194,0.18)]" : "border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]",
-            )}
-            key={card.id}
-            type="button"
-            onClick={() => onToggle(card.id)}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-white">{card.subscriberName}</p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {card.issueLabels.map((label) => (
-                    <span key={label} className="rounded-full bg-[#22F2C2]/12 px-2 py-1 text-[10px] font-bold text-[#22F2C2]">
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border", selected ? "border-[#22F2C2] bg-[#22F2C2] text-[#04120e]" : "border-white/25 text-transparent")}>✓</span>
-            </div>
+  //       return (
+  //         <button
+  //           className={cn(
+  //             "w-full rounded-2xl border p-4 text-left transition",
+  //             selected ? "border-[#22F2C2] bg-[#0B2B23] shadow-[0_0_22px_rgba(34,242,194,0.18)]" : "border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]",
+  //           )}
+  //           key={card.id}
+  //           type="button"
+  //           onClick={() => onToggle(card.id)}
+  //         >
+  //           <div className="flex items-start justify-between gap-3">
+  //             <div className="min-w-0">
+  //               <p className="text-sm font-bold text-white">{card.subscriberName}</p>
+  //               <div className="mt-2 flex flex-wrap gap-1.5">
+  //                 {card.issueLabels.map((label) => (
+  //                   <span key={label} className="rounded-full bg-[#22F2C2]/12 px-2 py-1 text-[10px] font-bold text-[#22F2C2]">
+  //                     {label}
+  //                   </span>
+  //                 ))}
+  //               </div>
+  //             </div>
+  //             <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border", selected ? "border-[#22F2C2] bg-[#22F2C2] text-[#04120e]" : "border-white/25 text-transparent")}>✓</span>
+  //           </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 text-[12px]">
-              <div>
-                <p className="text-[#7792aa]">Current balance</p>
-                <p className="mt-1 font-bold text-white">{formatINR(card.currentBalance)}</p>
-              </div>
-              {card.overdueAmount > 0 ? (
-                <div>
-                  <p className="text-[#7792aa]">Amount Past Due</p>
-                  <p className="mt-1 font-bold text-white">{formatINR(card.overdueAmount)}</p>
-                </div>
-              ) : null}
-              <div>
-                <p className="text-[#7792aa]">Account number</p>
-                <p className="mt-1 font-bold text-white">{maskAccountNumber(card.accountNumber)}</p>
-              </div>
-              <div>
-                <p className="text-[#7792aa]">Status</p>
-                <p className="mt-1 font-bold text-white">{card.accountStatus || "--"}</p>
-              </div>
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  );
+  //           <div className="mt-4 grid grid-cols-2 gap-2 text-[12px]">
+  //             <div>
+  //               <p className="text-[#7792aa]">Current balance</p>
+  //               <p className="mt-1 font-bold text-white">{formatINR(card.currentBalance)}</p>
+  //             </div>
+  //             {card.overdueAmount > 0 ? (
+  //               <div>
+  //                 <p className="text-[#7792aa]">Amount Past Due</p>
+  //                 <p className="mt-1 font-bold text-white">{formatINR(card.overdueAmount)}</p>
+  //               </div>
+  //             ) : null}
+  //             <div>
+  //               <p className="text-[#7792aa]">Account number</p>
+  //               <p className="mt-1 font-bold text-white">{maskAccountNumber(card.accountNumber)}</p>
+  //             </div>
+  //             <div>
+  //               <p className="text-[#7792aa]">Status</p>
+  //               <p className="mt-1 font-bold text-white">{card.accountStatus || "--"}</p>
+  //             </div>
+  //           </div>
+  //         </button>
+  //       );
+  //     })}
+  //   </div>
+  // );
 }
 
 function maskAccountNumber(accountNumber: string) {
@@ -882,7 +882,9 @@ function RepairDisputeCards({ loading, requests }: { loading: boolean; requests:
   );
 }
 
-function RepairRequestsTable({ loading, requests }: { loading: boolean; requests: CibilRepairRequest[] }) {
+function RepairRequestsTable({ loading, requests, status }: { loading: boolean; requests: CibilRepairRequest[]; status: CibilRepairStatus | null }) {
+  const hasRecords = hasRepairCounts(status);
+
   return (
     <div className={cn("mt-4 overflow-hidden rounded-2xl", reportMiniCardClass)}>
       <div className="grid grid-cols-[1.1fr_0.8fr_1fr] border-b border-white/10 px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9fb2c6]">
@@ -895,7 +897,7 @@ function RepairRequestsTable({ loading, requests }: { loading: boolean; requests
           <div className="h-3 animate-pulse rounded-full bg-white/10" />
           <div className="h-3 w-10/12 animate-pulse rounded-full bg-white/10" />
         </div>
-      ) : requests.length ? (
+      ) : hasRecords && requests.length ? (
         requests.map((request) => (
           <div key={request.publicId ?? request.id} className="grid grid-cols-[1.1fr_0.8fr_1fr] gap-2 border-b border-white/8 px-3 py-2 text-[12px] text-white last:border-b-0">
             <span className="text-[#c8d3e2]">{formatRepairRequestDate(request)}</span>
@@ -904,10 +906,26 @@ function RepairRequestsTable({ loading, requests }: { loading: boolean; requests
           </div>
         ))
       ) : (
-        <p className="px-3 py-3 text-[12px] text-[#9fb2c6]">No repair requests found.</p>
+        <p className="px-3 py-3 text-[12px] text-[#9fb2c6]">No records found.</p>
       )}
     </div>
   );
+}
+
+function readRepairStatus(data: unknown): CibilRepairStatus | null {
+  if (!data || typeof data !== "object") return null;
+
+  const status = data as CibilRepairStatus;
+
+  return {
+    activeDisputes: toNumber(status.activeDisputes),
+    resolvedDisputes: toNumber(status.resolvedDisputes),
+    pointsGained: toNumber(status.pointsGained),
+  };
+}
+
+function hasRepairCounts(status: CibilRepairStatus | null) {
+  return Boolean((status?.activeDisputes ?? 0) || (status?.resolvedDisputes ?? 0) || (status?.pointsGained ?? 0));
 }
 
 function clampScore(score: number) {
