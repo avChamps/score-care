@@ -2,7 +2,7 @@
 
 import { Bell, Crown, Menu, TrendingDown, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProfilePanel, type UserProfile } from "@/app/dashboard/home-dashboard";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
@@ -81,6 +81,19 @@ type CibilRepairStatus = {
   pointsGained?: number;
 };
 
+type RepairIssueCard = {
+  id: string;
+  accountNumber: string;
+  subscriberName: string;
+  issueType: string;
+  issueLabel: string;
+  issueLabels: string[];
+  currentBalance: number;
+  overdueAmount: number;
+  accountStatus: string;
+  rawAccount: Record<string, unknown>;
+};
+
 const notificationsPageSize = 10;
 const baselineUtilization = 42;
 const fallbackRepairContent: CibilRepairContent = {
@@ -134,6 +147,111 @@ function formatINR(amount: number) {
     style: "currency",
     currency: "INR",
   }).format(Math.round(amount));
+}
+
+function toNumber(value: unknown) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (typeof value !== "string") return 0;
+
+  const parsed = Number(value.replace(/[^\d.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getAccountsFromDisplayData(displayData: DisplayDataResponse | null) {
+  const data = displayData?.data as
+    | {
+        credit_report?: { CAIS_Account?: { CAIS_Account_DETAILS?: Record<string, unknown>[] } };
+        display?: { accounts?: Record<string, unknown>[] };
+      }
+    | undefined;
+
+  if (Array.isArray(data?.credit_report?.CAIS_Account?.CAIS_Account_DETAILS)) {
+    return data.credit_report.CAIS_Account.CAIS_Account_DETAILS;
+  }
+
+  return Array.isArray(data?.display?.accounts) ? data.display.accounts : [];
+}
+
+function readAccountHistory(account: Record<string, unknown>) {
+  if (Array.isArray(account.CAIS_Account_History)) return account.CAIS_Account_History as Record<string, unknown>[];
+  if (Array.isArray(account.payment_history_details)) return account.payment_history_details as Record<string, unknown>[];
+  return [];
+}
+
+function hasHistoryDpd(account: Record<string, unknown>) {
+  return readAccountHistory(account).some((history) => toNumber(history.Days_Past_Due ?? history.days_past_due) > 0);
+}
+
+function hasOverdueIssue(account: Record<string, unknown>) {
+  return toNumber(account.Amount_Past_Due ?? account.amount_overdue) > 0 || hasHistoryDpd(account);
+}
+
+function hasWrittenOffOrSettledIssue(account: Record<string, unknown>) {
+  const writtenStatus = String(account.Written_off_Settled_Status ?? "").toLowerCase();
+  const suitStatus = String(account.SuitFiledWillfulDefaultWrittenOffStatus ?? "").toLowerCase();
+  const status = `${writtenStatus} ${suitStatus}`;
+
+  return (
+    toNumber(account.Written_Off_Amt_Total) > 0 ||
+    toNumber(account.Written_Off_Amt_Principal) > 0 ||
+    Boolean(writtenStatus.trim()) ||
+    /written|settled|write/.test(status)
+  );
+}
+
+function hasReturnedOrBouncedIssue(account: Record<string, unknown>) {
+  const historyProfile = String(account.Payment_History_Profile ?? account.payment_history ?? "");
+  const hasNonCleanProfile = /[^0?\s,|/]/.test(historyProfile);
+
+  return hasNonCleanProfile || hasHistoryDpd(account);
+}
+
+function hasSuitFiledIssue(account: Record<string, unknown>) {
+  return (
+    toNumber(account.SuitFiled_WilfulDefault) > 0 ||
+    Boolean(String(account.SuitFiledWillfulDefaultWrittenOffStatus ?? "").trim()) ||
+    Boolean(String(account.LitigationStatusDate ?? "").trim())
+  );
+}
+
+function hasDelinquencyIssue(account: Record<string, unknown>) {
+  const accountStatus = String(account.Account_Status ?? account.account_status ?? "").toLowerCase();
+
+  return (
+    Boolean(String(account.Date_of_First_Delinquency ?? "").trim()) ||
+    Boolean(String(account.DefaultStatusDate ?? "").trim()) ||
+    /default|delinquent|written|settled|suit|wilful|negative/.test(accountStatus) ||
+    toNumber(account.CreditAccountDefault) > 0
+  );
+}
+
+function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairIssueCard[] {
+  return getAccountsFromDisplayData(displayData).flatMap((account, index) => {
+    const issueLabels = [
+      hasOverdueIssue(account) ? "Overdue Loans" : null,
+      hasWrittenOffOrSettledIssue(account) ? "Settled / Written-off" : null,
+      hasReturnedOrBouncedIssue(account) ? "Returned / Bounced" : null,
+      hasSuitFiledIssue(account) ? "Suit Filed / Wilful Default" : null,
+      hasDelinquencyIssue(account) ? "Negative / Delinquent" : null,
+    ].filter(Boolean) as string[];
+
+    if (!issueLabels.length) return [];
+
+    const accountNumber = String(account.Account_Number ?? account.account_number ?? account.AccountNumber ?? "");
+
+    return {
+      id: accountNumber || `${account.Subscriber_Name ?? account.member_name ?? "account"}-${index}`,
+      accountNumber,
+      subscriberName: String(account.Subscriber_Name ?? account.member_name ?? "Unknown lender"),
+      issueType: issueLabels.join(", "),
+      issueLabel: issueLabels[0],
+      issueLabels,
+      currentBalance: toNumber(account.Current_Balance ?? account.current_balance),
+      overdueAmount: toNumber(account.Amount_Past_Due ?? account.amount_overdue),
+      accountStatus: String(account.Account_Status ?? account.account_status ?? "--"),
+      rawAccount: account,
+    };
+  });
 }
 
 export function ScoreFixExperience() {
@@ -481,6 +599,7 @@ export function ScoreFixExperience() {
 
           {activeTab === "Credit Improvement Plan" ? (
             <CreditImprovementPlan
+              displayData={displayData}
               repairContent={repairContent}
               repairRequests={repairRequests}
               repairRequestsLoading={repairRequestsLoading}
@@ -529,20 +648,29 @@ function ActionRow({ action, checked, onChange }: { action: SimulatorAction; che
 }
 
 function CreditImprovementPlan({
+  displayData,
   repairContent,
   repairRequests,
   repairRequestsLoading,
   repairStatus,
 }: {
+  displayData: DisplayDataResponse | null;
   repairContent: CibilRepairContent;
   repairRequests: CibilRepairRequest[];
   repairRequestsLoading: boolean;
   repairStatus: CibilRepairStatus | null;
 }) {
+  const [selectedIssueIds, setSelectedIssueIds] = useState<string[]>([]);
   const disputeStats = buildDisputeStats(repairStatus);
   const plan = repairContent.plans[0] ?? fallbackRepairContent.plans[0];
   const originalAmount = getOriginalAmount(plan.amount, plan.offerTag);
-  const timelines = repairContent.timelines.length ? [...repairContent.timelines].sort((a, b) => a.displayOrder - b.displayOrder) : fallbackRepairContent.timelines;
+  const repairIssueCards = useMemo(() => buildRepairIssueCards(displayData), [displayData]);
+  const selectedCount = selectedIssueIds.length;
+  const finalAmount = (plan.amount ?? 0) * selectedCount;
+
+  function toggleIssueCard(issueId: string) {
+    setSelectedIssueIds((currentIds) => (currentIds.includes(issueId) ? currentIds.filter((id) => id !== issueId) : [...currentIds, issueId]));
+  }
 
   return (
     <div className="space-y-4">
@@ -565,18 +693,9 @@ function CreditImprovementPlan({
       </section>
 
       <section className={cn("rounded-[1.75rem] p-4 text-white", reportCardClass)}>
-        <h2 className="text-sm font-semibold text-white">Repair timeline</h2>
-        <div className="mt-4 space-y-3">
-          {timelines.map((step, index) => (
-            <div key={step.id} className="flex gap-3">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#22F2C2]/12 text-[12px] font-semibold text-[#22F2C2]">{index + 1}</span>
-              <div className="border-b border-white/10 pb-3 last:border-b-0">
-                <p className="text-xs font-semibold text-white">{step.title}</p>
-                <p className="mt-1 text-[12px] text-[#9fb2c6]">{step.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <h2 className="text-sm font-semibold text-white">Select issues to repair</h2>
+        <p className="mt-1 text-[12px] leading-5 text-[#9fb2c6]">Choose the accounts you want us to review and repair.</p>
+        <RepairIssueCards cards={repairIssueCards} selectedIds={selectedIssueIds} onToggle={toggleIssueCard} />
       </section>
 
       <section className={cn("rounded-[1.75rem] p-4 text-white", reportCardClass)}>
@@ -600,8 +719,94 @@ function CreditImprovementPlan({
         <RepairRequestsTable loading={repairRequestsLoading} requests={repairRequests} />
         <RepairDisputeCards loading={repairRequestsLoading} requests={repairRequests} />
       </section>
+
+      <div className="sticky bottom-24 z-20 rounded-2xl border border-[#0D5A3F]/70 bg-[#071812]/95 p-4 shadow-[0_18px_36px_rgba(0,0,0,0.42)] backdrop-blur">
+        {selectedCount ? (
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold text-white">{selectedCount} selected</p>
+              <p className="mt-1 text-xl font-black text-white">{formatINR(finalAmount)} total</p>
+            </div>
+            <button className="rounded-full bg-[#22F2C2] px-4 py-2 text-sm font-black text-[#04120e]" type="button">
+              Continue Repair
+            </button>
+          </div>
+        ) : (
+          <p className="text-sm font-semibold text-[#9fb2c6]">Select accounts to see repair cost</p>
+        )}
+      </div>
     </div>
   );
+}
+
+function RepairIssueCards({ cards, selectedIds, onToggle }: { cards: RepairIssueCard[]; selectedIds: string[]; onToggle: (issueId: string) => void }) {
+  if (!cards.length) {
+    return (
+      <div className={cn("mt-4 rounded-2xl p-4", reportMiniCardClass)}>
+        <p className="text-sm font-semibold text-white">No repair issues found</p>
+        <p className="mt-1 text-[12px] leading-5 text-[#9fb2c6]">Your report has no overdue, settled, written-off, suit-filed, or negative accounts.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 space-y-3">
+      {cards.map((card) => {
+        const selected = selectedIds.includes(card.id);
+
+        return (
+          <button
+            className={cn(
+              "w-full rounded-2xl border p-4 text-left transition",
+              selected ? "border-[#22F2C2] bg-[#0B2B23] shadow-[0_0_22px_rgba(34,242,194,0.18)]" : "border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]",
+            )}
+            key={card.id}
+            type="button"
+            onClick={() => onToggle(card.id)}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-white">{card.subscriberName}</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {card.issueLabels.map((label) => (
+                    <span key={label} className="rounded-full bg-[#22F2C2]/12 px-2 py-1 text-[10px] font-bold text-[#22F2C2]">
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border", selected ? "border-[#22F2C2] bg-[#22F2C2] text-[#04120e]" : "border-white/25 text-transparent")}>✓</span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2 text-[12px]">
+              <div>
+                <p className="text-[#7792aa]">Current balance</p>
+                <p className="mt-1 font-bold text-white">{formatINR(card.currentBalance)}</p>
+              </div>
+              <div>
+                <p className="text-[#7792aa]">Overdue amount</p>
+                <p className="mt-1 font-bold text-white">{formatINR(card.overdueAmount)}</p>
+              </div>
+              <div>
+                <p className="text-[#7792aa]">Account number</p>
+                <p className="mt-1 font-bold text-white">{maskAccountNumber(card.accountNumber)}</p>
+              </div>
+              <div>
+                <p className="text-[#7792aa]">Status</p>
+                <p className="mt-1 font-bold text-white">{card.accountStatus || "--"}</p>
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function maskAccountNumber(accountNumber: string) {
+  if (!accountNumber) return "--";
+
+  return accountNumber.length > 4 ? `•••• ${accountNumber.slice(-4)}` : accountNumber;
 }
 
 function RepairDisputeCards({ loading, requests }: { loading: boolean; requests: CibilRepairRequest[] }) {
