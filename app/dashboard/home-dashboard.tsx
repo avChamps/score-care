@@ -209,6 +209,7 @@ export function HomeDashboard() {
   const [showAiChat, setShowAiChat] = useState(false);
   const [showActionPlan, setShowActionPlan] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
   useEffect(() => {
@@ -232,10 +233,12 @@ export function HomeDashboard() {
         const freeTier = isFreeTierProfile(profile);
         const displayData = freeTier ? await loadBasicCibilScoreData(token, profile) : await loadCibilData(token, profile);
         const activeDisputes = freeTier ? 0 : await loadActiveDisputes(token);
+        const notifications = await loadNotifications(token);
 
         setName(profile?.fullName?.trim() || readDisplayName(displayData) || "there");
         setProfile(profile);
         setIsFreeTier(freeTier);
+        setNotificationUnreadCount(notifications.unreadCount);
         setDashboard(freeTier ? buildFreeTierDashboard(displayData) : buildDashboardData(displayData, profile, activeDisputes));
         if (shouldWaitForLanguage) {
           await waitForLanguageApply();
@@ -258,6 +261,35 @@ export function HomeDashboard() {
     }
 
     loadDashboard();
+  }, []);
+
+  useEffect(() => {
+    function handleNativeBackRoot() {
+      setShowBenefitsPrompt(true);
+    }
+
+    window.addEventListener("scorecare:native-back-root", handleNativeBackRoot);
+
+    return () => window.removeEventListener("scorecare:native-back-root", handleNativeBackRoot);
+  }, []);
+
+  useEffect(() => {
+    async function refreshNotifications() {
+      const token = sessionStorage.getItem("scorecare_token");
+
+      if (!token || isTokenExpired(token)) return;
+
+      try {
+        const result = await loadNotifications(token);
+        setNotificationUnreadCount(result.unreadCount);
+      } catch {
+        setNotificationUnreadCount(0);
+      }
+    }
+
+    window.addEventListener("scorecare:notifications-updated", refreshNotifications);
+
+    return () => window.removeEventListener("scorecare:notifications-updated", refreshNotifications);
   }, []);
 
   const visibleDashboard = dashboard;
@@ -329,16 +361,30 @@ export function HomeDashboard() {
             <button className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl sm:size-16" type="button" aria-label="Open profile menu" onClick={() => setShowProfile(true)}>
               <Menu className="size-5 sm:size-6" strokeWidth={1.8} />
             </button>
-            {isFreeTier ? (
-              <button
-                aria-label="Premium benefits"
-                className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl sm:size-16"
-                type="button"
-                onClick={() => setShowBenefitsPrompt(true)}
+            <div className="flex items-center gap-3">
+              {isFreeTier ? (
+                <button
+                  aria-label="Premium benefits"
+                  className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl sm:size-16"
+                  type="button"
+                  onClick={() => setShowBenefitsPrompt(true)}
+                >
+                  <Crown className="size-6 fill-[#FFD34D]/20" strokeWidth={1.8} />
+                </button>
+              ) : null}
+              <Link
+                aria-label="Open notifications"
+                className="relative grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl sm:size-16"
+                href="/notifications"
               >
-                <Crown className="size-6 fill-[#FFD34D]/20" strokeWidth={1.8} />
-              </button>
-            ) : null}
+                <Bell className="size-6" strokeWidth={1.8} />
+                {notificationUnreadCount > 0 ? (
+                  <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-[10px] font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
+                    {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
+                  </span>
+                ) : null}
+              </Link>
+            </div>
           </div>
 
           <div className="mt-10 max-w-sm sm:mt-16">

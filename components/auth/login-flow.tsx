@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, BadgeCheck, ShieldCheck, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ClipboardEvent } from "react";
 import panDetailsImage from "@/assets/pan-details.png";
 import { ButtonLoader } from "@/components/auth/button-loader";
 import { apiRequest } from "@/lib/api";
@@ -17,6 +17,14 @@ type LegalContent = {
   privacyPolicy?: string;
   consent?: string;
   updatedAt?: string;
+};
+
+type WebOtpCredential = Credential & {
+  code?: string;
+};
+
+type WebOtpRequestOptions = CredentialRequestOptions & {
+  otp: { transport: string[] };
 };
 
 export function LoginFlow() {
@@ -65,6 +73,29 @@ export function LoginFlow() {
     return () => window.clearTimeout(timer);
   }, [otpSeconds, step]);
 
+  useEffect(() => {
+    if (step !== "otp" || !("OTPCredential" in window) || !navigator.credentials) return;
+
+    const abortController = new AbortController();
+
+    navigator.credentials
+      .get({
+        otp: { transport: ["sms"] },
+        signal: abortController.signal,
+      } as WebOtpRequestOptions)
+      .then((credential) => {
+        const otp = (credential as WebOtpCredential | null)?.code?.replace(/\D/g, "").slice(0, 6);
+
+        if (otp?.length === 6) {
+          setOtpDigits(otp.split(""));
+          void verifyOtp(otp);
+        }
+      })
+      .catch(() => {});
+
+    return () => abortController.abort();
+  }, [step]);
+
   function goToDashboard() {
     router.push("/dashboard");
   }
@@ -93,8 +124,8 @@ export function LoginFlow() {
     }
   }
 
-  async function verifyOtp() {
-    if (!canVerifyOtp || isVerifyingOtp) return;
+  async function verifyOtp(otpValue = cleanOtp) {
+    if (otpValue.length !== 6 || isVerifyingOtp) return;
 
     setOtpError("");
     setIsVerifyingOtp(true);
@@ -104,7 +135,7 @@ export function LoginFlow() {
         method: "POST",
         body: {
           mobileNumber: cleanMobile,
-          otp: cleanOtp,
+          otp: otpValue,
         },
       });
 
@@ -216,6 +247,15 @@ export function LoginFlow() {
   function handleOtpKeyDown(index: number, key: string) {
     if (key !== "Backspace" || otpDigits[index]) return;
     document.getElementById(`otp-${Math.max(index - 1, 0)}`)?.focus();
+  }
+
+  function handleOtpPaste(index: number, event: ClipboardEvent<HTMLInputElement>) {
+    const pastedOtp = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+
+    if (pastedOtp.length <= 1) return;
+
+    event.preventDefault();
+    updateOtpDigit(index, pastedOtp);
   }
 
   const primaryButton =
@@ -484,8 +524,13 @@ export function LoginFlow() {
                       value={digit}
                       onChange={(event) => updateOtpDigit(index, event.target.value)}
                       onKeyDown={(event) => handleOtpKeyDown(index, event.key)}
+                      onPaste={(event) => handleOtpPaste(index, event)}
                       className="aspect-square w-full rounded-2xl border border-white/10 bg-[#071626] text-center text-[20px] font-semibold text-white outline-none transition placeholder:text-[#64748B] focus:border-[#22F2C2] focus:ring-2 focus:ring-[#22F2C2]/20"
+                      autoComplete={index === 0 ? "one-time-code" : "off"}
+                      enterKeyHint="done"
                       inputMode="numeric"
+                      name={index === 0 ? "one-time-code" : `otp-${index + 1}`}
+                      pattern="[0-9]*"
                       type="tel"
                       maxLength={1}
                       aria-label={`OTP digit ${index + 1}`}
@@ -520,7 +565,7 @@ export function LoginFlow() {
             <button
               type="button"
               disabled={!canVerifyOtp || isVerifyingOtp}
-              onClick={verifyOtp}
+              onClick={() => verifyOtp()}
               className={cn(
                 primaryButton,
                 "mt-5",
