@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ProfilePanel, type UserProfile } from "@/app/dashboard/home-dashboard";
+import dashboardBg from "@/assets/dashboard-bg.jpg";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import {
   AppCard,
@@ -716,14 +717,17 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
 
   return (
     <div className="fixed inset-0 z-[110] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
-      <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] border border-[var(--portal-border)] bg-white shadow-[0_24px_70px_rgba(16,24,40,0.24)]">
-        <div className="min-h-44 bg-[var(--portal-orange-soft)] px-5 py-6">
-          <button className="ml-auto grid size-9 place-items-center rounded-full bg-white text-[var(--portal-ink)] shadow-sm" type="button" aria-label="Close benefits" onClick={() => setShowLeavingMessage(true)}>
+      <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+        <div
+          className="min-h-44 bg-cover bg-center px-5 py-6"
+          style={{ backgroundImage: `linear-gradient(180deg, rgba(9,14,22,0.1), rgba(9,14,22,0.9)), url(${dashboardBg.src})` }}
+        >
+          <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close benefits" onClick={() => setShowLeavingMessage(true)}>
             <X className="size-5" />
           </button>
           <div className="mt-10 max-w-[18rem]">
-            <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#1F756B]">Premium Benefits</p>
-            <h2 className="mt-2 text-[22px] font-black leading-7 text-[var(--portal-ink)]">Unlock complete loan tracking</h2>
+            <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Premium Benefits</p>
+            <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Unlock complete loan tracking</h2>
           </div>
         </div>
 
@@ -731,18 +735,18 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
           <div className="grid gap-3 text-[13px] font-medium leading-5 text-[#AAB6C8]">
             {isLoadingBenefits ? (
               <>
-                <span className="h-11 rounded-2xl bg-slate-200 animate-pulse" />
-                <span className="h-11 rounded-2xl bg-slate-200 animate-pulse" />
-                <span className="h-11 rounded-2xl bg-slate-200 animate-pulse" />
+                <span className="h-11 animate-pulse rounded-2xl bg-white/[0.08]" />
+                <span className="h-11 animate-pulse rounded-2xl bg-white/[0.08]" />
+                <span className="h-11 animate-pulse rounded-2xl bg-white/[0.08]" />
               </>
             ) : (
               benefitItems.map((benefit) => (
-                <p key={benefit} className="rounded-2xl bg-[var(--portal-surface-soft)] px-4 py-3 text-[var(--portal-ink)]">{benefit}</p>
+                <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
               ))
             )}
           </div>
 
-          <button className="mt-5 h-12 w-full rounded-xl bg-[var(--portal-orange)] text-[14px] font-black text-white shadow-[0_2px_6px_rgba(255,109,0,0.24)]" type="button" onClick={onSubscribe}>
+          <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
             Subscription
           </button>
           <button className="mx-auto mt-3 block text-[12px] font-medium text-[#6F7B8E]" type="button" onClick={() => setShowLeavingMessage(true)}>
@@ -753,25 +757,28 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
 
       {showLeavingMessage ? (
         <div className="absolute inset-0 z-10 flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm" onClick={onClose}>
-          <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] border border-[var(--portal-border)] bg-white shadow-[0_24px_70px_rgba(16,24,40,0.24)]" onClick={(event) => event.stopPropagation()}>
-            <div className="min-h-44 bg-[var(--portal-orange-soft)] px-5 py-6">
-              <button className="ml-auto grid size-9 place-items-center rounded-full bg-white text-[var(--portal-ink)] shadow-sm" type="button" aria-label="Close benefits message" onClick={onClose}>
+          <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]" onClick={(event) => event.stopPropagation()}>
+            <div
+              className="min-h-44 bg-cover bg-center px-5 py-6"
+              style={{ backgroundImage: `linear-gradient(180deg, rgba(9,14,22,0.1), rgba(9,14,22,0.9)), url(${dashboardBg.src})` }}
+            >
+              <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close benefits message" onClick={onClose}>
                 <X className="size-5" />
               </button>
               <div className="mt-10 max-w-[18rem]">
-                <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#1F756B]">Before you leave</p>
-                <h2 className="mt-2 text-[22px] font-black leading-7 text-[var(--portal-ink)]">Enjoy more benefits with premium</h2>
+                <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Before you leave</p>
+                <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Enjoy more benefits with premium</h2>
               </div>
             </div>
 
             <div className="px-5 pb-5 pt-4">
               <div className="grid gap-3 text-[13px] font-medium leading-5 text-[#AAB6C8]">
                 {benefitItems.map((benefit) => (
-                  <p key={benefit} className="rounded-2xl bg-[var(--portal-surface-soft)] px-4 py-3 text-[var(--portal-ink)]">{benefit}</p>
+                  <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
                 ))}
               </div>
 
-              <button className="mt-5 h-12 w-full rounded-xl bg-[var(--portal-orange)] text-[14px] font-black text-white shadow-[0_2px_6px_rgba(255,109,0,0.24)]" type="button" onClick={onSubscribe}>
+              <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
                 View subscription
               </button>
               <button className="mx-auto mt-3 block text-[12px] font-medium text-[#6F7B8E]" type="button" onClick={onClose}>
