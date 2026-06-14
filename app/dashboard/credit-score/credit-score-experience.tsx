@@ -57,13 +57,21 @@ type CreditAccount = {
   opened?: string | null;
   account_closed?: string | null;
   last_payment?: string | null;
+  CAIS_Account_History?: PaymentHistoryItem[] | null;
   payment_history?: string[] | null;
   payment_frequency?: string | null;
-  payment_history_details?: Array<Record<string, unknown>> | null;
+  payment_history_details?: PaymentHistoryItem[] | null;
   portfolio_type?: string | null;
   rate_of_interest?: string | number | null;
   repayment_tenure?: string | number | null;
   reported_and_certified?: string | null;
+};
+
+type PaymentHistoryItem = {
+  Asset_Classification?: string | number | null;
+  Days_Past_Due?: string | number | null;
+  Month?: string | number | null;
+  Year?: string | number | null;
 };
 
 type CreditEnquiry = {
@@ -110,6 +118,7 @@ type BehaviourItem = {
 
 type ReportAccountItem = {
   details: { label: string; value: string }[];
+  history: PaymentHistoryItem[];
   id: string;
   impact: "High impact" | "Medium impact";
   impactTone: string;
@@ -287,6 +296,7 @@ const enquiryPurposeLabels: Record<string, string> = {
 const fallbackReportAccounts: ReportAccountItem[] = [
   {
     details: [],
+    history: [],
     id: "fallback-hdfc",
     impact: "High impact",
     impactTone: "border border-[#FFD34D]/25 bg-[#FFD34D]/14 text-[#FFD34D]",
@@ -298,6 +308,7 @@ const fallbackReportAccounts: ReportAccountItem[] = [
   },
   {
     details: [],
+    history: [],
     id: "fallback-sbi",
     impact: "Medium impact",
     impactTone: "bg-[#ffd166]/14 text-[#ffd166]",
@@ -309,6 +320,7 @@ const fallbackReportAccounts: ReportAccountItem[] = [
   },
   {
     details: [],
+    history: [],
     id: "fallback-axis",
     impact: "High impact",
     impactTone: "border border-[#FFD34D]/25 bg-[#FFD34D]/14 text-[#FFD34D]",
@@ -320,6 +332,7 @@ const fallbackReportAccounts: ReportAccountItem[] = [
   },
   {
     details: [],
+    history: [],
     id: "fallback-icici",
     impact: "Medium impact",
     impactTone: "bg-[#ffd166]/14 text-[#ffd166]",
@@ -1309,8 +1322,10 @@ function RepairRequestsTable({ loading, requests }: { loading: boolean; requests
 }
 
 function ReportAccountCard({ account }: { account: ReportAccountItem }) {
+  const [showHistory, setShowHistory] = useState(false);
+
   return (
-    <article className={cn("relative overflow-hidden rounded-[1.65rem] p-4 text-white", reportCardClass)}>
+    <article className={cn("relative overflow-hidden rounded-[1.65rem] p-4 text-white", showHistory ? "pb-8" : "", reportCardClass)}>
       <div className="absolute inset-x-5 top-0 h-1 rounded-b-full bg-[linear-gradient(90deg,#00D5A7_0%,#20D4AA_45%,#C8B945_78%,#F4A51C_100%)]" />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -1336,6 +1351,48 @@ function ReportAccountCard({ account }: { account: ReportAccountItem }) {
               <p className="mt-1 truncate text-[0.8rem] font-semibold text-[#dbe7f4]">{detail.value}</p>
             </div>
           ))}
+        </div>
+      ) : null}
+      <button
+        className="mt-4 h-10 w-full rounded-2xl border border-[#1F756B]/35 bg-[#1F756B]/12 text-[12px] font-semibold text-[#22F2C2] transition hover:bg-[#1F756B]/18"
+        type="button"
+        onClick={() => setShowHistory((current) => !current)}
+      >
+        {showHistory ? "Hide Payment History" : "View Payment History"}
+      </button>
+      {showHistory ? (
+        <div className="mt-4 rounded-[1.35rem] border border-[#1F756B]/30 bg-[#07130F]/70 p-3">
+          <h3 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#8AF1D4]">Payment History</h3>
+          {account.history.length ? (
+           <div className="mt-3 max-h-[320px] overflow-y-auto pr-1 pb-1">
+              <table className="w-full table-fixed border-separate border-spacing-y-2 text-left text-[12px]">
+                <thead className="text-[#8FA89F]">
+                  <tr>
+                    <th className="w-[45%] px-2 py-1 font-semibold">Month / Year</th>
+                    <th className="w-[18%] px-2 py-1 font-semibold">DPD</th>
+                    {/* <th className="px-3 py-1 font-semibold">Asset Classification</th> */}
+                    <th className="w-[37%] px-2 py-1 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {account.history.map((history, index) => (
+                    <tr key={`${history.Year ?? "year"}-${history.Month ?? "month"}-${index}`} className="bg-white/[0.055] text-[#dbe7f4]">
+                      <td className="rounded-l-2xl px-2 py-3 font-semibold">{formatMonthYear(history.Year, history.Month)}</td>
+                      <td className="px-2 py-3">{history.Days_Past_Due ?? "--"}</td>
+                      {/* <td className="px-3 py-3">{history.Asset_Classification || "--"}</td> */}
+                      <td className="rounded-r-2xl px-2 py-3">
+                        <span className={cn("inline-flex rounded-full px-2 py-1 text-[12px] font-semibold", getStatusClass(history.Days_Past_Due))}>
+                          {getPaymentStatus(history.Days_Past_Due)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="mt-3 rounded-2xl bg-white/[0.055] px-3 py-3 text-[12px] font-medium text-[#9fb2c6]">No transaction history available</p>
+          )}
         </div>
       ) : null}
     </article>
@@ -1984,6 +2041,7 @@ function buildReportAccounts(accounts: CreditAccount[], useFallback = true): Rep
 
     return {
       details: buildReportAccountDetails(account),
+      history: readPaymentHistory(account),
       id: `${account.member_name || "account"}-${readAccountType(account) || "account"}-${index}`,
       impact,
       impactTone: highImpact ? "border border-[#FFD34D]/25 bg-[#FFD34D]/14 text-[#FFD34D]" : "bg-[#ffd166]/14 text-[#ffd166]",
@@ -2126,7 +2184,7 @@ function readEnquiryTime(value?: string | null) {
 }
 
 function buildReportAccountDetails(account: CreditAccount) {
-  const latestHistory = account.payment_history_details?.[0];
+  const latestHistory = readPaymentHistory(account)[0];
   const latestDpd = latestHistory ? readNumericValue(latestHistory.Days_Past_Due) : null;
 
   return [
@@ -2141,6 +2199,54 @@ function buildReportAccountDetails(account: CreditAccount) {
     { label: "Interest", value: formatInterest(account.rate_of_interest) },
     { label: "Latest DPD", value: latestDpd === null ? "--" : String(latestDpd) },
   ].filter((detail) => detail.value && detail.value !== "Rs. 0" && detail.value !== "--");
+}
+
+function readPaymentHistory(account: CreditAccount) {
+  if (Array.isArray(account.CAIS_Account_History)) {
+    return account.CAIS_Account_History;
+  }
+
+  if (Array.isArray(account.payment_history_details)) {
+    return account.payment_history_details;
+  }
+
+  return [];
+}
+
+function formatMonthYear(year: unknown, month: unknown) {
+  const numericYear = Number(year);
+  const numericMonth = Number(month);
+
+  if (!Number.isFinite(numericYear) || !Number.isFinite(numericMonth) || numericMonth < 1 || numericMonth > 12) {
+    return "--";
+  }
+
+  return new Intl.DateTimeFormat("en-IN", {
+    month: "short",
+    year: "numeric",
+  }).format(new Date(numericYear, numericMonth - 1, 1));
+}
+
+function getPaymentStatus(daysPastDue: unknown) {
+  if (daysPastDue === null || daysPastDue === undefined || daysPastDue === "") {
+    return "No Data";
+  }
+
+  return readNumericValue(daysPastDue) > 0 ? "Delayed" : "On Time";
+}
+
+function getStatusClass(daysPastDue: unknown) {
+  const status = getPaymentStatus(daysPastDue);
+
+  if (status === "On Time") {
+    return "bg-[#22F2C2]/12 text-[#22F2C2]";
+  }
+
+  if (status === "Delayed") {
+    return "bg-[#FF5C8A]/12 text-[#FF8AAB]";
+  }
+
+  return "bg-white/10 text-[#9fb2c6]";
 }
 
 function buildDisputeStats(status: CibilRepairStatus | null) {

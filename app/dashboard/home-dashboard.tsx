@@ -110,6 +110,17 @@ type NotificationItem = {
   title?: string | null;
 };
 
+type CreditReportDownloadItem = {
+  createdAt?: string | null;
+  creditReportId?: string | number | null;
+  creditScore?: string | number | null;
+  downloadedAt?: string | null;
+  id: string | number;
+  provider?: string | null;
+  reportFetchedAt?: string | null;
+  reportType?: string | null;
+};
+
 type CibilRepairStatus = {
   activeDisputes?: number;
 };
@@ -1792,7 +1803,34 @@ function BenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubsc
   );
 }
 
-function DownloadReportsPopup({ downloads, onClose }: { downloads: Array<{ id: string; downloadedAt: string; title: string }>; onClose: () => void }) {
+function DownloadReportsPopup({ onClose }: { onClose: () => void }) {
+  const [downloads, setDownloads] = useState<CreditReportDownloadItem[]>([]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadDownloads() {
+      const token = sessionStorage.getItem("scorecare_token");
+
+      if (!token || isTokenExpired(token)) {
+        setError("Please login again to view downloads.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const result = await loadCreditReportDownloads(token);
+        setDownloads(result);
+      } catch {
+        setError("Unable to load downloaded reports.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void loadDownloads();
+  }, []);
+
   return (
     <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
       <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
@@ -1803,12 +1841,28 @@ function DownloadReportsPopup({ downloads, onClose }: { downloads: Array<{ id: s
           </button>
         </div>
 
-        {downloads.length ? (
+        {loading ? (
+          <div className="mt-5 space-y-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="rounded-[18px] bg-white/[0.06] px-4 py-3">
+                <div className="h-3 w-2/5 animate-pulse rounded-full bg-white/10" />
+                <div className="mt-3 h-2.5 w-3/5 animate-pulse rounded-full bg-white/10" />
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <p className="mt-5 rounded-[18px] bg-[#FF5C8A]/10 px-4 py-3 text-[12px] font-medium text-[#FF8AAB]">{error}</p>
+        ) : downloads.length ? (
           <div className="mt-5 space-y-3">
             {downloads.map((download) => (
               <div key={download.id} className="rounded-[18px] bg-white/[0.06] px-4 py-3">
-                <p className="text-[13px] font-semibold text-white">{download.title}</p>
-                <p className="mt-1 text-[12px] text-[#AAB6C8]">{formatDownloadDateTime(new Date(download.downloadedAt))}</p>
+                <p className="text-[13px] font-semibold text-white">{formatReportType(download.reportType)}</p>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[12px] text-[#AAB6C8]">
+                  <p>Provider: <span className="font-semibold text-white">{download.provider || "--"}</span></p>
+                  <p>Score: <span className="font-semibold text-white">{download.creditScore ?? "--"}</span></p>
+                  <p className="col-span-2">Fetched: <span className="font-semibold text-white">{formatOptionalDownloadDate(download.reportFetchedAt)}</span></p>
+                  <p className="col-span-2">Downloaded: <span className="font-semibold text-white">{formatOptionalDownloadDate(download.downloadedAt)}</span></p>
+                </div>
               </div>
             ))}
           </div>
@@ -2214,7 +2268,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
         />
       ) : null}
 
-      {showDownloadReports ? <DownloadReportsPopup downloads={[]} onClose={() => setShowDownloadReports(false)} /> : null}
+      {showDownloadReports ? <DownloadReportsPopup onClose={() => setShowDownloadReports(false)} /> : null}
 
       {showLanguageSettings ? (
         <LanguageSettingsPopup
@@ -3225,6 +3279,35 @@ function formatDownloadDateTime(value: Date) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(value);
+}
+
+function formatOptionalDownloadDate(value?: string | null) {
+  if (!value) return "--";
+
+  return formatDownloadDateTime(new Date(value));
+}
+
+function formatReportType(value?: string | null) {
+  return value ? value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()) : "Credit Report";
+}
+
+async function loadCreditReportDownloads(token: string) {
+  const response = await apiRequest("/credit-reports/downloads", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to load downloaded reports.");
+  }
+
+  const result = (await response.json()) as {
+    data?: CreditReportDownloadItem[] | null;
+    status?: string;
+  };
+
+  return result.status === "success" && Array.isArray(result.data) ? result.data : [];
 }
 
 function buildCoachText(overdueAccounts: number, utilization: number, enquiries: number) {

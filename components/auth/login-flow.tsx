@@ -500,7 +500,7 @@ export function LoginFlow() {
               <ArrowLeft className="size-4" />
             </button>
 
-            <div className="flex-1 rounded-[28px] border border-white/10 bg-[#0F1B2D]/95 p-5 shadow-[0_22px_54px_rgba(0,0,0,0.42)]">
+           <div className="rounded-[28px] border border-white/10 bg-[#0F1B2D]/95 p-5 shadow-[0_22px_54px_rgba(0,0,0,0.42)]">
               <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#22F2C2]">
                 Verification
               </p>
@@ -509,9 +509,12 @@ export function LoginFlow() {
                 Enter OTP
               </h1>
 
-              <p className="mt-3 text-[15px] font-medium leading-6 text-[#8F9BAA]">
+              <p className="mt-3 text-[15px] font-medium leading-6 text-white">
                 We sent a verification code to{" "}
-                <span className="font-semibold text-white">+91 {cleanMobile}</span>.
+                <span className="font-bold text-[#22F2C2]">
+                  +91 {cleanMobile}
+                </span>
+                .
               </p>
 
               <div className="mt-9 text-[13px] font-semibold uppercase tracking-[0.14em] text-[#8F9BAA]">
@@ -597,7 +600,7 @@ export function LoginFlow() {
       >
         <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,#183A5A_0%,transparent_38%),radial-gradient(circle_at_80%_10%,rgba(34,242,194,0.16),transparent_28%)]" />
 
-        <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col">
+      <div className="relative z-10 mx-auto flex w-full max-w-md flex-col">
           <div className="pt-7">
             {/* <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 shadow-[0_10px_25px_rgba(0,0,0,0.22)]">
               <ShieldCheck className="size-4 text-[#22F2C2]" />
