@@ -8,6 +8,7 @@ import {
   CreditCard,
   Crown,
   Download,
+  FileSearch,
   Gauge,
   LoaderCircle,
   Menu,
@@ -564,6 +565,25 @@ export function CreditScoreExperience() {
     }
   }
 
+  function handleAccountFilterClick(filter: AccountFilter) {
+    if (!accessLoading && isFreeTier && (filter === "loans" || filter === "cards")) {
+      promptSubscribe();
+      return;
+    }
+
+    setActiveTab("accounts");
+    setActiveAccountFilter(filter);
+  }
+
+  function handleReportTabClick(tab: Tab) {
+    if (!accessLoading && isFreeTier && tab === "enquiries") {
+      promptSubscribe();
+      return;
+    }
+
+    setActiveTab(tab);
+  }
+
   return (
     <PortalShell active="score">
       <div className="min-h-screen bg-[#050912] pb-28 text-white">
@@ -628,7 +648,7 @@ export function CreditScoreExperience() {
 
             <div className="mt-5 grid grid-cols-2 gap-2 rounded-[1.35rem] border border-[#0F5D43]/45 bg-[#102017]/70 p-1.5">
               {(["accounts", "enquiries"] as Tab[]).map((tab) => (
-                <TabButton key={tab} active={activeTab === tab} onClick={() => setActiveTab(tab)}>
+                <TabButton key={tab} active={activeTab === tab} onClick={() => handleReportTabClick(tab)}>
                   {toTitleCase(tab)}
                 </TabButton>
               ))}
@@ -644,10 +664,7 @@ export function CreditScoreExperience() {
                       : "border border-[#0F5D43]/35 bg-[rgba(21,38,27,0.82)] text-white",
                   )}
                   type="button"
-                  onClick={() => {
-                    setActiveTab("accounts");
-                    setActiveAccountFilter(item.filter);
-                  }}
+                  onClick={() => handleAccountFilterClick(item.filter)}
                 >
                   <p className="text-3xl font-black leading-none">{item.value}</p>
                   <p className={cn("mt-2 text-[12px] font-semibold", activeTab === "accounts" && activeAccountFilter === item.filter ? "text-[#8AF1D4]/75" : "text-[#8FA89F]")}>{item.label}</p>
@@ -841,17 +858,30 @@ function ReportAccountsTab({ accounts, activeFilter, loading }: { accounts: Cred
   const closedAccounts = filteredAccounts.filter(isClosedAccount);
   const openItems = buildReportAccounts(openAccounts, false);
   const closedItems = buildReportAccounts(closedAccounts, false);
+  const hasRecords = openItems.length > 0 || closedItems.length > 0;
 
   return (
     <div className="space-y-3">
       {loading ? (
         <ReportAccountsSkeleton />
+      ) : !hasRecords ? (
+        <ReportNoRecords />
       ) : (
         <>
           <ReportAccountSection items={openItems} title="Active Accounts" />
           <ReportAccountSection items={closedItems} title="Closed Accounts" />
         </>
       )}
+    </div>
+  );
+}
+
+function ReportNoRecords() {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <FileSearch className="size-12 text-[#AAB6C8]" strokeWidth={1.6} />
+      <p className="mt-4 text-[15px] font-semibold text-white">No Records Found</p>
+      <p className="mt-1 text-[13px] text-[#AAB6C8]">No report records available.</p>
     </div>
   );
 }
