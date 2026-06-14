@@ -182,67 +182,93 @@ function hasHistoryDpd(account: Record<string, unknown>) {
   return readAccountHistory(account).some((history) => toNumber(history.Days_Past_Due ?? history.days_past_due) > 0);
 }
 
-function hasOverdueIssue(account: Record<string, unknown>) {
+function hasHistoryDpdAtLeast(account: Record<string, unknown>, minimumDpd: number) {
+  return readAccountHistory(account).some((history) => toNumber(history.Days_Past_Due ?? history.days_past_due) >= minimumDpd);
+}
+
+function hasOverdue(account: Record<string, unknown>) {
   return toNumber(account.Amount_Past_Due ?? account.amount_overdue) > 0 || hasHistoryDpd(account);
 }
 
-function hasWrittenOffOrSettledIssue(account: Record<string, unknown>) {
+function hasSettled(account: Record<string, unknown>) {
   const writtenStatus = String(account.Written_off_Settled_Status ?? "").toLowerCase();
-  const suitStatus = String(account.SuitFiledWillfulDefaultWrittenOffStatus ?? "").toLowerCase();
-  const status = `${writtenStatus} ${suitStatus}`;
 
   return (
-    toNumber(account.Written_Off_Amt_Total) > 0 ||
-    toNumber(account.Written_Off_Amt_Principal) > 0 ||
-    Boolean(writtenStatus.trim()) ||
-    /written|settled|write/.test(status)
+    toNumber(account.Settlement_Amount) > 0 ||
+    (Boolean(writtenStatus.trim()) && writtenStatus !== "0")
   );
 }
 
-function hasReturnedOrBouncedIssue(account: Record<string, unknown>) {
+function hasWrittenOff(account: Record<string, unknown>) {
+  return (
+    toNumber(account.Written_Off_Amt_Total) > 0 ||
+    toNumber(account.Written_Off_Amt_Principal) > 0 ||
+    Boolean(String(account.WriteOffStatusDate ?? "").trim())
+  );
+}
+
+function hasReturnedPayment(account: Record<string, unknown>) {
   const historyProfile = String(account.Payment_History_Profile ?? account.payment_history ?? "");
   const hasNonCleanProfile = /[^0?\s,|/]/.test(historyProfile);
 
   return hasNonCleanProfile || hasHistoryDpd(account);
 }
 
-function hasSuitFiledIssue(account: Record<string, unknown>) {
-  return (
-    toNumber(account.SuitFiled_WilfulDefault) > 0 ||
-    Boolean(String(account.SuitFiledWillfulDefaultWrittenOffStatus ?? "").trim()) ||
-    Boolean(String(account.LitigationStatusDate ?? "").trim())
-  );
-}
-
-function hasDelinquencyIssue(account: Record<string, unknown>) {
-  const accountStatus = String(account.Account_Status ?? account.account_status ?? "").toLowerCase();
+function hasDelinquent(account: Record<string, unknown>) {
+  const paymentRating = String(account.Payment_Rating ?? "").trim();
+  const numericPaymentRating = Number(paymentRating);
+  const hasNegativePaymentRating = paymentRating
+    ? Number.isFinite(numericPaymentRating)
+      ? numericPaymentRating > 0
+      : paymentRating !== "0"
+    : false;
 
   return (
-    Boolean(String(account.Date_of_First_Delinquency ?? "").trim()) ||
+    hasHistoryDpdAtLeast(account, 30) ||
+    hasNegativePaymentRating ||
     Boolean(String(account.DefaultStatusDate ?? "").trim()) ||
-    /default|delinquent|written|settled|suit|wilful|negative/.test(accountStatus) ||
-    toNumber(account.CreditAccountDefault) > 0
+    Boolean(String(account.Date_of_First_Delinquency ?? "").trim()) ||
+    hasSettled(account) ||
+    hasWrittenOff(account)
   );
 }
 
 function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairIssueCard[] {
-  return getAccountsFromDisplayData(displayData).flatMap((account, index) => {
+  const cards = new Map<string, RepairIssueCard>();
+
+  getAccountsFromDisplayData(displayData).forEach((account, index) => {
     const issueLabels = [
-      hasOverdueIssue(account) ? "Overdue Loans" : null,
-      hasWrittenOffOrSettledIssue(account) ? "Settled / Written-off" : null,
-      hasReturnedOrBouncedIssue(account) ? "Returned / Bounced" : null,
-      hasSuitFiledIssue(account) ? "Suit Filed / Wilful Default" : null,
-      hasDelinquencyIssue(account) ? "Negative / Delinquent" : null,
+      hasOverdue(account) ? "Overdue" : null,
+      hasSettled(account) ? "Settled" : null,
+      hasWrittenOff(account) ? "Written-off" : null,
+      hasReturnedPayment(account) ? "Returned Payment" : null,
+      hasDelinquent(account) ? "Delinquent" : null,
     ].filter(Boolean) as string[];
 
-    if (!issueLabels.length) return [];
+    if (!issueLabels.length) return;
 
     const accountNumber = String(account.Account_Number ?? account.account_number ?? account.AccountNumber ?? "");
+    const subscriberName = String(account.Subscriber_Name ?? account.member_name ?? "Unknown lender");
+    const id = `${subscriberName.toLowerCase()}-${accountNumber || index}`;
 
-    return {
-      id: accountNumber || `${account.Subscriber_Name ?? account.member_name ?? "account"}-${index}`,
+    if (cards.has(id)) {
+      const existingCard = cards.get(id);
+
+      if (existingCard) {
+        existingCard.issueLabels = Array.from(new Set([...existingCard.issueLabels, ...issueLabels]));
+        existingCard.issueType = existingCard.issueLabels.join(", ");
+        existingCard.issueLabel = existingCard.issueLabels[0] ?? "";
+        existingCard.currentBalance = Math.max(existingCard.currentBalance, toNumber(account.Current_Balance ?? account.current_balance));
+        existingCard.overdueAmount = Math.max(existingCard.overdueAmount, toNumber(account.Amount_Past_Due ?? account.amount_overdue));
+      }
+
+      return;
+    }
+
+    cards.set(id, {
+      id,
       accountNumber,
-      subscriberName: String(account.Subscriber_Name ?? account.member_name ?? "Unknown lender"),
+      subscriberName,
       issueType: issueLabels.join(", "),
       issueLabel: issueLabels[0],
       issueLabels,
@@ -250,8 +276,10 @@ function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairI
       overdueAmount: toNumber(account.Amount_Past_Due ?? account.amount_overdue),
       accountStatus: String(account.Account_Status ?? account.account_status ?? "--"),
       rawAccount: account,
-    };
+    });
   });
+
+  return Array.from(cards.values());
 }
 
 export function ScoreFixExperience() {
@@ -662,11 +690,17 @@ function CreditImprovementPlan({
 }) {
   const [selectedIssueIds, setSelectedIssueIds] = useState<string[]>([]);
   const disputeStats = buildDisputeStats(repairStatus);
-  const plan = repairContent.plans[0] ?? fallbackRepairContent.plans[0];
+  const plan = repairContent.plans.find((repairPlan) => repairPlan.isActive) ?? repairContent.plans[0] ?? fallbackRepairContent.plans[0];
   const originalAmount = getOriginalAmount(plan.amount, plan.offerTag);
   const repairIssueCards = useMemo(() => buildRepairIssueCards(displayData), [displayData]);
   const selectedCount = selectedIssueIds.length;
   const finalAmount = (plan.amount ?? 0) * selectedCount;
+
+  useEffect(() => {
+    const repairIssueCardIds = new Set(repairIssueCards.map((card) => card.id));
+
+    setSelectedIssueIds((currentIds) => currentIds.filter((issueId) => repairIssueCardIds.has(issueId)));
+  }, [repairIssueCards]);
 
   function toggleIssueCard(issueId: string) {
     setSelectedIssueIds((currentIds) => (currentIds.includes(issueId) ? currentIds.filter((id) => id !== issueId) : [...currentIds, issueId]));
@@ -783,10 +817,12 @@ function RepairIssueCards({ cards, selectedIds, onToggle }: { cards: RepairIssue
                 <p className="text-[#7792aa]">Current balance</p>
                 <p className="mt-1 font-bold text-white">{formatINR(card.currentBalance)}</p>
               </div>
-              <div>
-                <p className="text-[#7792aa]">Overdue amount</p>
-                <p className="mt-1 font-bold text-white">{formatINR(card.overdueAmount)}</p>
-              </div>
+              {card.overdueAmount > 0 ? (
+                <div>
+                  <p className="text-[#7792aa]">Amount Past Due</p>
+                  <p className="mt-1 font-bold text-white">{formatINR(card.overdueAmount)}</p>
+                </div>
+              ) : null}
               <div>
                 <p className="text-[#7792aa]">Account number</p>
                 <p className="mt-1 font-bold text-white">{maskAccountNumber(card.accountNumber)}</p>
@@ -806,7 +842,9 @@ function RepairIssueCards({ cards, selectedIds, onToggle }: { cards: RepairIssue
 function maskAccountNumber(accountNumber: string) {
   if (!accountNumber) return "--";
 
-  return accountNumber.length > 4 ? `•••• ${accountNumber.slice(-4)}` : accountNumber;
+  if (/x/i.test(accountNumber)) return accountNumber;
+
+  return accountNumber.length > 4 ? `${"X".repeat(Math.max(accountNumber.length - 4, 3))}${accountNumber.slice(-4)}` : accountNumber;
 }
 
 function RepairDisputeCards({ loading, requests }: { loading: boolean; requests: CibilRepairRequest[] }) {

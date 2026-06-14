@@ -21,12 +21,14 @@ export function clearScorecareSession() {
 }
 
 export function isTokenExpired(token: string) {
+  if (token.split(".").length !== 3) return false;
+
   try {
     const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
     const expiresAt = typeof payload.exp === "number" ? payload.exp * 1000 : 0;
 
-    return !expiresAt || Date.now() >= expiresAt;
+    return Boolean(expiresAt) && Date.now() >= expiresAt;
   } catch {
-    return true;
+    return false;
   }
 }
