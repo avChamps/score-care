@@ -384,7 +384,7 @@ const reportBottomNav = [
   { label: "Home", href: "/dashboard", Icon: Home },
   { label: "Report", href: "/dashboard/credit-score", Icon: FileText },
   { label: "Improve", href: "/dashboard/score-fix", Icon: TrendingUp },
-  { label: "Offers", href: "/pricing", Icon: Gift },
+  { label: "Offers", href: "/dashboard/offers", Icon: Gift },
   { label: "Loans", href: "/dashboard/loans", Icon: ReceiptText },
 ];
 
@@ -888,7 +888,7 @@ export function CreditScoreExperience() {
           <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-[32px] border border-[#1F756B]/35 bg-[#07130F]/88 px-3 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.42),inset_0_0_28px_rgba(31,117,107,0.08)] backdrop-blur-2xl">
             {reportBottomNav.map(({ label, href, Icon }) => {
               const active = label === "Report";
-              const disabled = label !== "Home" && label !== "Report" && label !== "Loans";
+              const disabled = label !== "Home" && label !== "Report" && label !== "Offers" && label !== "Loans";
 
               if (disabled) {
                 return (
@@ -912,6 +912,7 @@ export function CreditScoreExperience() {
                   key={label}
                   href={href}
                   data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
+                  data-dashboard-offers={href === "/dashboard/offers" ? "true" : undefined}
                   className={cn("flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[12px] font-semibold tracking-normal text-[#5B716A] transition duration-300", active ? "text-[#18B98E]" : "hover:text-[#88A39A]")}
                 >
                   <span className={cn("grid size-8 place-items-center rounded-[14px] text-[#5B716A]", active && "border border-[#18B98E]/45 bg-[#18B98E]/12 text-[#18B98E] shadow-[0_0_16px_rgba(24,185,142,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]")}>

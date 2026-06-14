@@ -144,7 +144,7 @@ const bottomNav = [
   { label: "Home", href: "/dashboard", Icon: Home },
   { label: "Report", href: "/dashboard/credit-score", Icon: FileText },
   { label: "Improve", href: "/dashboard/score-fix", Icon: TrendingUp },
-  { label: "Offers", href: "/pricing", Icon: Gift },
+  { label: "Offers", href: "/dashboard/offers", Icon: Gift },
   { label: "Loans", href: "/dashboard/loans", Icon: BadgeIndianRupee }
 ];
 const appTiles = [
@@ -644,13 +644,14 @@ export function HomeDashboard() {
         <nav className="floating-bottom-nav mx-auto grid max-w-[27rem] grid-cols-5 rounded-[32px] border border-[#1F756B]/35 bg-[#08110D]/88 px-3 py-3 shadow-[0_18px_42px_rgba(0,0,0,0.42),inset_0_0_28px_rgba(31,117,107,0.08)] backdrop-blur-2xl">
           {bottomNav.map(({ label, href, Icon }) => {
             const active = label === "Home";
-            const enabled = active || label === "Report";
+            const enabled = active || label === "Report" || label === "Offers";
 
             return (
               <Link
                 key={label}
                 href={href}
                 data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
+                data-dashboard-offers={href === "/dashboard/offers" ? "true" : undefined}
                 aria-disabled={!enabled}
                 tabIndex={enabled ? 0 : -1}
                 className={cn("flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[12px] font-semibold tracking-normal text-[#5B716A] transition duration-300", active ? "text-[#18B98E]" : enabled ? "hover:text-[#88A39A]" : "pointer-events-none opacity-60")}
