@@ -102,7 +102,7 @@ function OverviewView({
   return (
     <div className="space-y-5 animate-[creditPanelIn_0.42s_ease-out]">
       <div>
-        <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-cyan-600">Score repair desk</p>
+        <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-cyan-600">Score repair desk</p>
         <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-950">Fix your score</h2>
       </div>
 
@@ -290,7 +290,7 @@ function NewRequestDialog({
       <div className="mx-auto flex h-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.24)]">
         <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 bg-white px-4 py-4 sm:px-5">
           <div>
-            <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-cyan-600">Score Fix</p>
+            <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-cyan-600">Score Fix</p>
             <h2 className="mt-1 text-base font-bold tracking-tight text-slate-950">Score Fix Request</h2>
             <p className="mt-1 text-xs text-slate-500">Report bureau issues with clear details and urgency.</p>
           </div>

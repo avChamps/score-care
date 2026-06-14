@@ -42,8 +42,13 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
   overflow-x: hidden;
   top: 0 !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 html,
@@ -88,6 +93,23 @@ html.translated-rtl body {
   background: var(--portal-bg);
 }
 
+.native-shell,
+.native-shell body {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.native-shell input,
+.native-shell button,
+.native-shell textarea,
+.native-shell select {
+  font: inherit;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 .native-shell .portal-theme {
   min-height: 100dvh;
   padding-top: 0;
@@ -112,10 +134,29 @@ html.translated-rtl body {
 }
 
 html {
+  font-size: 16px;
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  font-synthesis: none;
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+input,
+textarea,
+select {
+  font-size: 16px;
 }
 
 ::selection {

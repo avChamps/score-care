@@ -124,7 +124,7 @@ export function CreditHealthCard() {
       <SubscribePromptOverlay onClose={closeSubscribePrompt} show={showSubscribePrompt} />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[0.68rem] font-black uppercase text-[var(--portal-orange)]">Credit health</p>
+          <p className="text-[12px] font-black uppercase text-[var(--portal-orange)]">Credit health</p>
           <h2 className="mt-1 text-lg font-black tracking-tight text-[var(--portal-ink)]">
             {loading ? "Loading report health" : health ? `${health.scoreLabel} profile` : "Report not ready"}
           </h2>
@@ -141,7 +141,7 @@ export function CreditHealthCard() {
         {items.map((item) => (
           <div key={item.label} className="rounded-2xl border border-[var(--portal-border)] bg-white/85 p-3">
             <p className={`text-lg font-black leading-none ${item.tone}`}>{item.value}</p>
-            <p className="mt-1 text-[0.66rem] font-bold leading-tight text-[var(--portal-muted)]">{item.label}</p>
+            <p className="mt-1 text-[12px] font-bold leading-tight text-[var(--portal-muted)]">{item.label}</p>
           </div>
         ))}
       </div>
@@ -149,14 +149,14 @@ export function CreditHealthCard() {
       {health?.factors.length ? (
         <div className="mt-4 space-y-2">
           {health.factors.slice(0, 2).map((factor) => (
-            <p key={factor} className="rounded-xl border border-[var(--portal-border)] bg-white/70 px-3 py-2 text-[0.68rem] font-bold leading-4 text-[var(--portal-muted)]">
+            <p key={factor} className="rounded-xl border border-[var(--portal-border)] bg-white/70 px-3 py-2 text-[12px] font-bold leading-4 text-[var(--portal-muted)]">
               {toTitleCase(factor)}
             </p>
           ))}
         </div>
       ) : null}
 
-      {health?.fetchedAt ? <p className="mt-4 text-[0.66rem] font-bold text-[var(--portal-muted)]">Fetched {formatDateTime(health.fetchedAt)}</p> : null}
+      {health?.fetchedAt ? <p className="mt-4 text-[12px] font-bold text-[var(--portal-muted)]">Fetched {formatDateTime(health.fetchedAt)}</p> : null}
     </AppCard>
   );
 }

@@ -2,6 +2,7 @@
 
 import {
   BadgeIndianRupee,
+  Bell,
   CheckCircle2,
   Clock3,
   CreditCard,
@@ -358,11 +359,13 @@ const fallbackRepairContent: CibilRepairContent = {
   ],
 };
 
+const notificationsPageSize = 10;
+
 const reportCardClass =
   "border border-[#103A2B]/50 bg-[linear-gradient(135deg,#06120E_0%,#081712_50%,#091813_100%)] shadow-[0_20px_45px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]";
 const reportHighlightCardClass = "border border-[#0F6C4B]/70 bg-[radial-gradient(circle_at_84%_0%,rgba(34,242,194,0.09),transparent_36%),linear-gradient(135deg,rgba(8,54,37,0.98),rgba(9,38,25,0.98))] shadow-[0_0_34px_rgba(34,242,194,0.07),0_18px_40px_rgba(0,0,0,0.32)]";
 const reportMiniCardClass = "border border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]";
-const reportSectionHeadingClass = "px-1 text-[0.72rem] font-extrabold uppercase tracking-[0.18em] text-[#B9C7D8]";
+const reportSectionHeadingClass = "px-1 text-[12px] font-extrabold uppercase tracking-[0.18em] text-[#B9C7D8]";
 
 const reportBottomNav = [
   { label: "Home", href: "/dashboard", Icon: Home },
@@ -392,6 +395,7 @@ export function CreditScoreExperience() {
   const [repairSubmitting, setRepairSubmitting] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [, setIsLanguageLoading] = useState(false);
   const [toast, setToast] = useState("");
   const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
@@ -554,6 +558,26 @@ export function CreditScoreExperience() {
       window.removeEventListener("scorecare:cibil-display-updated", handleDisplayUpdate);
     };
   }, [isFreeTier, loadDisplayData, loadRepairContent]);
+
+  useEffect(() => {
+    async function refreshNotifications() {
+      const token = sessionStorage.getItem("scorecare_token");
+
+      if (!token || isTokenExpired(token)) return;
+
+      try {
+        const result = await loadNotifications(token);
+        setNotificationUnreadCount(result.unreadCount);
+      } catch {
+        setNotificationUnreadCount(0);
+      }
+    }
+
+    void refreshNotifications();
+    window.addEventListener("scorecare:notifications-updated", refreshNotifications);
+
+    return () => window.removeEventListener("scorecare:notifications-updated", refreshNotifications);
+  }, []);
 
   useEffect(() => {
     if (activeTab !== "repair") {
@@ -750,21 +774,37 @@ export function CreditScoreExperience() {
               >
                 <Menu className="size-5" strokeWidth={1.8} />
               </button>
-              <Link
-                href="/pricing"
-                aria-label="Premium benefits"
-                className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
-              >
-                <Crown className="size-6 fill-[#FFD34D]/20" strokeWidth={1.8} />
-              </Link>
+              <div className="flex items-center gap-3">
+                {isFreeTier ? (
+                  <Link
+                    href="/pricing"
+                    aria-label="Premium benefits"
+                    className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
+                  >
+                    <Crown className="size-6 fill-[#FFD34D]/20" strokeWidth={1.8} />
+                  </Link>
+                ) : null}
+                <Link
+                  aria-label="Open notifications"
+                  className="relative grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
+                  href="/notifications"
+                >
+                  <Bell className="size-6" strokeWidth={1.8} />
+                  {notificationUnreadCount > 0 ? (
+                    <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-[12px] font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
+                      {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
+                    </span>
+                  ) : null}
+                </Link>
+              </div>
             </div>
 
             <div className={cn("rounded-[2rem] p-4 text-white", reportHighlightCardClass)}>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#1F756B]">Credit Report</p>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#1F756B]">Credit Report</p>
                 <h1 className="mt-1 text-lg font-semibold tracking-tight">Report Insights</h1>
-                <p className="mt-1 text-[0.72rem] text-[#9fb2c6]">
+                <p className="mt-1 text-[12px] text-[#9fb2c6]">
                   Updated {loading ? "Loading..." : lastChecked ?? "--"}
                 </p>
               </div>
@@ -779,7 +819,7 @@ export function CreditScoreExperience() {
               </button>
             </div>
 
-            {error ? <p className="mt-3 rounded-2xl bg-[#ff4d7d]/10 px-3 py-2 text-[0.72rem] font-medium text-[#ff8cab]">{error}</p> : null}
+            {error ? <p className="mt-3 rounded-2xl bg-[#ff4d7d]/10 px-3 py-2 text-[12px] font-medium text-[#ff8cab]">{error}</p> : null}
 
             <div className="mt-5 grid grid-cols-3 gap-2 rounded-[1.35rem] border border-[#0F5D43]/45 bg-[#102017]/70 p-1.5">
               {(["accounts", "enquiries", "repair"] as Tab[]).map((tab) => (
@@ -805,7 +845,7 @@ export function CreditScoreExperience() {
                   }}
                 >
                   <p className="text-3xl font-black leading-none">{item.value}</p>
-                  <p className={cn("mt-2 text-[0.72rem] font-semibold", activeTab === "accounts" && activeAccountFilter === item.filter ? "text-[#8AF1D4]/75" : "text-[#8FA89F]")}>{item.label}</p>
+                  <p className={cn("mt-2 text-[12px] font-semibold", activeTab === "accounts" && activeAccountFilter === item.filter ? "text-[#8AF1D4]/75" : "text-[#8FA89F]")}>{item.label}</p>
                 </button>
               ))}
             </div>
@@ -842,7 +882,7 @@ export function CreditScoreExperience() {
                   <button
                     key={label}
                     aria-disabled="true"
-                    className="flex min-h-[58px] cursor-not-allowed flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[10px] font-semibold text-[#5B716A] opacity-55"
+                    className="flex min-h-[58px] cursor-not-allowed flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[12px] font-semibold text-[#5B716A] opacity-55"
                     disabled
                     type="button"
                   >
@@ -859,7 +899,7 @@ export function CreditScoreExperience() {
                   key={label}
                   href={href}
                   data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
-                  className={cn("flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[10px] font-semibold tracking-normal text-[#5B716A] transition duration-300", active ? "text-[#18B98E]" : "hover:text-[#88A39A]")}
+                  className={cn("flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[20px] px-0.5 py-1 text-[12px] font-semibold tracking-normal text-[#5B716A] transition duration-300", active ? "text-[#18B98E]" : "hover:text-[#88A39A]")}
                 >
                   <span className={cn("grid size-8 place-items-center rounded-[14px] text-[#5B716A]", active && "border border-[#18B98E]/45 bg-[#18B98E]/12 text-[#18B98E] shadow-[0_0_16px_rgba(24,185,142,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]")}>
                     <Icon className="size-4" strokeWidth={active ? 2.1 : 1.75} />
@@ -1082,7 +1122,7 @@ function ReportEnquiriesTab({ enquiries, loading }: { enquiries: CreditEnquiry[]
       ) : (
         <div className={cn("rounded-[1.65rem] p-4 text-white", reportCardClass)}>
           <p className="text-sm font-semibold">No recent enquiries found</p>
-          <p className="mt-2 text-[0.72rem] leading-5 text-[#9fb2c6]">Your recent credit report does not contain any enquiry records.</p>
+          <p className="mt-2 text-[12px] leading-5 text-[#9fb2c6]">Your recent credit report does not contain any enquiry records.</p>
         </div>
       )}
     </div>
@@ -1093,7 +1133,7 @@ function EnquirySummaryCard({ label, value }: { label: string; value: number }) 
   return (
     <div className={cn("rounded-2xl px-3 py-2 text-white", reportCardClass)}>
       <p className="text-sm font-semibold">{value}</p>
-      <p className="mt-1 text-[0.62rem] leading-3 text-[#9fb2c6]">{label}</p>
+      <p className="mt-1 text-[12px] leading-3 text-[#9fb2c6]">{label}</p>
     </div>
   );
 }
@@ -1155,9 +1195,9 @@ function ReportRepairTab({
     <div className="space-y-4">
       <section className={cn("overflow-hidden rounded-[1.75rem] text-white", reportCardClass)}>
         <div className="bg-[radial-gradient(circle_at_85%_0%,rgba(31,117,107,0.28),transparent_34%),linear-gradient(160deg,#10243a,#081625)] px-4 py-5">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#1F756B]">Credit Repair Service</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#1F756B]">Credit Repair Service</p>
           <h2 className="mt-2 text-base font-semibold">{plan.planName}</h2>
-          <p className="mt-2 text-[0.72rem] leading-5 text-[#9fb2c6]">Expert review, disputes, lender follow-up, and score verification in one guided flow.</p>
+          <p className="mt-2 text-[12px] leading-5 text-[#9fb2c6]">Expert review, disputes, lender follow-up, and score verification in one guided flow.</p>
           <button className="mt-4 h-11 w-full rounded-2xl bg-[#ff4d7d] text-xs font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)] disabled:opacity-60" disabled={repairSubmitting} type="button" onClick={() => onStartRepair(plan)}>
             {repairSubmitting ? "Submitting..." : `${plan.buttonLabel} — ${amountLabel}/${billingCycleLabel}`}
           </button>
@@ -1169,10 +1209,10 @@ function ReportRepairTab({
         <div className="mt-4 space-y-3">
           {timelines.map((step, index) => (
             <div key={step.id} className="flex gap-3">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#22F2C2]/12 text-[0.68rem] font-semibold text-[#22F2C2]">{index + 1}</span>
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#22F2C2]/12 text-[12px] font-semibold text-[#22F2C2]">{index + 1}</span>
               <div className="border-b border-white/10 pb-3 last:border-b-0">
                 <p className="text-xs font-semibold text-white">{step.title}</p>
-                <p className="mt-1 text-[0.68rem] text-[#9fb2c6]">{step.description}</p>
+                <p className="mt-1 text-[12px] text-[#9fb2c6]">{step.description}</p>
               </div>
             </div>
           ))}
@@ -1182,17 +1222,17 @@ function ReportRepairTab({
       <section className={cn("rounded-[1.75rem] p-4 text-white", reportCardClass)}>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#1F756B]">Dispute Centre</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#1F756B]">Dispute Centre</p>
             <h2 className="mt-1 text-sm font-semibold">Case progress</h2>
           </div>
-          <span className="rounded-full bg-[#ff4d7d]/14 px-3 py-1 text-[0.68rem] font-semibold text-[#ff8cab]">Live</span>
+          <span className="rounded-full bg-[#ff4d7d]/14 px-3 py-1 text-[12px] font-semibold text-[#ff8cab]">Live</span>
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
           {disputeStats.map((stat) => (
             <div key={stat.label} className={cn("rounded-2xl px-3 py-3", reportMiniCardClass)}>
               <p className="text-sm font-semibold">{stat.value}</p>
-              <p className="mt-1 text-[0.62rem] leading-3 text-[#9fb2c6]">{stat.label}</p>
+              <p className="mt-1 text-[12px] leading-3 text-[#9fb2c6]">{stat.label}</p>
             </div>
           ))}
         </div>
@@ -1216,7 +1256,7 @@ function RepairDisputeCards({ loading, requests }: { loading: boolean; requests:
     return (
       <div className={cn("mt-4 rounded-2xl p-3", reportMiniCardClass)}>
         <p className="text-xs font-semibold">No active disputes found</p>
-        <p className="mt-1 text-[0.68rem] leading-5 text-[#9fb2c6]">You currently have no dispute cases associated with this credit report.</p>
+        <p className="mt-1 text-[12px] leading-5 text-[#9fb2c6]">You currently have no dispute cases associated with this credit report.</p>
       </div>
     );
   }
@@ -1228,12 +1268,12 @@ function RepairDisputeCards({ loading, requests }: { loading: boolean; requests:
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold">{getDisputeId(dispute)}</p>
-              <p className="mt-1 text-[0.68rem] text-[#9fb2c6]">{dispute.lenderName || "--"}</p>
-              <p className="mt-1 text-[0.68rem] text-[#9fb2c6]">Created {formatDisputeCreatedDate(dispute)}</p>
+              <p className="mt-1 text-[12px] text-[#9fb2c6]">{dispute.lenderName || "--"}</p>
+              <p className="mt-1 text-[12px] text-[#9fb2c6]">Created {formatDisputeCreatedDate(dispute)}</p>
             </div>
-            <span className="rounded-full bg-[#1F756B]/12 px-2.5 py-1 text-[0.62rem] font-semibold capitalize text-[#1F756B]">{dispute.repairStatus || dispute.paymentStatus || "--"}</span>
+            <span className="rounded-full bg-[#1F756B]/12 px-2.5 py-1 text-[12px] font-semibold capitalize text-[#1F756B]">{dispute.repairStatus || dispute.paymentStatus || "--"}</span>
           </div>
-          {readDisputeProgress(dispute) ? <p className="mt-3 text-[0.68rem] font-semibold text-[#1F756B]">Progress {readDisputeProgress(dispute)}</p> : null}
+          {readDisputeProgress(dispute) ? <p className="mt-3 text-[12px] font-semibold text-[#1F756B]">Progress {readDisputeProgress(dispute)}</p> : null}
         </div>
       ))}
     </div>
@@ -1243,7 +1283,7 @@ function RepairDisputeCards({ loading, requests }: { loading: boolean; requests:
 function RepairRequestsTable({ loading, requests }: { loading: boolean; requests: CibilRepairRequest[] }) {
   return (
     <div className={cn("mt-4 overflow-hidden rounded-2xl", reportMiniCardClass)}>
-      <div className="grid grid-cols-[1.1fr_0.8fr_1fr] border-b border-white/10 px-3 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#9fb2c6]">
+      <div className="grid grid-cols-[1.1fr_0.8fr_1fr] border-b border-white/10 px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9fb2c6]">
         <span>Date/Time</span>
         <span>Status</span>
         <span>Remarks</span>
@@ -1255,14 +1295,14 @@ function RepairRequestsTable({ loading, requests }: { loading: boolean; requests
         </div>
       ) : requests.length ? (
         requests.map((request) => (
-          <div key={request.publicId ?? request.id} className="grid grid-cols-[1.1fr_0.8fr_1fr] gap-2 border-b border-white/8 px-3 py-2 text-[0.68rem] text-white last:border-b-0">
+          <div key={request.publicId ?? request.id} className="grid grid-cols-[1.1fr_0.8fr_1fr] gap-2 border-b border-white/8 px-3 py-2 text-[12px] text-white last:border-b-0">
             <span className="text-[#c8d3e2]">{formatRepairRequestDate(request)}</span>
             <span className="font-semibold capitalize text-[#1F756B]">{request.repairStatus || request.paymentStatus || "--"}</span>
             <span className="text-[#9fb2c6]">{request.remarks || "--"}</span>
           </div>
         ))
       ) : (
-        <p className="px-3 py-3 text-[0.68rem] text-[#9fb2c6]">No repair requests found.</p>
+        <p className="px-3 py-3 text-[12px] text-[#9fb2c6]">No repair requests found.</p>
       )}
     </div>
   );
@@ -1275,24 +1315,24 @@ function ReportAccountCard({ account }: { account: ReportAccountItem }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="truncate text-xl font-bold">{account.lender}</h2>
-          <p className="mt-1 text-[0.72rem] text-[#9fb2c6]">{account.loanType}</p>
+          <p className="mt-1 text-[12px] text-[#9fb2c6]">{account.loanType}</p>
         </div>
-        <span className={cn("shrink-0 rounded-full px-3 py-1 text-[0.64rem] font-semibold", account.statusTone)}>
+        <span className={cn("shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold", account.statusTone)}>
           {account.status}
         </span>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.66rem] font-semibold", account.impactTone)}>
+        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold", account.impactTone)}>
           {account.impact === "High impact" ? <Zap className="size-3" fill="currentColor" strokeWidth={2.4} /> : null}
           {account.impact}
         </span>
-        <span className="rounded-full border border-white/[0.06] bg-white/[0.045] px-3 py-1.5 text-[0.66rem] font-medium text-[#9fb2c6]">Opened {account.opened}</span>
+        <span className="rounded-full border border-white/[0.06] bg-white/[0.045] px-3 py-1.5 text-[12px] font-medium text-[#9fb2c6]">Opened {account.opened}</span>
       </div>
       {account.details.length ? (
         <div className="mt-4 grid grid-cols-2 gap-2">
           {account.details.map((detail) => (
             <div key={detail.label} className={cn("rounded-2xl px-3 py-2", reportMiniCardClass)}>
-              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#6f8399]">{detail.label}</p>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#6f8399]">{detail.label}</p>
               <p className="mt-1 truncate text-[0.8rem] font-semibold text-[#dbe7f4]">{detail.value}</p>
             </div>
           ))}
@@ -1308,17 +1348,17 @@ function ReportEnquiryCard({ enquiry }: { enquiry: ReportEnquiryItem }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold">{enquiry.lender}</h2>
-          <p className="mt-1 text-[0.72rem] text-[#9fb2c6]">{enquiry.loanType}</p>
+          <p className="mt-1 text-[12px] text-[#9fb2c6]">{enquiry.loanType}</p>
         </div>
-        <span className={cn("shrink-0 rounded-full px-3 py-1 text-[0.64rem] font-semibold", enquiry.kind === "Hard" ? "bg-[#ff4d7d]/14 text-[#ff8cab]" : "bg-[#1F756B]/12 text-[#1F756B]")}>
+        <span className={cn("shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold", enquiry.kind === "Hard" ? "bg-[#ff4d7d]/14 text-[#ff8cab]" : "bg-[#1F756B]/12 text-[#1F756B]")}>
           {enquiry.kind}
         </span>
       </div>
-      <div className="mt-3 space-y-1 text-[0.72rem] font-medium text-[#9fb2c6]">
+      <div className="mt-3 space-y-1 text-[12px] font-medium text-[#9fb2c6]">
         <p>Enquiry Date {enquiry.date}</p>
         {enquiry.amount ? <p>Requested Amount {enquiry.amount}</p> : null}
       </div>
-      <p className={cn("mt-3 text-[0.72rem] font-medium", enquiry.kind === "Hard" ? "text-[#ff8cab]" : "text-[#1F756B]")}>{enquiry.message}</p>
+      <p className={cn("mt-3 text-[12px] font-medium", enquiry.kind === "Hard" ? "text-[#ff8cab]" : "text-[#1F756B]")}>{enquiry.message}</p>
     </article>
   );
 }
@@ -1388,7 +1428,7 @@ function ScorePanel({
             {loading ? "Loading latest report..." : lastChecked ? `Last checked: ${lastChecked}` : "Latest report is not ready"}
           </p>
         </div>
-        <span className={cn("rounded-full px-3 py-1.5 text-[0.68rem] font-bold", hasReport ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500")}>
+        <span className={cn("rounded-full px-3 py-1.5 text-[12px] font-bold", hasReport ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500")}>
           {hasReport ? "PDF ready" : "No PDF"}
         </span>
       </div>
@@ -1402,7 +1442,7 @@ function ScorePanel({
       {factors.length ? (
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           {factors.slice(0, 2).map((factor) => (
-            <p key={factor} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[0.68rem] font-bold leading-4 text-slate-500">
+            <p key={factor} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] font-bold leading-4 text-slate-500">
               {toTitleCase(factor)}
             </p>
           ))}
@@ -1627,7 +1667,7 @@ function BehaviourCard({ title, value, rating, body, index, tone }: BehaviourIte
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="rounded-full border border-slate-200 px-3 py-1.5 text-[0.68rem] font-bold text-slate-600">{rating}</span>
+          <span className="rounded-full border border-slate-200 px-3 py-1.5 text-[12px] font-bold text-slate-600">{rating}</span>
           <CheckCircle2 className={cn("size-7", tone === "danger" ? "text-rose-500" : tone === "warn" ? "text-amber-500" : "text-emerald-500")} />
         </div>
       </div>
@@ -1646,7 +1686,7 @@ function AccountCard({ account }: { account: CreditAccount }) {
           <p className="truncate text-sm font-bold text-slate-950">{account.member_name || "Credit account"}</p>
           <p className="mt-1 text-xs text-slate-500">Type {account.type || "--"} • Opened {formatCompactDate(account.opened)}</p>
         </div>
-        <span className={cn("shrink-0 rounded-full px-3 py-1.5 text-[0.68rem] font-bold", overdue > 0 ? "bg-rose-100 text-rose-700" : "bg-emerald-50 text-emerald-700")}>
+        <span className={cn("shrink-0 rounded-full px-3 py-1.5 text-[12px] font-bold", overdue > 0 ? "bg-rose-100 text-rose-700" : "bg-emerald-50 text-emerald-700")}>
           {overdue > 0 ? "Overdue" : "Current"}
         </span>
       </div>
@@ -1667,7 +1707,7 @@ function EnquiryCard({ enquiry }: { enquiry: CreditEnquiry }) {
           <p className="text-sm font-bold text-slate-950">{enquiry.member || "Credit enquiry"}</p>
           <p className="mt-1 text-xs text-slate-500">Purpose {enquiry.enquiry_purpose || "--"} • {formatCompactDate(enquiry.enquiry_date)}</p>
         </div>
-        <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-[0.68rem] font-bold text-slate-700">
+        <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-[12px] font-bold text-slate-700">
           {formatRupees(enquiry.enquiry_amount)}
         </span>
       </div>
@@ -1678,7 +1718,7 @@ function EnquiryCard({ enquiry }: { enquiry: CreditEnquiry }) {
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-      <p className="text-[0.65rem] font-bold text-slate-500">{label}</p>
+      <p className="text-[12px] font-bold text-slate-500">{label}</p>
       <p className="mt-1 truncate text-xs font-black text-slate-900">{value}</p>
     </div>
   );
@@ -2276,6 +2316,29 @@ function getReportFileName(contentDisposition: string | null) {
   const fileName = utf8Match?.[1] ?? quotedMatch?.[1];
 
   return fileName ? decodeURIComponent(fileName.trim()) : "Scorecare-cibil-report.pdf";
+}
+
+async function loadNotifications(token: string) {
+  const response = await apiRequest(`/notifications?limit=${notificationsPageSize}&unreadOnly=false`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to load notifications.");
+  }
+
+  const result = (await response.json()) as {
+    data?: {
+      unreadCount?: number | null;
+    };
+    status?: string;
+  };
+
+  return {
+    unreadCount: result.status === "success" ? result.data?.unreadCount ?? 0 : 0,
+  };
 }
 
 function toTitleCase(value: string) {

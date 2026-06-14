@@ -60,7 +60,7 @@ export function ScorecareBrandAnimation({ message = "Securing your credit journe
             {services.map((service, index) => (
               <motion.div
                 key={service}
-                className="rounded-2xl border border-[#e3edf1] bg-[#fbfdfc] px-3 py-2 text-center text-[0.68rem] font-black uppercase tracking-[0.08em] text-[#123f5a] shadow-[0_8px_24px_rgba(18,63,90,0.05)]"
+                className="rounded-2xl border border-[#e3edf1] bg-[#fbfdfc] px-3 py-2 text-center text-[12px] font-black uppercase tracking-[0.08em] text-[#123f5a] shadow-[0_8px_24px_rgba(18,63,90,0.05)]"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: [0, 1, 1, 0.72], y: 0 }}
                 transition={{ duration: 3.8, delay: 0.65 + index * 0.18, ease: [0.22, 1, 0.36, 1] }}

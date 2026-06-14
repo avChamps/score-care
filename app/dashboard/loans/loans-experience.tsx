@@ -457,7 +457,7 @@ function RepaymentsView({
           <ArrowLeft className="size-4" />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[#FFD34D]">Loans</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#FFD34D]">Loans</p>
           <h2 className="mt-1 text-lg font-semibold tracking-tight text-white">Repayments</h2>
           <p className="mt-1 text-xs text-[#94A3B8]">{loading ? "Loading CIBIL accounts..." : lastChecked ? `Report updated ${lastChecked}` : "Report data not available"}</p>
         </div>
@@ -494,7 +494,7 @@ function RepaymentsView({
         </div>
         <div className="relative mt-3 flex flex-wrap gap-2">
           {["CIBIL", "KYC", "Plan"].map((item) => (
-            <span key={item} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-[0.65rem] font-semibold text-[#94A3B8]">
+            <span key={item} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-[12px] font-semibold text-[#94A3B8]">
               <Check className="size-3 text-[#1F756B]" /> {item}
             </span>
           ))}
@@ -510,7 +510,7 @@ function RepaymentsView({
         <AppCard className="!border-[#FF5C8A]/25 !bg-[#FF5C8A]/10">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-medium leading-5 text-[#FF8AAB]">{error}</p>
-            <button className="shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[0.68rem] font-semibold text-[#FF8AAB]" type="button" onClick={onRefresh}>
+            <button className="shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[12px] font-semibold text-[#FF8AAB]" type="button" onClick={onRefresh}>
               Retry
             </button>
           </div>
@@ -539,7 +539,7 @@ function RepaymentsView({
             <button
               key={tab}
               className={cn(
-                "shrink-0 rounded-full border px-3 py-1.5 text-[0.68rem] font-semibold transition",
+                "shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition",
                 loanStatusFilter === tab ? "border-[#1F756B] bg-[#1F756B]/10 text-[#1F756B]" : "border-white/10 bg-white/[0.05] text-[#94A3B8]",
               )}
               type="button"
@@ -640,7 +640,7 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
             <X className="size-5" />
           </button>
           <div className="mt-10 max-w-[18rem]">
-            <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#1F756B]">Premium Benefits</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#1F756B]">Premium Benefits</p>
             <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Unlock complete loan tracking</h2>
           </div>
         </div>
@@ -663,7 +663,7 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
           <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
             Subscription
           </button>
-          <button className="mx-auto mt-3 block text-[11px] font-medium text-[#6F7B8E]" type="button" onClick={() => setShowLeavingMessage(true)}>
+          <button className="mx-auto mt-3 block text-[12px] font-medium text-[#6F7B8E]" type="button" onClick={() => setShowLeavingMessage(true)}>
             skip for later
           </button>
         </div>
@@ -677,7 +677,7 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
                 <X className="size-5" />
               </button>
               <div className="mt-10 max-w-[18rem]">
-                <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#1F756B]">Before you leave</p>
+                <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#1F756B]">Before you leave</p>
                 <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Enjoy more benefits with premium</h2>
               </div>
             </div>
@@ -692,7 +692,7 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
               <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
                 View subscription
               </button>
-              <button className="mx-auto mt-3 block text-[11px] font-medium text-[#6F7B8E]" type="button" onClick={onClose}>
+              <button className="mx-auto mt-3 block text-[12px] font-medium text-[#6F7B8E]" type="button" onClick={onClose}>
                 Continue free
               </button>
             </div>
@@ -759,9 +759,9 @@ function LoanApplicationStatusCard({
     <AppCard className="!border-white/10 !bg-[#0C1626] overflow-hidden">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[#1F756B]">Your Application</p>
+          <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-[#1F756B]">Your Application</p>
           <h3 className="mt-1 text-base font-medium tracking-tight text-white">{formatRupees(application.loanAmount)}</h3>
-          <p className="mt-1 text-[0.72rem] font-normal text-[#94A3B8]">{formatLoanTypeLabel(application.loanType)} application</p>
+          <p className="mt-1 text-[12px] font-normal text-[#94A3B8]">{formatLoanTypeLabel(application.loanType)} application</p>
         </div>
         <span className="inline-flex w-fit items-center rounded-full border border-[#1F756B]/20 bg-[#1F756B]/10 px-3 py-1.5 text-[0.7rem] font-medium capitalize text-[#1F756B]">
           {status.replace(/_/g, " ")}
@@ -779,7 +779,7 @@ function LoanApplicationStatusCard({
 function ApplicationMeta({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[0.65rem] font-medium uppercase tracking-[0.1em] text-[#94A3B8]">{label}</p>
+      <p className="text-[12px] font-medium uppercase tracking-[0.1em] text-[#94A3B8]">{label}</p>
       <p className="mt-1 text-xs font-medium text-white">{value}</p>
     </div>
   );
@@ -813,7 +813,7 @@ function SummaryCard({
       type="button"
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[0.72rem] font-semibold leading-tight text-[#94A3B8]">{title}</p>
+        <p className="text-[12px] font-semibold leading-tight text-[#94A3B8]">{title}</p>
         <span className={cn("grid size-7 place-items-center rounded-lg border", isGreen ? "border-[#1F756B]/20 bg-[#1F756B]/10 text-[#1F756B]" : "border-[#FF5C8A]/25 bg-[#FF5C8A]/10 text-[#FF5C8A]")}>
           {isGreen ? <FileText className="size-4" /> : <Info className="size-4" />}
         </span>
@@ -842,7 +842,7 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
           <h3 className="text-sm font-semibold text-white">{loan.bank}</h3>
           <p className="mt-0.5 text-xs text-[#94A3B8]">{loan.loanType}</p>
         </div>
-        <span className={cn("rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold", overdue ? "border-[#FF5C8A]/25 bg-[#FF5C8A]/10 text-[#FF8AAB]" : "border-[#1F756B]/20 bg-[#1F756B]/10 text-[#1F756B]")}>
+        <span className={cn("rounded-full border px-2.5 py-1 text-[12px] font-semibold", overdue ? "border-[#FF5C8A]/25 bg-[#FF5C8A]/10 text-[#FF8AAB]" : "border-[#1F756B]/20 bg-[#1F756B]/10 text-[#1F756B]")}>
           {loan.status}
         </span>
       </div>
@@ -1152,7 +1152,7 @@ function ApplyLoanDialog({
             <ArrowLeft className="size-4" />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[#8EA2FF]">Loan Application</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#8EA2FF]">Loan Application</p>
             <h2 className="mt-1 text-base font-semibold tracking-tight text-white">Apply for Loan</h2>
             <p className="mt-1 text-[0.7rem] text-[#94A3B8]">Complete the details and upload required PDF documents.</p>
           </div>
@@ -1385,12 +1385,12 @@ function UploadField({
         <span className="min-w-0">
           <Upload className="mx-auto size-8 text-[#94A3B8]" />
           <span className="mt-3 block text-xs font-medium text-[#CBD5E1]">Upload {label}</span>
-          <span className="mt-2 block text-[0.68rem] text-[#94A3B8]">Upload PDF format only. Max {maxFiles} files.</span>
-          <span className={cn("mt-3 block text-[0.68rem] font-semibold", files.length ? "text-[#8EA2FF]" : "text-[#94A3B8]")}>{fileCountLabel}</span>
+          <span className="mt-2 block text-[12px] text-[#94A3B8]">Upload PDF format only. Max {maxFiles} files.</span>
+          <span className={cn("mt-3 block text-[12px] font-semibold", files.length ? "text-[#8EA2FF]" : "text-[#94A3B8]")}>{fileCountLabel}</span>
           {files.length ? (
             <span className="mt-2 block space-y-1 text-left">
               {files.map((file, index) => (
-                <span key={`${file.name}-${file.lastModified}`} className="flex min-w-0 items-center gap-2 rounded-lg bg-white/[0.08] px-2 py-1 text-[0.68rem] font-medium text-[#CBD5E1]">
+                <span key={`${file.name}-${file.lastModified}`} className="flex min-w-0 items-center gap-2 rounded-lg bg-white/[0.08] px-2 py-1 text-[12px] font-medium text-[#CBD5E1]">
                   <span className="min-w-0 flex-1 truncate">{file.name}</span>
                   <button
                     aria-label={`Remove ${file.name}`}

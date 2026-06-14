@@ -180,7 +180,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
                   <div className="mx-auto h-1.5 w-12 rounded-full bg-white/16" />
                   <div className="relative mx-auto mt-5 flex max-w-md items-start justify-between gap-4">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#FFD34D]">{selectedPlan.subtitle}</p>
+                      <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#FFD34D]">{selectedPlan.subtitle}</p>
                       <h2 className="mt-2 text-[21px] font-semibold leading-7 text-white">{selectedPlan.title}</h2>
                       <p className="mt-2 text-[12px] font-medium leading-5 text-[#AAB6C8]">{selectedPlan.description}</p>
                     </div>
@@ -222,7 +222,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
                     <X className="size-5" />
                   </button>
                   <div className="mt-10 max-w-[18rem]">
-                    <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Premium Benefits</p>
+                    <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Premium Benefits</p>
                     <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Unlock your complete credit dashboard</h2>
                   </div>
                 </div>
@@ -237,7 +237,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
                   <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={() => setShowPlans(true)}>
                     Subscription
                   </button>
-                  <button className="mx-auto mt-3 block text-[11px] font-medium text-[#6F7B8E]" type="button" onClick={closePrompt}>
+                  <button className="mx-auto mt-3 block text-[12px] font-medium text-[#6F7B8E]" type="button" onClick={closePrompt}>
                     skip for later
                   </button>
                 </div>
@@ -251,7 +251,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
                       <X className="size-5" />
                     </button>
                     <div className="mt-10 max-w-[18rem]">
-                      <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">{selectedPlan.subtitle}</p>
+                      <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">{selectedPlan.subtitle}</p>
                       <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">{selectedPlan.title}</h2>
                     </div>
                   </div>
@@ -291,7 +291,7 @@ function SubscriptionPlanCard({ onSelect, plan, selected }: { onSelect: () => vo
       type="button"
     >
       <div className={`relative px-6 py-6 ${theme.header}`}>
-        <span className="inline-flex rounded-full bg-white/16 px-2.5 py-1 text-[10px] font-bold text-white shadow-[0_8px_16px_rgba(0,0,0,0.12)]">
+        <span className="inline-flex rounded-full bg-white/16 px-2.5 py-1 text-[12px] font-bold text-white shadow-[0_8px_16px_rgba(0,0,0,0.12)]">
           ⭐ {plan.badge}
         </span>
         <span className="absolute right-6 top-16 grid size-8 place-items-center rounded-full border-[5px] border-white/90">

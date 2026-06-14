@@ -32,7 +32,7 @@ export default function SignupPage() {
             </div>
 
             <div className="px-5 pt-5">
-              <div className="grid grid-cols-3 gap-2 text-center text-[0.68rem] font-black">
+              <div className="grid grid-cols-3 gap-2 text-center text-[12px] font-black">
                 <span className="rounded-full bg-[#172033] px-3 py-2 text-white">Profile</span>
                 <span className="rounded-full border border-[#e2e5ea] bg-[#fafafa] px-3 py-2 text-[#667085]">OTP</span>
                 <span className="rounded-full border border-[#e2e5ea] bg-[#fafafa] px-3 py-2 text-[#667085]">Done</span>

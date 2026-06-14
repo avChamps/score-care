@@ -339,7 +339,7 @@ export function LoginFlow() {
 
             <div className="rounded-[28px] border border-white/10 bg-[#0F1B2D]/95 p-5 shadow-[0_22px_54px_rgba(0,0,0,0.42)]">
               <div className="mb-6">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#22F2C2]">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#22F2C2]">
                   Secure profile
                 </p>
                 <h1 className="mt-2 text-[1.4rem] font-bold leading-tight tracking-tight text-white">
@@ -601,7 +601,7 @@ export function LoginFlow() {
           <div className="pt-7">
             {/* <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 shadow-[0_10px_25px_rgba(0,0,0,0.22)]">
               <ShieldCheck className="size-4 text-[#22F2C2]" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#B8FFF0]">
+              <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#B8FFF0]">
                 ScoreCare
               </span>
             </div> */}
@@ -745,7 +745,7 @@ export function LoginFlow() {
               <div className="relative border-b border-white/10 px-5 py-5 sm:px-8 sm:py-7">
                 <div className="flex items-start justify-between gap-5">
                   <div className="max-w-2xl">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#22F2C2]">
+                    <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#22F2C2]">
                       {legalMeta[legalPopup].eyebrow}
                     </p>
                     <h2

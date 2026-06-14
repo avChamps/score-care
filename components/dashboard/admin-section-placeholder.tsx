@@ -17,7 +17,7 @@ export function AdminSectionPlaceholder({ Icon, description, items, title }: Adm
             <Icon className="size-6" />
           </span>
           <div className="min-w-0">
-            <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">Admin</p>
+            <p className="text-[12px] font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">Admin</p>
             <h2 className="mt-1 text-xl font-black tracking-tight text-[var(--portal-ink)]">{title}</h2>
             <p className="mt-2 text-sm leading-6 text-[var(--portal-muted)]">{description}</p>
           </div>

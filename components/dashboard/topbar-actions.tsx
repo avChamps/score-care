@@ -198,7 +198,7 @@ function IconButton({
     >
       {children}
       {badgeCount > 0 ? (
-        <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[0.58rem] font-black leading-4 text-white ring-2 ring-white">
+        <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[12px] font-black leading-4 text-white ring-2 ring-white">
           {badgeCount > 99 ? "99+" : badgeCount}
         </span>
       ) : null}
@@ -212,7 +212,7 @@ function DrawerHeader({ eyebrow, icon, iconTone = "blue", onClose, title }: { ey
       <div className="flex items-center gap-3">
         <span className={cn("grid size-10 place-items-center rounded-2xl", iconTone === "orange" ? "bg-[var(--portal-orange-soft)] text-[var(--portal-orange)]" : "bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]")}>{icon}</span>
         <div>
-          <p className="text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[var(--portal-orange)]">{eyebrow}</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--portal-orange)]">{eyebrow}</p>
           <h2 className="mt-0.5 text-[0.95rem] font-extrabold text-[var(--portal-ink)]">{title}</h2>
         </div>
       </div>
@@ -411,7 +411,7 @@ function NotificationsDrawer({ onClose, onUnreadCountChange }: { onClose: () => 
         <div className="mb-4 flex items-center justify-between gap-3">
           <p className="text-xs font-bold text-[var(--portal-muted)]">{unreadCount} unread</p>
           <button
-            className="rounded-full border border-[var(--portal-border)] bg-white px-3 py-1.5 text-[0.68rem] font-black text-[var(--portal-muted)] shadow-sm transition hover:border-[var(--portal-blue)] hover:text-[var(--portal-blue)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full border border-[var(--portal-border)] bg-white px-3 py-1.5 text-[12px] font-black text-[var(--portal-muted)] shadow-sm transition hover:border-[var(--portal-blue)] hover:text-[var(--portal-blue)] disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
             disabled={!unreadCount || markingAll}
             onClick={() => void markAllNotificationsRead()}
@@ -423,7 +423,7 @@ function NotificationsDrawer({ onClose, onUnreadCountChange }: { onClose: () => 
         {error ? (
           <div className="mb-4 rounded-2xl border border-rose-100 bg-rose-50 p-3">
             <p className="text-xs font-bold leading-5 text-rose-700">{error}</p>
-            <button className="mt-2 rounded-full bg-white px-3 py-1.5 text-[0.68rem] font-black text-rose-700" type="button" onClick={() => void loadNotifications()}>
+            <button className="mt-2 rounded-full bg-white px-3 py-1.5 text-[12px] font-black text-rose-700" type="button" onClick={() => void loadNotifications()}>
               Retry
             </button>
           </div>
@@ -449,7 +449,7 @@ function NotificationsDrawer({ onClose, onUnreadCountChange }: { onClose: () => 
           )}
           {loadingMore ? <NotificationLoadingCards count={1} /> : null}
           {!loading && notifications.length && !hasMore ? (
-            <p className="py-2 text-center text-[0.68rem] font-bold text-[var(--portal-muted)]/70">You are all caught up</p>
+            <p className="py-2 text-center text-[12px] font-bold text-[var(--portal-muted)]/70">You are all caught up</p>
           ) : null}
         </div>
       </div>
@@ -474,13 +474,13 @@ function NotificationCard({ item, marking, onMarkRead }: { item: NotificationApi
           <Icon className="size-4" strokeWidth={1.9} />
         </span>
         <div className="min-w-0">
-          <h4 className="text-[0.72rem] font-black text-[var(--portal-ink)]">{item.title || "Notification"}</h4>
-          <p className="mt-1 text-[0.68rem] leading-4 text-[var(--portal-muted)]">{item.message || "You have a new update."}</p>
+          <h4 className="text-[12px] font-black text-[var(--portal-ink)]">{item.title || "Notification"}</h4>
+          <p className="mt-1 text-[12px] leading-4 text-[var(--portal-muted)]">{item.message || "You have a new update."}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <p className="text-[0.62rem] font-medium text-[var(--portal-muted)]/70">{formatNotificationTime(item.createdAt)}</p>
+            <p className="text-[12px] font-medium text-[var(--portal-muted)]/70">{formatNotificationTime(item.createdAt)}</p>
             {!item.isRead ? (
               <button
-                className="rounded-full bg-[var(--portal-blue-soft)] px-2.5 py-1 text-[0.62rem] font-black text-[var(--portal-blue)] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-full bg-[var(--portal-blue-soft)] px-2.5 py-1 text-[12px] font-black text-[var(--portal-blue)] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                 type="button"
                 disabled={marking}
                 onClick={onMarkRead}
@@ -730,7 +730,7 @@ export function SupportDrawer({ onClose }: { onClose: () => void }) {
             {quickActions.map(({ Icon, label }) => (
               <button
                 key={label}
-                className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[#5EF2C2]/20 bg-[#5EF2C2]/10 px-3 text-[0.72rem] font-semibold text-[#5EF2C2] shadow-sm transition hover:border-[#5EF2C2]/60 hover:bg-[#5EF2C2]/15 disabled:cursor-not-allowed disabled:opacity-55"
+                className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[#5EF2C2]/20 bg-[#5EF2C2]/10 px-3 text-[12px] font-semibold text-[#5EF2C2] shadow-sm transition hover:border-[#5EF2C2]/60 hover:bg-[#5EF2C2]/15 disabled:cursor-not-allowed disabled:opacity-55"
                 type="button"
                 disabled={loading}
                 onClick={() => void sendAssistantMessage(label)}
@@ -794,7 +794,7 @@ function AssistantReplyContent({ body, isUser }: { body: string; isUser: boolean
   return (
     <div className="space-y-2">
       {lines.map((line, index) => (
-        <p key={`${line}-${index}`} className={cn("text-[0.72rem] font-medium leading-5", isUser ? "text-white" : "text-[#AAB6C8]")}>
+        <p key={`${line}-${index}`} className={cn("text-[12px] font-medium leading-5", isUser ? "text-white" : "text-[#AAB6C8]")}>
           {line}
         </p>
       ))}

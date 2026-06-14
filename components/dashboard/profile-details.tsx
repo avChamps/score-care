@@ -137,7 +137,7 @@ export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean 
                 <Icon className="size-5" strokeWidth={1.9} />
               </span>
               <div className="min-w-0">
-                <p className="text-[0.68rem] font-semibold text-slate-500">{label}</p>
+                <p className="text-[12px] font-semibold text-slate-500">{label}</p>
                 <p className="mt-1 truncate text-xs font-bold text-slate-900">{loading ? "..." : value || "-"}</p>
               </div>
             </div>
