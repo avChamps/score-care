@@ -180,9 +180,9 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
                   <div className="mx-auto h-1.5 w-12 rounded-full bg-white/16" />
                   <div className="relative mx-auto mt-5 flex max-w-md items-start justify-between gap-4">
                     <div>
-                      <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#FFD34D]">{selectedPlan.subtitle}</p>
-                      <h2 className="mt-2 text-[21px] font-semibold leading-7 text-white">{selectedPlan.title}</h2>
-                      <p className="mt-2 text-[12px] font-medium leading-5 text-[#AAB6C8]">{selectedPlan.description}</p>
+                      <p className="text-caption font-semibold uppercase tracking-[3px] text-[#FFD34D]">{selectedPlan.subtitle}</p>
+                      <h2 className="mt-2 text-heading font-semibold leading-7 text-white">{selectedPlan.title}</h2>
+                      <p className="mt-2 text-caption font-medium leading-5 text-[#AAB6C8]">{selectedPlan.description}</p>
                     </div>
                     <button
                       aria-label="Close subscription prompt"
@@ -222,22 +222,22 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
                     <X className="size-5" />
                   </button>
                   <div className="mt-10 max-w-[18rem]">
-                    <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Premium Benefits</p>
-                    <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Unlock your complete credit dashboard</h2>
+                    <p className="text-caption font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Premium Benefits</p>
+                    <h2 className="mt-2 text-heading font-semibold leading-7 text-white">Unlock your complete credit dashboard</h2>
                   </div>
                 </div>
 
                 <div className="px-5 pb-5 pt-4">
-                  <div className="grid gap-3 text-[13px] font-medium leading-5 text-[#AAB6C8]">
+                  <div className="grid gap-3 text-body-sm font-medium leading-5 text-[#AAB6C8]">
                     {premiumBenefits.map((benefit) => (
                       <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
                     ))}
                   </div>
 
-                  <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={() => setShowPlans(true)}>
+                  <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-body font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={() => setShowPlans(true)}>
                     Subscription
                   </button>
-                  <button className="mx-auto mt-3 block text-[12px] font-medium text-[#6F7B8E]" type="button" onClick={closePrompt}>
+                  <button className="mx-auto mt-3 block text-caption font-medium text-[#6F7B8E]" type="button" onClick={closePrompt}>
                     skip for later
                   </button>
                 </div>
@@ -251,19 +251,19 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
                       <X className="size-5" />
                     </button>
                     <div className="mt-10 max-w-[18rem]">
-                      <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">{selectedPlan.subtitle}</p>
-                      <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">{selectedPlan.title}</h2>
+                      <p className="text-caption font-semibold uppercase tracking-[3px] text-[#5EF2C2]">{selectedPlan.subtitle}</p>
+                      <h2 className="mt-2 text-heading font-semibold leading-7 text-white">{selectedPlan.title}</h2>
                     </div>
                   </div>
 
                   <div className="px-5 pb-5 pt-4">
-                    <div className="grid gap-3 text-[13px] font-medium leading-5 text-[#AAB6C8]">
+                    <div className="grid gap-3 text-body-sm font-medium leading-5 text-[#AAB6C8]">
                       {premiumBenefits.map((benefit) => (
                         <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
                       ))}
                     </div>
 
-                    <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={closeAll}>
+                    <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-body font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={closeAll}>
                       {selectedPlan.skipLabel}
                     </button>
                   </div>
@@ -291,29 +291,29 @@ function SubscriptionPlanCard({ onSelect, plan, selected }: { onSelect: () => vo
       type="button"
     >
       <div className={`relative px-6 py-6 ${theme.header}`}>
-        <span className="inline-flex rounded-full bg-white/16 px-2.5 py-1 text-[12px] font-bold text-white shadow-[0_8px_16px_rgba(0,0,0,0.12)]">
+        <span className="inline-flex rounded-full bg-white/16 px-2.5 py-1 text-caption font-bold text-white shadow-[0_8px_16px_rgba(0,0,0,0.12)]">
           ⭐ {plan.badge}
         </span>
         <span className="absolute right-6 top-16 grid size-8 place-items-center rounded-full border-[5px] border-white/90">
           {selected ? <span className="size-3 rounded-full bg-white" /> : null}
         </span>
-        <div className="mt-5 flex items-center gap-2.5 text-[21px] font-extrabold text-white">
+        <div className="mt-5 flex items-center gap-2.5 text-heading font-extrabold text-white">
           <span>{plan.icon}</span>
           <span>{plan.planName}</span>
         </div>
-        <p className="mt-4 text-[34px] font-black leading-none text-white">{formatPlanAmount(plan)}<span className="ml-1 text-[12px] font-bold text-white/76">{formatBillingCycle(plan.billingCycle)}</span></p>
+        <p className="mt-4 text-[34px] font-black leading-none text-white">{formatPlanAmount(plan)}<span className="ml-1 text-caption font-bold text-white/76">{formatBillingCycle(plan.billingCycle)}</span></p>
       </div>
 
       <div className="space-y-3 px-7 py-6">
         {plan.features.map((feature) => (
-          <div key={feature} className="flex items-center gap-3 text-[15px] font-semibold text-white/90">
-            <span className="grid size-6 shrink-0 place-items-center rounded-full text-[13px] shadow-[0_8px_16px_rgba(0,0,0,0.22)]" style={{ backgroundColor: `${theme.accent}24`, color: theme.accent }}>
+          <div key={feature} className="flex items-center gap-3 text-base font-semibold text-white/90">
+            <span className="grid size-6 shrink-0 place-items-center rounded-full text-body-sm shadow-[0_8px_16px_rgba(0,0,0,0.22)]" style={{ backgroundColor: `${theme.accent}24`, color: theme.accent }}>
               ✓
             </span>
             <span>{feature}</span>
           </div>
         ))}
-        {plan.moreFeatures ? <p className="pt-1 text-[14px] font-semibold text-white/20">{plan.moreFeatures}</p> : null}
+        {plan.moreFeatures ? <p className="pt-1 text-body font-semibold text-white/20">{plan.moreFeatures}</p> : null}
       </div>
     </button>
   );

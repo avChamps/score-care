@@ -528,7 +528,7 @@ function RepaymentsView({
         >
           <Bell className="size-6" strokeWidth={1.8} />
           {notificationUnreadCount > 0 ? (
-            <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-[12px] font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
+            <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-caption font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
               {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
             </span>
           ) : null}
@@ -537,7 +537,7 @@ function RepaymentsView({
 
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-[2rem] font-black leading-none tracking-tight text-white">Loans</h1>
+          <h1 className="text-heading font-black leading-none tracking-tight text-white">Loans</h1>
           <p className="mt-2 text-sm font-medium text-[#9fb2c6]">Track EMIs, dues and repayment health.</p>
         </div>
         {/* <button
@@ -553,9 +553,9 @@ function RepaymentsView({
       <section className="rounded-[28px] border border-[#00CFA4]/35 bg-[radial-gradient(circle_at_100%_0%,rgba(34,242,194,0.14),transparent_34%),linear-gradient(145deg,#062B1F,#0B3A29)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.24)]">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#22F2C2]">Repayment Health</p>
+            <p className="text-caption font-semibold uppercase tracking-[0.18em] text-[#22F2C2]">Repayment Health</p>
             <h2 className="mt-1 text-lg font-semibold tracking-tight text-white">EMI Summary</h2>
-            <p className="mt-1 text-[12px] text-[#9fb2c6]">{loading ? "Loading accounts..." : lastChecked ? `Updated ${lastChecked}` : "Report data not available"}</p>
+            <p className="mt-1 text-caption text-[#9fb2c6]">{loading ? "Loading accounts..." : lastChecked ? `Updated ${lastChecked}` : "Report data not available"}</p>
           </div>
 
           <button
@@ -566,7 +566,7 @@ function RepaymentsView({
   border border-[#FFD34D]/35
   bg-[linear-gradient(135deg,rgba(255,211,77,0.22),rgba(180,120,0,0.38))]
   px-4
-  text-[13px]
+  text-body-sm
   font-bold
   text-[#FFD34D]
   shadow-[0_10px_24px_rgba(255,211,77,0.16),inset_0_1px_0_rgba(255,255,255,0.08)]
@@ -602,7 +602,7 @@ function RepaymentsView({
         <div className="rounded-[24px] border border-[#FF5C8A]/25 bg-[#FF5C8A]/10 p-4">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-medium leading-5 text-[#FF8AAB]">{error}</p>
-            <button className="shrink-0 rounded-xl border border-[#FF5C8A]/25 bg-white/10 px-3 py-1.5 text-[12px] font-semibold text-[#FF8AAB]" type="button" onClick={onRefresh}>
+            <button className="shrink-0 rounded-xl border border-[#FF5C8A]/25 bg-white/10 px-3 py-1.5 text-caption font-semibold text-[#FF8AAB]" type="button" onClick={onRefresh}>
               Retry
             </button>
           </div>
@@ -631,7 +631,7 @@ function RepaymentsView({
             <button
               key={tab}
               className={cn(
-                "shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition",
+                "shrink-0 rounded-full border px-3 py-1.5 text-caption font-semibold transition",
                 loanStatusFilter === tab ? "border-[#08DB69]/45 bg-[#08DB69]/12 text-[#08DB69]" : "border-white/10 bg-white/5 text-[#9fb2c6]",
               )}
               type="button"
@@ -653,7 +653,7 @@ function RepaymentsView({
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <FileSearch className="size-10 text-[#6B7280]" />
-            <p className="mt-4 text-[15px] font-semibold text-white">No Records Found</p>
+            <p className="mt-4 text-base font-semibold text-white">No Records Found</p>
           </div>
         )}
       </div>
@@ -661,14 +661,14 @@ function RepaymentsView({
       {/* <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(145deg,#111821,#151E2A)] p-4 shadow-[0_18px_38px_rgba(0,0,0,0.24)]">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-black text-white">Payment History</h2>
-          <span className="rounded-full bg-[#22F2C2]/12 px-3 py-1 text-[12px] font-medium text-[#22F2C2]">Monthly</span>
+          <span className="rounded-full bg-[#22F2C2]/12 px-3 py-1 text-caption font-medium text-[#22F2C2]">Monthly</span>
         </div>
         <div className="mt-4 grid gap-2">
           {historyRows.length ? historyRows.map((row) => (
             <div key={`${row.month}-${row.amount}`} className="grid grid-cols-[1fr_auto] gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
               <div>
                 <p className="text-sm font-bold text-white">{row.month}</p>
-                <p className="mt-1 text-[12px] text-[#9fb2c6]">Paid Date: {row.paidDate}</p>
+                <p className="mt-1 text-caption text-[#9fb2c6]">Paid Date: {row.paidDate}</p>
               </div>
               <div className="text-right">
                 <p className="text-sm font-black text-[#08DB69]">{row.amount}</p>
@@ -678,7 +678,7 @@ function RepaymentsView({
           )) : (
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
               <p className="text-sm font-bold text-white">No payment history found</p>
-              <p className="mt-1 text-[12px] text-[#9fb2c6]">Month-wise EMI payments will appear here.</p>
+              <p className="mt-1 text-caption text-[#9fb2c6]">Month-wise EMI payments will appear here.</p>
             </div>
           )}
         </div>
@@ -761,13 +761,13 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
             <X className="size-5" />
           </button>
           <div className="mt-10 max-w-[18rem]">
-            <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Premium Benefits</p>
-            <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Unlock complete loan tracking</h2>
+            <p className="text-caption font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Premium Benefits</p>
+            <h2 className="mt-2 text-heading font-semibold leading-7 text-white">Unlock complete loan tracking</h2>
           </div>
         </div>
 
         <div className="px-5 pb-5 pt-4">
-          <div className="grid gap-3 text-[13px] font-medium leading-5 text-[#AAB6C8]">
+          <div className="grid gap-3 text-body-sm font-medium leading-5 text-[#AAB6C8]">
             {isLoadingBenefits ? (
               <>
                 <span className="h-11 animate-pulse rounded-2xl bg-white/[0.08]" />
@@ -781,10 +781,10 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
             )}
           </div>
 
-          <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
+          <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-body font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
             Subscription
           </button>
-          <button className="mx-auto mt-3 block text-[12px] font-medium text-[#6F7B8E]" type="button" onClick={() => setShowLeavingMessage(true)}>
+          <button className="mx-auto mt-3 block text-caption font-medium text-[#6F7B8E]" type="button" onClick={() => setShowLeavingMessage(true)}>
             skip for later
           </button>
         </div>
@@ -801,22 +801,22 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
                 <X className="size-5" />
               </button>
               <div className="mt-10 max-w-[18rem]">
-                <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Before you leave</p>
-                <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Enjoy more benefits with premium</h2>
+                <p className="text-caption font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Before you leave</p>
+                <h2 className="mt-2 text-heading font-semibold leading-7 text-white">Enjoy more benefits with premium</h2>
               </div>
             </div>
 
             <div className="px-5 pb-5 pt-4">
-              <div className="grid gap-3 text-[13px] font-medium leading-5 text-[#AAB6C8]">
+              <div className="grid gap-3 text-body-sm font-medium leading-5 text-[#AAB6C8]">
                 {benefitItems.map((benefit) => (
                   <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
                 ))}
               </div>
 
-              <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
+              <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-body font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
                 View subscription
               </button>
-              <button className="mx-auto mt-3 block text-[12px] font-medium text-[#6F7B8E]" type="button" onClick={onClose}>
+              <button className="mx-auto mt-3 block text-caption font-medium text-[#6F7B8E]" type="button" onClick={onClose}>
                 Continue free
               </button>
             </div>
@@ -861,7 +861,7 @@ function LoanApplicationStatusCard({
       // <AppCard>
       //   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       //     <div>
-      //       <p className="text-[0.82rem] font-black text-[var(--portal-ink)]">{error || "Loan application not found"}</p>
+      //       <p className="text-body-sm font-black text-[var(--portal-ink)]">{error || "Loan application not found"}</p>
       //       <p className="mt-1 text-xs font-medium leading-5 text-[var(--portal-muted)]">Your submitted loan application will appear here after you apply.</p>
       //     </div>
       //     <div className="flex shrink-0 gap-2">
@@ -881,11 +881,11 @@ function LoanApplicationStatusCard({
     strokeWidth={1.6}
   />
 
-  <p className="mt-4 text-[15px] font-semibold text-white">
+  <p className="mt-4 text-base font-semibold text-white">
     No Records Found
   </p>
 
-  <p className="mt-1 text-[13px] text-[#AAB6C8]">
+  <p className="mt-1 text-body-sm text-[#AAB6C8]">
     No loan applications available.
   </p>
 </div>
@@ -899,11 +899,11 @@ function LoanApplicationStatusCard({
     <AppCard className="overflow-hidden">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-[#1F756B]">Your Application</p>
+          <p className="text-caption font-medium uppercase tracking-[0.14em] text-[#1F756B]">Your Application</p>
           <h3 className="mt-1 text-base font-black tracking-tight text-[var(--portal-ink)]">{formatRupees(application.loanAmount)}</h3>
-          <p className="mt-1 text-[12px] font-normal text-[var(--portal-muted)]">{formatLoanTypeLabel(application.loanType)} application</p>
+          <p className="mt-1 text-caption font-normal text-[var(--portal-muted)]">{formatLoanTypeLabel(application.loanType)} application</p>
         </div>
-        <span className="inline-flex w-fit items-center rounded-full border border-[#1F756B]/20 bg-[#1F756B]/10 px-3 py-1.5 text-[0.7rem] font-medium capitalize text-[#1F756B]">
+        <span className="inline-flex w-fit items-center rounded-full border border-[#1F756B]/20 bg-[#1F756B]/10 px-3 py-1.5 text-tiny font-medium capitalize text-[#1F756B]">
           {status.replace(/_/g, " ")}
         </span>
       </div>
@@ -919,7 +919,7 @@ function LoanApplicationStatusCard({
 function ApplicationMeta({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[12px] font-medium uppercase tracking-[0.1em] text-[var(--portal-muted)]">{label}</p>
+      <p className="text-caption font-medium uppercase tracking-[0.1em] text-[var(--portal-muted)]">{label}</p>
       <p className="mt-1 text-xs font-bold text-[var(--portal-ink)]">{value}</p>
     </div>
   );
@@ -928,7 +928,7 @@ function ApplicationMeta({ label, value }: { label: string; value: string }) {
 function SummaryStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[22px] border border-[#0F5D43]/45 bg-[#102017]/70 p-3">
-      <p className="text-[11px] font-semibold text-[#9fb2c6]">{label}</p>
+      <p className="text-tiny font-semibold text-[#9fb2c6]">{label}</p>
       <p className="mt-2 text-base font-black text-[#08DB69]">{value}</p>
     </div>
   );
@@ -954,7 +954,7 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
       </div>
 
       <div className="mt-4">
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#7FA6B8]">EMI Amount</p>
+        <p className="text-tiny font-bold uppercase tracking-[0.12em] text-[#7FA6B8]">EMI Amount</p>
         <p className="mt-1 text-2xl font-black text-white">{loan.emi}</p>
         <p className="mt-1 text-xs text-[#AAB6C8]">Due date: {loan.nextEmi}</p>
       </div>
@@ -970,7 +970,7 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
         </div>
       ) : null}
 
-      <div className="mt-4 grid grid-cols-3 gap-2.5 text-[0.7rem] text-[#AAB6C8]">
+      <div className="mt-4 grid grid-cols-3 gap-2.5 text-tiny text-[#AAB6C8]">
         <MetaCell label="Sanctioned" value={loan.sanctioned} />
         <MetaCell label="Disbursed" value={loan.disbursed} />
         <MetaCell align="right" label="EMIs" value={loan.tenure} />
@@ -980,7 +980,7 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
         <div className="pt-3">
           <button
             disabled
-            className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[16px] border border-[#A78BFA]/55 bg-[linear-gradient(135deg,#7C3AED,rgba(59,130,246,0.94))] text-[13px] font-bold text-white shadow-[0_12px_28px_rgba(124,58,237,0.3),0_0_22px_rgba(59,130,246,0.2)] transition hover:scale-[1.01] active:scale-[0.99]"
+            className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[16px] border border-[#A78BFA]/55 bg-[linear-gradient(135deg,#7C3AED,rgba(59,130,246,0.94))] text-body-sm font-bold text-white shadow-[0_12px_28px_rgba(124,58,237,0.3),0_0_22px_rgba(59,130,246,0.2)] transition hover:scale-[1.01] active:scale-[0.99]"
             type="button"
           >
             <BadgeIndianRupee className="size-4" strokeWidth={2} />
@@ -1015,7 +1015,7 @@ function LoanLoadingCards() {
 function LoanMetric({ title, value }: { title: string; value: string }) {
   return (
     <div className="rounded-[16px] border border-white/10 bg-white/[0.04] p-3">
-      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#7FA6B8]">{title}</p>
+      <p className="text-tiny font-bold uppercase tracking-[0.12em] text-[#7FA6B8]">{title}</p>
       <p className="mt-1 text-sm font-black text-white">{value}</p>
     </div>
   );
@@ -1024,7 +1024,7 @@ function LoanMetric({ title, value }: { title: string; value: string }) {
 function MetaCell({ align, label, value }: { align?: "right"; label: string; value: string }) {
   return (
     <span className={cn(align === "right" && "text-right")}>
-      <strong className="block text-[10px] font-bold uppercase tracking-[0.12em] text-[#7FA6B8]">{label}</strong>
+      <strong className="block text-tiny font-bold uppercase tracking-[0.12em] text-[#7FA6B8]">{label}</strong>
       <span className="mt-1 block font-bold text-white">{value}</span>
     </span>
   );
@@ -1034,7 +1034,7 @@ function StatusPill({ status }: { status: "On Time" | "Due Soon" | "Overdue" }) 
   return (
     <span
       className={cn(
-        "inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-[12px] font-semibold",
+        "inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-caption font-semibold",
         status === "On Time" && "border-[#08DB69]/30 bg-[#08DB69]/12 text-[#08DB69]",
         status === "Due Soon" && "border-[#FFD34D]/30 bg-[#FFD34D]/12 text-[#FFD34D]",
         status === "Overdue" && "border-[#EF4444]/30 bg-[#EF4444]/12 text-[#EF4444]",
@@ -1273,9 +1273,9 @@ function ApplyLoanDialog({
                 <ArrowLeft className="size-4" />
               </button>
               <div className="min-w-0 flex-1">
-                <p className="text-[12px] font-black uppercase tracking-[0.22em] text-[#22F2C2]">Loan Application</p>
+                <p className="text-caption font-black uppercase tracking-[0.22em] text-[#22F2C2]">Loan Application</p>
                 <h2 className="mt-2 text-lg font-black tracking-tight text-white">Apply for Loan</h2>
-                <p className="mt-1 text-[0.75rem] text-[#AAB6C8]">Complete the details and upload required PDF documents.</p>
+                <p className="mt-1 text-caption text-[#AAB6C8]">Complete the details and upload required PDF documents.</p>
               </div>
               <button
                 aria-label="Close loan application"
@@ -1297,10 +1297,10 @@ function ApplyLoanDialog({
               </span>
               <div>
                 <p className="text-xs font-semibold text-[#22F2C2]">CIBIL Score: {score ?? "--"}</p>
-                <p className="text-[0.7rem] text-[#AAB6C8]">{lastChecked ? `Verified on ${lastChecked}` : "Latest report data will be used when available"}</p>
+                <p className="text-tiny text-[#AAB6C8]">{lastChecked ? `Verified on ${lastChecked}` : "Latest report data will be used when available"}</p>
               </div>
             </div>
-            <button className="inline-flex shrink-0 items-center gap-1.5 text-[0.7rem] font-bold text-[#08DB69] transition hover:text-[#22F2C2]" type="button" onClick={handleScoreRefresh} disabled={scoreRefreshing}>
+            <button className="inline-flex shrink-0 items-center gap-1.5 text-tiny font-bold text-[#08DB69] transition hover:text-[#22F2C2]" type="button" onClick={handleScoreRefresh} disabled={scoreRefreshing}>
               {scoreRefreshing ? <LoaderCircle className="size-3.5 animate-spin" /> : null}
               {scoreRefreshing ? "Loading..." : "Refresh"}
             </button>
@@ -1331,7 +1331,7 @@ function ApplyLoanDialog({
                   <button
                     aria-expanded={loanTypeOpen}
                     aria-haspopup="listbox"
-                    className="flex h-14 w-full items-center justify-between rounded-[18px] border border-[#1F756B]/35 bg-[#101B2B] px-4 text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition hover:border-[#22F2C2] focus:border-[#22F2C2]"
+                    className="flex h-14 w-full items-center justify-between rounded-[18px] border border-[#1F756B]/35 bg-[#101B2B] px-4 text-body font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition hover:border-[#22F2C2] focus:border-[#22F2C2]"
                     type="button"
                     onClick={() => setLoanTypeOpen((open) => !open)}
                   >
@@ -1432,7 +1432,7 @@ function ApplyLoanDialog({
 function FormField({ children, label, required }: { children: React.ReactNode; label: string; required?: boolean }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-[12px] font-semibold text-[#DDE7F4]">
+      <span className="mb-2 block text-caption font-semibold text-[#DDE7F4]">
         {label} {required ? <span className="text-[#FF5C8A]">*</span> : null}
       </span>
       {children}
@@ -1443,7 +1443,7 @@ function FormField({ children, label, required }: { children: React.ReactNode; l
 function FormSection({ children, title }: { children: React.ReactNode; title: string }) {
   return (
     <section className="min-w-0 rounded-[24px] border border-[#1F756B]/25 bg-[linear-gradient(145deg,#09131F,#0D1827)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.24)]">
-      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#22F2C2]">{title}</p>
+      <p className="text-tiny font-bold uppercase tracking-[0.22em] text-[#22F2C2]">{title}</p>
       <div className="mt-5 space-y-5">{children}</div>
     </section>
   );
@@ -1468,7 +1468,7 @@ function EmploymentTypeOptions({
             key={type.value}
             className={cn(
               "flex h-12 items-center justify-center gap-2 rounded-full border px-3 text-center transition hover:-translate-y-0.5",
-              selected ? "border-[#22F2C2]/45 bg-[#22F2C2]/12 text-[14px] font-semibold text-[#22F2C2] shadow-[0_0_18px_rgba(34,242,194,0.12)]" : "border-white/10 bg-white/[0.05] text-[14px] font-medium text-[#AAB6C8]",
+              selected ? "border-[#22F2C2]/45 bg-[#22F2C2]/12 text-body font-semibold text-[#22F2C2] shadow-[0_0_18px_rgba(34,242,194,0.12)]" : "border-white/10 bg-white/[0.05] text-body font-medium text-[#AAB6C8]",
             )}
             type="button"
             onClick={() => onEmploymentTypeChange(type.value)}
@@ -1486,7 +1486,7 @@ function TextInput({ className, ...props }: React.ComponentPropsWithoutRef<"inpu
   return (
     <input
       className={cn(
-        "h-12 w-full rounded-[18px] border border-white/10 bg-[#101B2B] px-4 text-[14px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition placeholder:text-[#8FA3B8] focus:border-[#22F2C2] focus:outline-none focus-visible:outline-none",
+        "h-12 w-full rounded-[18px] border border-white/10 bg-[#101B2B] px-4 text-body font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition placeholder:text-[#8FA3B8] focus:border-[#22F2C2] focus:outline-none focus-visible:outline-none",
         className,
       )}
       {...props}
@@ -1520,12 +1520,12 @@ function UploadField({
         <span className="w-full min-w-0">
           <Upload className="mx-auto size-8 text-[#22F2C2]" />
           <span className="mt-3 block text-xs font-bold text-white">Upload {label}</span>
-          <span className="mt-2 block text-[12px] text-[#AAB6C8]">Upload PDF format only. Max {maxFiles} files.</span>
-          <span className={cn("mt-3 block text-[12px] font-semibold", files.length ? "text-[#22F2C2]" : "text-[#AAB6C8]")}>{fileCountLabel}</span>
+          <span className="mt-2 block text-caption text-[#AAB6C8]">Upload PDF format only. Max {maxFiles} files.</span>
+          <span className={cn("mt-3 block text-caption font-semibold", files.length ? "text-[#22F2C2]" : "text-[#AAB6C8]")}>{fileCountLabel}</span>
           {files.length ? (
             <span className="mx-auto mt-2 block w-full max-w-[calc(100%-1.5rem)] space-y-1 text-left">
               {files.map((file, index) => (
-                <span key={`${file.name}-${file.lastModified}`} className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-[11px] font-medium text-[#DDE7F4]">
+                <span key={`${file.name}-${file.lastModified}`} className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-tiny font-medium text-[#DDE7F4]">
                   <span className="min-w-0 flex-1 truncate">{file.name}</span>
                   <button
                     aria-label={`Remove ${file.name}`}

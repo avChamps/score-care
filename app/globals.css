@@ -34,6 +34,20 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --text-tiny: 11px;
+  --text-tiny--line-height: 1rem;
+  --text-caption: 12px;
+  --text-caption--line-height: 1rem;
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 1.25rem;
+  --text-body: 14px;
+  --text-body--line-height: 1.375rem;
+  --text-base: 16px;
+  --text-base--line-height: 1.5rem;
+  --text-title: 18px;
+  --text-title--line-height: 1.625rem;
+  --text-heading: 22px;
+  --text-heading--line-height: 1.75rem;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

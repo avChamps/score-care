@@ -102,7 +102,7 @@ export default function BillPaymentsPage() {
             <div className="absolute inset-y-0 left-0 w-1 bg-[var(--portal-blue)]" />
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-cyan-600">Payments hub</p>
+                <p className="text-caption font-bold uppercase tracking-[0.16em] text-cyan-600">Payments hub</p>
                 <h2 className="mt-1 text-base font-bold tracking-tight text-slate-950">Pay bills and recharge</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-500">Choose a service category to continue with secure payments.</p>
               </div>
@@ -133,7 +133,7 @@ function PaymentSection({ section }: { section: PaymentSectionData }) {
                 <Icon className="size-5" strokeWidth={1.9} />
               </span>
             </span>
-            <span className="mx-auto mt-1.5 block max-w-[4.8rem] text-[12px] font-semibold leading-tight text-slate-600">
+            <span className="mx-auto mt-1.5 block max-w-[4.8rem] text-caption font-semibold leading-tight text-slate-600">
               {label}
             </span>
           </button>

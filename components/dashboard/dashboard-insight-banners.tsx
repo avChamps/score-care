@@ -185,7 +185,7 @@ function VisualBanner({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm font-black tracking-tight text-[var(--portal-ink)]">{title}</p>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-black ${isBlue ? "bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]" : "bg-[var(--portal-orange-soft)] text-[var(--portal-orange)]"}`}>
+            <span className={`shrink-0 rounded-full px-2.5 py-1 text-caption font-black ${isBlue ? "bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]" : "bg-[var(--portal-orange-soft)] text-[var(--portal-orange)]"}`}>
               {metric}
             </span>
           </div>

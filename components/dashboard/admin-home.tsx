@@ -121,7 +121,7 @@ export function AdminHome() {
     <div className="space-y-5 animate-[creditPanelIn_0.42s_ease-out]">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[12px] font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">Admin home</p>
+          <p className="text-caption font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">Admin home</p>
           <h2 className="mt-1 text-2xl font-black tracking-tight text-[var(--portal-ink)]">Analytics overview</h2>
         </div>
         {notice ? <p className="rounded-full border border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">{notice}</p> : null}

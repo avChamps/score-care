@@ -382,7 +382,7 @@ export function HomeDashboard() {
               >
                 <Bell className="size-6" strokeWidth={1.8} />
                 {notificationUnreadCount > 0 ? (
-                  <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-[12px] font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
+                  <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-caption font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
                     {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
                   </span>
                 ) : null}
@@ -392,15 +392,15 @@ export function HomeDashboard() {
 
           <div className="mt-10 max-w-sm sm:mt-16">
             <div className="min-w-0">
-              <p className="text-[18px] font-medium italic leading-5 text-[#10206B] sm:text-[20px] sm:leading-6">Up to</p>
+              <p className="text-title font-medium italic leading-5 text-[#10206B] sm:text-heading sm:leading-6">Up to</p>
               <h1 className="mt-1 text-[31px] font-bold italic leading-none text-[#10206B] sm:text-[35px]">800+</h1>
-              <p className="mt-1.5 text-[20px] font-medium leading-5 text-white sm:text-[22px] sm:leading-6">Credit Ready</p>
+              <p className="mt-1.5 text-heading font-medium leading-5 text-white sm:text-heading sm:leading-6">Credit Ready</p>
 
               <p className="mt-4 inline-flex items-center rounded-full bg-[#112C8F] px-4 py-2 text-white shadow-[0_12px_26px_rgba(17,44,143,0.22)] sm:mt-5">
-                <span className="text-[13px] font-medium sm:text-[14px]">
+                <span className="text-body-sm font-medium sm:text-body">
                   Hi,
                 </span>
-                <span className="ml-1 text-[12px] font-semibold sm:text-[13px]">
+                <span className="ml-1 text-caption font-semibold sm:text-body-sm">
                   {name}
                 </span>
               </p>
@@ -475,24 +475,24 @@ export function HomeDashboard() {
                       {score}
                     </p>
 
-                    <p className="mt-1 text-[12px] font-black tracking-[0.18em] text-[#08DB69] sm:text-[12px]">
+                    <p className="mt-1 text-caption font-black tracking-[0.18em] text-[#08DB69] sm:text-caption">
                       {visibleDashboard.rating}
                     </p>
 
-                    <p className="mt-1 text-[12px] font-normal text-[#AAB6C8] sm:text-[12px]">
+                    <p className="mt-1 text-caption font-normal text-[#AAB6C8] sm:text-caption">
                       out of 900
                     </p>
 
-                    <p className="mt-1.5 text-[12px] font-black text-[#08DB69] sm:text-[12px]">
+                    <p className="mt-1.5 text-caption font-black text-[#08DB69] sm:text-caption">
                       Grade {visibleDashboard.grade}+
                     </p>
                   </div>
 
-                  <span className="absolute left-[5%] top-[74%] -translate-y-1/2 text-[12px] font-medium text-[#627286]">
+                  <span className="absolute left-[5%] top-[74%] -translate-y-1/2 text-caption font-medium text-[#627286]">
                     300
                   </span>
 
-                  <span className="absolute right-[5%] top-[74%] -translate-y-1/2 text-[12px] font-medium text-[#627286]">
+                  <span className="absolute right-[5%] top-[74%] -translate-y-1/2 text-caption font-medium text-[#627286]">
                     900
                   </span>
                 </div>
@@ -532,8 +532,8 @@ export function HomeDashboard() {
 
             <section {...premiumClickProps} className={cn("mt-5 overflow-hidden rounded-[28px] bg-[linear-gradient(145deg,#101B2B,#111827)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.2)]", isFreeTier && "cursor-pointer")}>
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-[15px] font-medium tracking-normal">Score Journey</h2>
-                <span className="rounded-full bg-[#22F2C2]/12 px-3 py-1 text-[12px] font-medium text-[#22F2C2]">{formatSignedValue(growth)} growth</span>
+                <h2 className="text-base font-medium tracking-normal">Score Journey</h2>
+                <span className="rounded-full bg-[#22F2C2]/12 px-3 py-1 text-caption font-medium text-[#22F2C2]">{formatSignedValue(growth)} growth</span>
               </div>
               {hasJourneyMonths ? (
                 <svg className="mt-5 h-[150px] w-full rounded-2xl bg-[#08111F]" viewBox="0 0 320 150" preserveAspectRatio="none" role="img" aria-label="Credit score history trend">
@@ -567,7 +567,7 @@ export function HomeDashboard() {
                   ))}
                 </svg>
               ) : (
-                <div className="mt-5 flex h-[150px] items-center justify-center rounded-2xl border border-white/10 bg-[#08111F] px-6 text-center text-[12px] font-medium leading-5 text-[#AAB6C8]">
+                <div className="mt-5 flex h-[150px] items-center justify-center rounded-2xl border border-white/10 bg-[#08111F] px-6 text-center text-caption font-medium leading-5 text-[#AAB6C8]">
                   Score history will appear after your next report update.
                 </div>
               )}
@@ -589,12 +589,12 @@ export function HomeDashboard() {
             </section>
 
             <section {...premiumClickProps} className={cn("mt-5 rounded-[28px] bg-[linear-gradient(145deg,#111821,#151E2A)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.2)]", isFreeTier && "cursor-pointer")}>
-              <h2 className="text-[17px] font-bold tracking-normal">Score Factors</h2>
+              <h2 className="text-title font-bold tracking-normal">Score Factors</h2>
               <div className="mt-6 space-y-5">
                 {visibleDashboard.factors.map((factor) => (
                   <div key={factor.name}>
-                    <div className="flex items-center justify-between gap-3 text-[12px]">
-                      <p className="font-normal text-[13px] text-white">{factor.name}</p>
+                    <div className="flex items-center justify-between gap-3 text-caption">
+                      <p className="font-normal text-body-sm text-white">{factor.name}</p>
                       <p className={cn("font-normal", factor.tone === "good" && "text-[#1F756B]", factor.tone === "warn" && "text-[#FFD34D]", factor.tone === "alert" && "text-[#EF4444]")}>{factor.meta}</p>
                     </div>
                     <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-white/8">
@@ -614,21 +614,21 @@ export function HomeDashboard() {
                   <Lightbulb className="size-7" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[12px] font-bold text-[#22D3EE]">AI Credit Coach</p>
-                  <h2 className="mt-2 text-[13px] font-normal leading-5 tracking-normal">{visibleDashboard.coach}</h2>
-                  <div className="mt-4 flex flex-wrap gap-2 text-[12px] font-medium">
+                  <p className="text-caption font-bold text-[#22D3EE]">AI Credit Coach</p>
+                  <h2 className="mt-2 text-body-sm font-normal leading-5 tracking-normal">{visibleDashboard.coach}</h2>
+                  <div className="mt-4 flex flex-wrap gap-2 text-caption font-medium">
                     <span className="rounded-full bg-[#1F756B]/18 px-3 py-1 text-[#22D3EE]">+{visibleDashboard.coachGain} points</span>
                     <span className="rounded-full bg-white/8 px-3 py-1 text-[#22D3EE]">{visibleDashboard.coachTime}</span>
                   </div>
                 </div>
               </div>
-              <button className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#08DB69] text-[12px] font-medium text-white shadow-[0_12px_24px_rgba(31,117,107,0.18)]" type="button" onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : () => setShowActionPlan(true)}>
+              <button className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#08DB69] text-caption font-medium text-white shadow-[0_12px_24px_rgba(31,117,107,0.18)]" type="button" onClick={isFreeTier ? () => setShowBenefitsPrompt(true) : () => setShowActionPlan(true)}>
                 View Action Plan <ArrowUpRight className="size-5" />
               </button>
             </section>
           </>
         ) : (
-          <div className="mt-5 rounded-[26px] bg-[linear-gradient(145deg,#111821,#151E2A)] p-7 text-center text-[13px] font-medium text-[#AAB6C8]">{error || visibleDashboard.coach}</div>
+          <div className="mt-5 rounded-[26px] bg-[linear-gradient(145deg,#111821,#151E2A)] p-7 text-center text-body-sm font-medium text-[#AAB6C8]">{error || visibleDashboard.coach}</div>
         )}
       </main>
 
@@ -810,7 +810,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
       <div className="mx-auto max-w-md pb-10">
         <div
           className={cn(
-            "fixed left-1/2 top-5 z-[9999] -translate-x-1/2 rounded-full bg-[#5EF2C2] px-5 py-2.5 text-[12px] font-semibold text-[#06221A] shadow-[0_14px_30px_rgba(94,242,194,0.22)] transition-transform",
+            "fixed left-1/2 top-5 z-[9999] -translate-x-1/2 rounded-full bg-[#5EF2C2] px-5 py-2.5 text-caption font-semibold text-[#06221A] shadow-[0_14px_30px_rgba(94,242,194,0.22)] transition-transform",
             toast.visible ? "translate-y-0" : "-translate-y-24"
           )}
         >
@@ -829,7 +829,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
                 <ChevronLeft className="size-5" strokeWidth={1.8} />
               </button>
 
-              <p className="rounded-full bg-white/40 px-3 py-1 text-[12px] font-semibold uppercase tracking-wide text-[#6F7B8E]">Support</p>
+              <p className="rounded-full bg-white/40 px-3 py-1 text-caption font-semibold uppercase tracking-wide text-[#6F7B8E]">Support</p>
             </div>
 
             <div className="grid size-14 place-items-center rounded-2xl bg-[#112C8F] text-white shadow-[0_12px_26px_rgba(17,44,143,0.22)]">
@@ -840,7 +840,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
               How can we help?
             </h2>
 
-            <p className="mt-2 text-[12px] font-medium leading-5 text-[#6F7B8E]">
+            <p className="mt-2 text-caption font-medium leading-5 text-[#6F7B8E]">
               {totalQ} answers across {faqData.length} topics
             </p>
 
@@ -850,7 +850,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search questions"
-                className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-[#111827] outline-none placeholder:text-[#8A94A6]"
+                className="min-w-0 flex-1 bg-transparent text-body-sm font-medium text-[#111827] outline-none placeholder:text-[#8A94A6]"
               />
               {search ? (
                 <button
@@ -874,10 +874,10 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
                   key={label}
                   className="rounded-[16px] bg-white/45 px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]"
                 >
-                  <p className="text-[15px] font-bold" style={{ color }}>
+                  <p className="text-base font-bold" style={{ color }}>
                     {value}
                   </p>
-                  <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#6F7B8E]">
+                  <p className="mt-0.5 text-caption font-medium leading-snug text-[#6F7B8E]">
                     {label}
                   </p>
                 </div>
@@ -911,7 +911,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
           </div>
 
           {search ? (
-            <div className="mb-4 rounded-[18px] bg-[#111821] px-4 py-3 text-[12px] font-medium text-[#AAB6C8]">
+            <div className="mb-4 rounded-[18px] bg-[#111821] px-4 py-3 text-caption font-medium text-[#AAB6C8]">
               {totalResults > 0 ? (
                 <>
                   Found{" "}
@@ -931,10 +931,10 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
           ) : filteredData.length === 0 ? (
             <div className="mb-5 rounded-[26px] bg-[#111821] px-5 py-10 text-center">
               <Search className="mx-auto mb-3 size-9 text-[#6F7B8E]" strokeWidth={1.7} />
-              <p className="mb-2 text-[16px] font-semibold text-white">
+              <p className="mb-2 text-base font-semibold text-white">
                 No results found
               </p>
-              <p className="text-[12px] leading-6 text-[#AAB6C8]">
+              <p className="text-caption leading-6 text-[#AAB6C8]">
                 Try different words or browse a category above.
               </p>
             </div>
@@ -956,10 +956,10 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
                   </div>
 
                   <div>
-                    <p className="text-[14px] font-semibold text-white">
+                    <p className="text-body font-semibold text-white">
                       {cat.label}
                     </p>
-                    <p className="mt-0.5 text-[12px] font-medium text-[#AAB6C8]">
+                    <p className="mt-0.5 text-caption font-medium text-[#AAB6C8]">
                       {cat.questions.length} question
                       {cat.questions.length > 1 ? "s" : ""}
                     </p>
@@ -991,10 +991,10 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
           ))}
 
           <div className="mb-4 rounded-[26px] bg-[#111821] p-5 shadow-[0_18px_36px_rgba(0,0,0,0.22)]">
-            <h3 className="text-[15px] font-semibold text-white">
+            <h3 className="text-base font-semibold text-white">
               Still need help?
             </h3>
-            <p className="mt-1 text-[12px] leading-6 text-[#AAB6C8]">
+            <p className="mt-1 text-caption leading-6 text-[#AAB6C8]">
               Contact SCORECARE support for profile, report, subscription, and score queries.
             </p>
 
@@ -1045,10 +1045,10 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
             </span>
 
             <span className="flex-1">
-              <span className="block text-[13px] font-semibold">
+              <span className="block text-body-sm font-semibold">
                 Chat on WhatsApp
               </span>
-              <span className="mt-0.5 block text-[12px] font-medium opacity-75">
+              <span className="mt-0.5 block text-caption font-medium opacity-75">
                 Get help for disputes, payments and score queries
               </span>
             </span>
@@ -1057,7 +1057,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
           </button>
 
           <div className="rounded-[22px] bg-[#111821] px-4 py-4">
-            <p className="mb-3 text-[13px] font-semibold text-white">
+            <p className="mb-3 text-body-sm font-semibold text-white">
               Was this page helpful?
             </p>
 
@@ -1066,7 +1066,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
                 type="button"
                 disabled={feedbackLoading}
                 onClick={() => submitHelpFeedback(true)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#5EF2C2]/12 p-2.5 text-[12px] font-semibold text-[#5EF2C2]"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#5EF2C2]/12 p-2.5 text-caption font-semibold text-[#5EF2C2]"
               >
                 <ThumbsUp className="size-4" strokeWidth={1.8} /> Yes
               </button>
@@ -1075,14 +1075,14 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
                 type="button"
                 disabled={feedbackLoading}
                 onClick={() => submitHelpFeedback(false)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#EF4444]/12 p-2.5 text-[12px] font-semibold text-[#EF4444]"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#EF4444]/12 p-2.5 text-caption font-semibold text-[#EF4444]"
               >
                 <ThumbsDown className="size-4" strokeWidth={1.8} /> No
               </button>
             </div>
           </div>
 
-          <p className="mt-6 text-center text-[12px] font-medium text-[#6F7B8E]">
+          <p className="mt-6 text-center text-caption font-medium text-[#6F7B8E]">
             {website ? "SCORECARE support" : ""}
           </p>
         </div>
@@ -1095,7 +1095,7 @@ function CategoryPill({ active, color, Icon, label, onClick }: { active: boolean
   return (
     <button
       type="button"
-      className={cn("flex items-center gap-2 rounded-full border px-3.5 py-2 text-[12px] font-semibold transition", active ? "text-white" : "text-[#AAB6C8]")}
+      className={cn("flex items-center gap-2 rounded-full border px-3.5 py-2 text-caption font-semibold transition", active ? "text-white" : "text-[#AAB6C8]")}
       style={{
         backgroundColor: active ? color : "#111821",
         borderColor: active ? `${color}66` : "rgba(255,255,255,0.07)",
@@ -1123,13 +1123,13 @@ function AccordionItem({ a, color, index, isOpen, onToggle, q }: { a: string; co
   return (
     <div className="mb-2.5 overflow-hidden rounded-[20px] bg-[#111821] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
       <button type="button" className="flex w-full items-center gap-3 px-4 py-3.5 text-left" onClick={onToggle}>
-        <span className="grid size-8 shrink-0 place-items-center rounded-[12px] text-[12px] font-semibold" style={{ backgroundColor: `${color}22`, color }}>
+        <span className="grid size-8 shrink-0 place-items-center rounded-[12px] text-caption font-semibold" style={{ backgroundColor: `${color}22`, color }}>
           {index + 1}
         </span>
-        <span className="flex-1 text-[13px] font-medium leading-5 text-white">{q}</span>
+        <span className="flex-1 text-body-sm font-medium leading-5 text-white">{q}</span>
         <ChevronDown className={cn("size-4 shrink-0 text-[#AAB6C8] transition-transform", isOpen && "rotate-180")} strokeWidth={1.8} />
       </button>
-      {isOpen ? <p className="border-t border-white/[0.06] px-4 py-3 text-[12px] leading-6 text-[#AAB6C8]">{a}</p> : null}
+      {isOpen ? <p className="border-t border-white/[0.06] px-4 py-3 text-caption leading-6 text-[#AAB6C8]">{a}</p> : null}
     </div>
   );
 }
@@ -1234,8 +1234,8 @@ function ContactCard({ color, Icon, label, onClick, sub }: { color: string; Icon
       <span className="mx-auto grid size-9 place-items-center rounded-[13px]" style={{ backgroundColor: `${color}22`, color }}>
         <Icon className="size-5" strokeWidth={1.8} />
       </span>
-      <span className="mt-2 block text-[12px] font-semibold text-white">{label}</span>
-      <span className="mt-0.5 block text-[12px] font-medium leading-snug text-[#AAB6C8]">{sub}</span>
+      <span className="mt-2 block text-caption font-semibold text-white">{label}</span>
+      <span className="mt-0.5 block text-caption font-medium leading-snug text-[#AAB6C8]">{sub}</span>
     </button>
   );
 }
@@ -1266,7 +1266,7 @@ function SummaryTile({
     >
       <p
         className={cn(
-          "flex items-center justify-center gap-1 text-[16px] font-black leading-none tracking-[-0.02em] sm:text-[18px]",
+          "flex items-center justify-center gap-1 text-base font-black leading-none tracking-[-0.02em] sm:text-title",
           target ? "text-[#08DB69]" : "text-[#08DB69]"
         )}
       >
@@ -1276,7 +1276,7 @@ function SummaryTile({
         {value}
       </p>
 
-      <p className="mt-2 truncate text-[12px] font-medium text-[#AAB6C8] sm:text-[12px]">
+      <p className="mt-2 truncate text-caption font-medium text-[#AAB6C8] sm:text-caption">
         {label}
       </p>
     </button>
@@ -1394,10 +1394,10 @@ function QuickCardContent({ Icon, alert, meta, offer, title, value }: { Icon: Co
       <span className={cn("grid size-10 place-items-center rounded-[13px] border border-white/10 bg-[#173B66]/80 text-[#DFEBFF] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(21,101,192,0.3)]", alert && "bg-[#4B1E43]/70 text-[#FF8AAB]", offer && "bg-[#4A431C]/70 text-[#FFD34D]")}>
         <Icon className="size-5" strokeWidth={1.7} />
       </span>
-      <p className="mt-4 text-[13px] font-black leading-5 text-white">{title}</p>
+      <p className="mt-4 text-body-sm font-black leading-5 text-white">{title}</p>
       <p
         className={cn(
-          "mt-1 text-[12px] font-lighter tracking-normal",
+          "mt-1 text-caption font-lighter tracking-normal",
           alert
             ? "text-[#EF4444]"
             : offer
@@ -1415,8 +1415,8 @@ function QuickCardContent({ Icon, alert, meta, offer, title, value }: { Icon: Co
 function JourneyStat({ label, onClick, value, gold = false }: { label: string; onClick?: () => void; value: string; gold?: boolean }) {
   return (
     <button className={cn("rounded-[20px] bg-white/[0.06] p-3 text-left", onClick && "cursor-pointer")} type="button" onClick={onClick}>
-      <p className="text-[12px] font-normal text-[#AAB6C8]">{label}</p>
-      <p className={cn("mt-1 text-[12px] font-medium", gold ? "text-[#08DB69]" : "text-white")}>{value}</p>
+      <p className="text-caption font-normal text-[#AAB6C8]">{label}</p>
+      <p className={cn("mt-1 text-caption font-medium", gold ? "text-[#08DB69]" : "text-white")}>{value}</p>
     </button>
   );
 }
@@ -1485,9 +1485,9 @@ function ActionPlanPopup({ dashboard, onClose }: { dashboard: DashboardData; onC
           <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/10 text-white backdrop-blur" type="button" aria-label="Close action plan" onClick={onClose}>
             <X className="size-5" />
           </button>
-          <p className="mt-3 text-[12px] font-bold uppercase tracking-[3px] text-[#22D3EE]">AI Credit Coach</p>
-          <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Your action plan</h2>
-          <div className="mt-4 flex flex-wrap gap-2 text-[12px] font-medium">
+          <p className="mt-3 text-caption font-bold uppercase tracking-[3px] text-[#22D3EE]">AI Credit Coach</p>
+          <h2 className="mt-2 text-heading font-semibold leading-7 text-white">Your action plan</h2>
+          <div className="mt-4 flex flex-wrap gap-2 text-caption font-medium">
             <span className="rounded-full bg-[#5EF2C2]/14 px-3 py-1 text-[#5EF2C2]">+{dashboard.coachGain} points</span>
             <span className="rounded-full bg-white/8 px-3 py-1 text-[#AAB6C8]">{dashboard.coachTime}</span>
           </div>
@@ -1497,13 +1497,13 @@ function ActionPlanPopup({ dashboard, onClose }: { dashboard: DashboardData; onC
           {aiPlanLoading ? (
             <ActionPlanSkeleton />
           ) : null}
-          {aiPlanError ? <p className="rounded-2xl bg-[#EF4444]/10 px-4 py-3 text-[13px] font-medium leading-5 text-[#FF8AAB]">{aiPlanError}</p> : null}
+          {aiPlanError ? <p className="rounded-2xl bg-[#EF4444]/10 px-4 py-3 text-body-sm font-medium leading-5 text-[#FF8AAB]">{aiPlanError}</p> : null}
           {(!aiPlanLoading && aiPoints.length ? aiPoints : !aiPlanLoading && !aiPlan ? points : []).map(({ Icon, text, title, tone }) => (
             <div key={text} className="flex gap-3 rounded-2xl bg-white/[0.06] px-4 py-3">
               <span className={cn("mt-0.5 grid size-8 shrink-0 place-items-center rounded-full", tone === "mint" ? "bg-[#5EF2C2]/14 text-[#5EF2C2]" : tone === "gold" ? "bg-[#FFD34D]/14 text-[#FFD34D]" : "bg-[#FF7A00]/14 text-[#FF9F45]")}>
                 <Icon className="size-4" strokeWidth={2} />
               </span>
-              <p className="text-[13px] font-medium leading-5 text-[#D7DEE9]">
+              <p className="text-body-sm font-medium leading-5 text-[#D7DEE9]">
                 {title ? (
                   <span
                     className={cn(
@@ -1726,22 +1726,22 @@ function BenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubsc
             <X className="size-5" />
           </button>
           <div className="mt-10 max-w-[18rem]">
-            <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Premium Benefits</p>
-            <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Unlock your complete credit dashboard</h2>
+            <p className="text-caption font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Premium Benefits</p>
+            <h2 className="mt-2 text-heading font-semibold leading-7 text-white">Unlock your complete credit dashboard</h2>
           </div>
         </div>
 
         <div className="px-5 pb-5 pt-4">
-          <div className="grid gap-3 text-[13px] font-medium leading-5 text-[#AAB6C8]">
+          <div className="grid gap-3 text-body-sm font-medium leading-5 text-[#AAB6C8]">
             {isLoadingBenefits ? <BenefitsSkeleton /> : benefits.map((benefit) => (
               <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
             ))}
           </div>
 
-          <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
+          <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-body font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
             Subscription
           </button>
-          <button className="mx-auto mt-3 block text-[12px] font-medium text-[#6F7B8E]" type="button" onClick={() => setShowLeavingMessage(true)}>
+          <button className="mx-auto mt-3 block text-caption font-medium text-[#6F7B8E]" type="button" onClick={() => setShowLeavingMessage(true)}>
             skip for later
           </button>
         </div>
@@ -1757,22 +1757,22 @@ function BenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubsc
                 <X className="size-5" />
               </button>
               <div className="mt-10 max-w-[18rem]">
-                <p className="text-[12px] font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Before you leave</p>
-                <h2 className="mt-2 text-[22px] font-semibold leading-7 text-white">Enjoy more benefits with premium</h2>
+                <p className="text-caption font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Before you leave</p>
+                <h2 className="mt-2 text-heading font-semibold leading-7 text-white">Enjoy more benefits with premium</h2>
               </div>
             </div>
 
             <div className="px-5 pb-5 pt-4">
-              <div className="grid gap-3 text-[13px] font-medium leading-5 text-[#AAB6C8]">
+              <div className="grid gap-3 text-body-sm font-medium leading-5 text-[#AAB6C8]">
                 {isLoadingBenefits ? <BenefitsSkeleton /> : benefits.map((benefit) => (
                   <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
                 ))}
               </div>
 
-              <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-[14px] font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
+              <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-body font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
                 View subscription
               </button>
-              <button className="mx-auto mt-3 block text-[12px] font-medium text-[#6F7B8E]" type="button" onClick={onClose}>
+              <button className="mx-auto mt-3 block text-caption font-medium text-[#6F7B8E]" type="button" onClick={onClose}>
                 Continue free
               </button>
             </div>
@@ -1815,7 +1815,7 @@ function DownloadReportsPopup({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
       <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[17px] font-bold text-white">Download Reports</h2>
+          <h2 className="text-title font-bold text-white">Download Reports</h2>
           <button className="grid size-9 place-items-center rounded-full bg-white/10 text-white" type="button" aria-label="Close download reports" onClick={onClose}>
             <X className="size-5" />
           </button>
@@ -1831,13 +1831,13 @@ function DownloadReportsPopup({ onClose }: { onClose: () => void }) {
             ))}
           </div>
         ) : error ? (
-          <p className="mt-5 rounded-[18px] bg-[#FF5C8A]/10 px-4 py-3 text-[12px] font-medium text-[#FF8AAB]">{error}</p>
+          <p className="mt-5 rounded-[18px] bg-[#FF5C8A]/10 px-4 py-3 text-caption font-medium text-[#FF8AAB]">{error}</p>
         ) : downloads.length ? (
           <div className="mt-5 space-y-3">
             {downloads.map((download) => (
               <div key={download.id} className="rounded-[18px] bg-white/[0.06] px-4 py-3">
-                <p className="text-[13px] font-semibold text-white">{formatReportType(download.reportType)}</p>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-[12px] text-[#AAB6C8]">
+                <p className="text-body-sm font-semibold text-white">{formatReportType(download.reportType)}</p>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-caption text-[#AAB6C8]">
                   <p>Provider: <span className="font-semibold text-white">{download.provider || "--"}</span></p>
                   <p>Score: <span className="font-semibold text-white">{download.creditScore ?? "--"}</span></p>
                   <p className="col-span-2">Fetched: <span className="font-semibold text-white">{formatOptionalDownloadDate(download.reportFetchedAt)}</span></p>
@@ -1853,8 +1853,8 @@ function DownloadReportsPopup({ onClose }: { onClose: () => void }) {
                 <FileText className="size-7" strokeWidth={1.8} />
               </div>
             </div>
-            <p className="mt-5 text-[15px] font-semibold text-white">No records found</p>
-            <p className="mt-2 text-[12px] leading-5 text-[#AAB6C8]">Downloaded reports will appear here.</p>
+            <p className="mt-5 text-base font-semibold text-white">No records found</p>
+            <p className="mt-2 text-caption leading-5 text-[#AAB6C8]">Downloaded reports will appear here.</p>
           </div>
         )}
       </section>
@@ -1875,7 +1875,7 @@ function LanguageSettingsPopup({
     <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
       <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[17px] font-bold text-white">Language Settings</h2>
+          <h2 className="text-title font-bold text-white">Language Settings</h2>
           <button className="grid size-9 place-items-center rounded-full bg-white/10 text-white" type="button" aria-label="Close language settings" onClick={onClose}>
             <X className="size-5" />
           </button>
@@ -1887,13 +1887,13 @@ function LanguageSettingsPopup({
               key={language.code}
               type="button"
               className={cn(
-                "flex h-12 items-center justify-between rounded-[16px] px-4 text-left text-[13px] font-semibold transition",
+                "flex h-12 items-center justify-between rounded-[16px] px-4 text-left text-body-sm font-semibold transition",
                 selectedLanguage === language.code ? "bg-[#5EF2C2] text-[#06221a]" : "bg-white/[0.06] text-white hover:bg-white/[0.1]"
               )}
               onClick={() => onSelect(language.code)}
             >
               {language.label}
-              {selectedLanguage === language.code ? <span className="text-[12px] font-bold">Selected</span> : null}
+              {selectedLanguage === language.code ? <span className="text-caption font-bold">Selected</span> : null}
             </button>
           ))}
         </div>
@@ -2091,7 +2091,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
         </button>
 
         <div className="mt-8 rounded-[24px] bg-white/35 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
-          <div className="mb-5 inline-flex rounded-full bg-[#C9F9DF] px-4 py-1.5 text-[12px] font-medium text-[#07844E]">{completion}% Complete</div>
+          <div className="mb-5 inline-flex rounded-full bg-[#C9F9DF] px-4 py-1.5 text-caption font-medium text-[#07844E]">{completion}% Complete</div>
           <div className="grid gap-3.5">
             <ProfileField label="Full name" value={profile?.fullName || name} />
             <ProfileField label="Phone number" value={formatPhone(phone)} />
@@ -2114,7 +2114,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
       </section>
 
       <section className="mx-auto mt-6 max-w-md rounded-[26px] bg-[#111821] p-5 shadow-[0_18px_36px_rgba(0,0,0,0.22)]">
-        <p className="text-[12px] font-medium uppercase tracking-wide text-[#AAB6C8]">
+        <p className="text-caption font-medium uppercase tracking-wide text-[#AAB6C8]">
           Credit Service
         </p>
 
@@ -2136,7 +2136,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
       </section>
 
       <section className="mx-auto mt-6 max-w-md rounded-[26px] bg-[#111821] p-5 shadow-[0_18px_36px_rgba(0,0,0,0.22)]">
-        <p className="text-[12px] font-medium uppercase tracking-wide text-[#AAB6C8]">
+        <p className="text-caption font-medium uppercase tracking-wide text-[#AAB6C8]">
           Other Options
         </p>
 
@@ -2198,20 +2198,20 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
                 setRatingSubmitted(false);
               }}
               placeholder="Share your feedback"
-              className="mt-4 min-h-24 w-full resize-none rounded-[18px] border border-white/[0.08] bg-[#111821] px-4 py-3 text-[13px] font-medium leading-5 text-white outline-none placeholder:text-[#AAB6C8]/60 focus:border-[#5EF2C2]/60 focus:ring-4 focus:ring-[#5EF2C2]/10"
+              className="mt-4 min-h-24 w-full resize-none rounded-[18px] border border-white/[0.08] bg-[#111821] px-4 py-3 text-body-sm font-medium leading-5 text-white outline-none placeholder:text-[#AAB6C8]/60 focus:border-[#5EF2C2]/60 focus:ring-4 focus:ring-[#5EF2C2]/10"
             />
 
             {ratingSubmitted ? (
-              <p className="mt-3 text-[12px] font-medium text-[#5EF2C2]">Thanks for your feedback.</p>
+              <p className="mt-3 text-caption font-medium text-[#5EF2C2]">Thanks for your feedback.</p>
             ) : null}
 
             {ratingError ? (
-              <p className="mt-3 text-[12px] font-medium text-[#EF4444]">{ratingError}</p>
+              <p className="mt-3 text-caption font-medium text-[#EF4444]">{ratingError}</p>
             ) : null}
 
             <button
               type="button"
-              className="mt-4 h-11 w-full rounded-[16px] bg-[#2DB094] text-[13px] font-semibold text-white shadow-[0_12px_26px_rgba(45,176,148,0.22)] transition hover:bg-[#249a81] disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-4 h-11 w-full rounded-[16px] bg-[#2DB094] text-body-sm font-semibold text-white shadow-[0_12px_26px_rgba(45,176,148,0.22)] transition hover:bg-[#249a81] disabled:cursor-not-allowed disabled:opacity-50"
               disabled={!selectedRating || ratingLoading}
               onClick={submitRatingFeedback}
             >
@@ -2258,7 +2258,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
         />
       ) : null}
 
-      <p className="mt-6 text-center text-[12px] font-normal text-[#6F7B8E]">V 1.0.0</p>
+      <p className="mt-6 text-center text-caption font-normal text-[#6F7B8E]">V 1.0.0</p>
     </div>
   );
 }
@@ -2273,11 +2273,11 @@ function NotificationsScreen({ error, loading, markingAll, notifications, onBack
           <ArrowLeft className="size-6" strokeWidth={2.2} />
         </button>
         <div className="min-w-0 flex-1">
-          <h1 className="text-[15px] font-medium text-[#1F2937]">Notifications</h1>
-          <p className="mt-0.5 text-[12px] font-medium text-[#6F7B8E]">{unreadCount} unread</p>
+          <h1 className="text-base font-medium text-[#1F2937]">Notifications</h1>
+          <p className="mt-0.5 text-caption font-medium text-[#6F7B8E]">{unreadCount} unread</p>
         </div>
         <button
-          className="rounded-full border border-black/10 px-3 py-1.5 text-[12px] font-semibold text-[#1F2937] disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full border border-black/10 px-3 py-1.5 text-caption font-semibold text-[#1F2937] disabled:cursor-not-allowed disabled:opacity-50"
           type="button"
           disabled={!unreadCount || markingAll}
           onClick={onReadAll}
@@ -2290,17 +2290,17 @@ function NotificationsScreen({ error, loading, markingAll, notifications, onBack
         {loading ? (
           <NotificationScreenSkeleton />
         ) : error ? (
-          <p className="px-5 py-5 text-[12px] font-normal text-[#EF4444]">{error}</p>
+          <p className="px-5 py-5 text-caption font-normal text-[#EF4444]">{error}</p>
         ) : notifications.length ? (
           notifications.map((notification) => (
             <article key={notification.id} className={cn("border-b border-black/20 px-5 py-5", !notification.isRead && "bg-[#F2FFFA]")}>
-              <h2 className="text-[16px] font-medium leading-5 text-black">{notification.title || "Notification"}</h2>
-              <p className="mt-2 text-[15px] font-normal leading-4 text-black">{notification.message || "--"}</p>
-              {notification.createdAt ? <p className="mt-5 text-right text-[12px] font-normal text-black">{formatNotificationRelativeTime(notification.createdAt)}</p> : null}
+              <h2 className="text-base font-medium leading-5 text-black">{notification.title || "Notification"}</h2>
+              <p className="mt-2 text-base font-normal leading-4 text-black">{notification.message || "--"}</p>
+              {notification.createdAt ? <p className="mt-5 text-right text-caption font-normal text-black">{formatNotificationRelativeTime(notification.createdAt)}</p> : null}
             </article>
           ))
         ) : (
-          <p className="px-5 py-5 text-[12px] font-normal text-[#111827]">No notifications yet.</p>
+          <p className="px-5 py-5 text-caption font-normal text-[#111827]">No notifications yet.</p>
         )}
       </main>
     </div>
@@ -2327,8 +2327,8 @@ function NotificationScreenSkeleton() {
 function ProfileField({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-[14px] font-medium uppercase tracking-[2px] text-[#6F7280]">{label}</p>
-      <p className="mt-1 break-words text-[15px] font-medium tracking-[0.3px] text-[#111827]">{value || "--"}</p>
+      <p className="text-body font-medium uppercase tracking-[2px] text-[#6F7280]">{label}</p>
+      <p className="mt-1 break-words text-base font-medium tracking-[0.3px] text-[#111827]">{value || "--"}</p>
     </div>
   );
 }
@@ -2366,7 +2366,7 @@ function ProfileOption({
           )}
         />
         {badgeCount ? (
-          <span className="absolute -right-2.5 -top-2.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#EF4444] px-1 text-[12px] font-bold leading-none text-white">
+          <span className="absolute -right-2.5 -top-2.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#EF4444] px-1 text-caption font-bold leading-none text-white">
             {badgeCount > 99 ? "99+" : badgeCount}
           </span>
         ) : null}
@@ -2375,7 +2375,7 @@ function ProfileOption({
       <div className="flex-1 text-left">
         <p
           className={cn(
-            "text-[14px] font-medium",
+            "text-body font-medium",
             danger ? "text-[#EF4444]" : "text-white"
           )}
         >
@@ -2383,7 +2383,7 @@ function ProfileOption({
         </p>
 
         {subtitle && (
-          <p className="mt-0.5 text-[12px] text-[#6F7B8E]">
+          <p className="mt-0.5 text-caption text-[#6F7B8E]">
             {subtitle}
           </p>
         )}

@@ -64,7 +64,7 @@ export function OffersExperience() {
                 >
                   <Bell className="size-6" strokeWidth={1.8} />
                   {notificationUnreadCount > 0 ? (
-                    <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-[12px] font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
+                    <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-caption font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
                       {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
                     </span>
                   ) : null}

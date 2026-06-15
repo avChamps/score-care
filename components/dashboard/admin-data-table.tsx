@@ -158,7 +158,7 @@ export function AdminDataTable({ columns, description, emptyMessage, endpoint, e
     <div className="space-y-5 animate-[creditPanelIn_0.42s_ease-out]">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[12px] font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">Admin</p>
+          <p className="text-caption font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">Admin</p>
           <h2 className="mt-1 text-2xl font-black tracking-tight text-[var(--portal-ink)]">{title}</h2>
           <p className="mt-1 text-xs leading-5 text-[var(--portal-muted)]">{description}</p>
         </div>
@@ -197,7 +197,7 @@ export function AdminDataTable({ columns, description, emptyMessage, endpoint, e
       <AppCard className="overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
-            <thead className="bg-[var(--portal-surface-soft)] text-[12px] font-black uppercase tracking-[0.12em] text-[var(--portal-muted)]">
+            <thead className="bg-[var(--portal-surface-soft)] text-caption font-black uppercase tracking-[0.12em] text-[var(--portal-muted)]">
               <tr>
                 {columns.map((column) => (
                   <th key={column.key} className="whitespace-nowrap border-b border-[var(--portal-border)] px-4 py-3">

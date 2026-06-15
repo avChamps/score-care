@@ -40,7 +40,7 @@ export function PortalShell({ active, children, variant = "user" }: PortalShellP
       <div className="relative z-10 mx-auto grid min-h-screen max-w-7xl lg:h-screen lg:grid-cols-[16rem_minmax(0,1fr)]">
         {sidebarItems.length ? (
           <aside className="hidden border-r border-[var(--portal-border)] bg-white/92 px-4 py-6 lg:block">
-            <p className="px-3 text-[11px] font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">{variant === "admin" ? "Admin" : "Scorecare"}</p>
+            <p className="px-3 text-tiny font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">{variant === "admin" ? "Admin" : "Scorecare"}</p>
             <nav className="mt-5 space-y-1">
               {sidebarItems.map(({ active: itemActive, label, href, Icon }) => {
                 const isActive = active === itemActive;

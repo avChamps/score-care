@@ -101,11 +101,11 @@ export default function NotificationsPage() {
           <ArrowLeft className="size-6" strokeWidth={2.2} />
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="text-[15px] font-medium text-[#1F2937]">Notifications</h1>
-          <p className="mt-0.5 text-[12px] font-medium text-[#6F7B8E]">{unreadCount} unread</p>
+          <h1 className="text-base font-medium text-[#1F2937]">Notifications</h1>
+          <p className="mt-0.5 text-caption font-medium text-[#6F7B8E]">{unreadCount} unread</p>
         </div>
         <button
-          className="rounded-full border border-black/10 px-3 py-1.5 text-[12px] font-semibold text-[#1F2937] disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full border border-black/10 px-3 py-1.5 text-caption font-semibold text-[#1F2937] disabled:cursor-not-allowed disabled:opacity-50"
           type="button"
           disabled={!unreadCount || markingAll}
           onClick={markAllRead}
@@ -118,17 +118,17 @@ export default function NotificationsPage() {
         {loading ? (
           <NotificationSkeleton />
         ) : error ? (
-          <p className="px-5 py-5 text-[12px] font-normal text-[#EF4444]">{error}</p>
+          <p className="px-5 py-5 text-caption font-normal text-[#EF4444]">{error}</p>
         ) : notifications.length ? (
           notifications.map((notification) => (
             <article key={notification.id} className={cn("border-b border-black/20 px-5 py-5", !notification.isRead && "bg-[#F2FFFA]")}>
-              <h2 className="text-[16px] font-medium leading-5 text-black">{notification.title || "Notification"}</h2>
-              <p className="mt-2 text-[15px] font-normal leading-4 text-black">{notification.message || "--"}</p>
-              {notification.createdAt ? <p className="mt-5 text-right text-[12px] font-normal text-black">{formatNotificationRelativeTime(notification.createdAt)}</p> : null}
+              <h2 className="text-base font-medium leading-5 text-black">{notification.title || "Notification"}</h2>
+              <p className="mt-2 text-base font-normal leading-4 text-black">{notification.message || "--"}</p>
+              {notification.createdAt ? <p className="mt-5 text-right text-caption font-normal text-black">{formatNotificationRelativeTime(notification.createdAt)}</p> : null}
             </article>
           ))
         ) : (
-          <p className="px-5 py-5 text-[12px] font-normal text-[#111827]">No notifications yet.</p>
+          <p className="px-5 py-5 text-caption font-normal text-[#111827]">No notifications yet.</p>
         )}
       </main>
     </div>

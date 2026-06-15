@@ -307,7 +307,7 @@ const reportCardClass =
   "border border-[#103A2B]/50 bg-[linear-gradient(135deg,#06120E_0%,#081712_50%,#091813_100%)] shadow-[0_20px_45px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]";
 const reportHighlightCardClass = "border border-[#0F6C4B]/70 bg-[radial-gradient(circle_at_84%_0%,rgba(34,242,194,0.09),transparent_36%),linear-gradient(135deg,rgba(8,54,37,0.98),rgba(9,38,25,0.98))] shadow-[0_0_34px_rgba(34,242,194,0.07),0_18px_40px_rgba(0,0,0,0.32)]";
 const reportMiniCardClass = "border border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]";
-const reportSectionHeadingClass = "px-1 text-[12px] font-extrabold uppercase tracking-[0.18em] text-[#B9C7D8]";
+const reportSectionHeadingClass = "px-1 text-caption font-extrabold uppercase tracking-[0.18em] text-[#B9C7D8]";
 
 export function CreditScoreExperience() {
   const router = useRouter();
@@ -616,7 +616,7 @@ export function CreditScoreExperience() {
                 >
                   <Bell className="size-6" strokeWidth={1.8} />
                   {notificationUnreadCount > 0 ? (
-                    <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-[12px] font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
+                    <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-caption font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
                       {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
                     </span>
                   ) : null}
@@ -627,14 +627,14 @@ export function CreditScoreExperience() {
             <div className={cn("rounded-[2rem] p-4 text-white", reportHighlightCardClass)}>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#1F756B]">Credit Report</p>
+                <p className="text-caption font-semibold uppercase tracking-[0.18em] text-[#1F756B]">Credit Report</p>
                 <h1 className="mt-1 text-lg font-semibold tracking-tight">Report Insights</h1>
-                <p className="mt-1 text-[12px] text-[#9fb2c6]">
+                <p className="mt-1 text-caption text-[#9fb2c6]">
                   Updated {loading ? "Loading..." : lastChecked ?? "--"}
                 </p>
               </div>
               <button
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#EF4444] px-3 text-[0.7rem] font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)] disabled:opacity-55"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#EF4444] px-3 text-tiny font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)] disabled:opacity-55"
                 type="button"
                 onClick={downloadReport}
                 disabled={downloading}
@@ -644,7 +644,7 @@ export function CreditScoreExperience() {
               </button>
             </div>
 
-            {error ? <p className="mt-3 rounded-2xl bg-[#ff4d7d]/10 px-3 py-2 text-[12px] font-medium text-[#ff8cab]">{error}</p> : null}
+            {error ? <p className="mt-3 rounded-2xl bg-[#ff4d7d]/10 px-3 py-2 text-caption font-medium text-[#ff8cab]">{error}</p> : null}
 
             <div className="mt-5 grid grid-cols-2 gap-2 rounded-[1.35rem] border border-[#0F5D43]/45 bg-[#102017]/70 p-1.5">
               {(["accounts", "enquiries"] as Tab[]).map((tab) => (
@@ -667,7 +667,7 @@ export function CreditScoreExperience() {
                   onClick={() => handleAccountFilterClick(item.filter)}
                 >
                   <p className="text-3xl font-black leading-none">{item.value}</p>
-                  <p className={cn("mt-2 text-[12px] font-semibold", activeTab === "accounts" && activeAccountFilter === item.filter ? "text-[#8AF1D4]/75" : "text-[#8FA89F]")}>{item.label}</p>
+                  <p className={cn("mt-2 text-caption font-semibold", activeTab === "accounts" && activeAccountFilter === item.filter ? "text-[#8AF1D4]/75" : "text-[#8FA89F]")}>{item.label}</p>
                 </button>
               ))}
             </div>
@@ -841,7 +841,7 @@ function TabButton({
   return (
     <button
       className={cn(
-        "flex items-center justify-center rounded-full px-2.5 py-2 text-[0.7rem] font-semibold capitalize transition duration-300",
+        "flex items-center justify-center rounded-full px-2.5 py-2 text-tiny font-semibold capitalize transition duration-300",
         active ? "bg-[linear-gradient(135deg,#00D5A7,#13B98F)] text-[#041B12] shadow-[0_10px_22px_rgba(34,242,194,0.16)]" : "border border-[#0F5D43]/45 bg-[rgba(21,38,27,0.58)] text-[#8FA89F] hover:bg-white/[0.08] hover:text-white",
       )}
       type="button"
@@ -880,8 +880,8 @@ function ReportNoRecords() {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <FileSearch className="size-12 text-[#AAB6C8]" strokeWidth={1.6} />
-      <p className="mt-4 text-[15px] font-semibold text-white">No Records Found</p>
-      <p className="mt-1 text-[13px] text-[#AAB6C8]">No report records available.</p>
+      <p className="mt-4 text-base font-semibold text-white">No Records Found</p>
+      <p className="mt-1 text-body-sm text-[#AAB6C8]">No report records available.</p>
     </div>
   );
 }
@@ -909,7 +909,7 @@ function ReportEnquiriesTab({ enquiries, loading }: { enquiries: CreditEnquiry[]
       ) : (
         <div className={cn("rounded-[1.65rem] p-4 text-white", reportCardClass)}>
           <p className="text-sm font-semibold">No recent enquiries found</p>
-          <p className="mt-2 text-[12px] leading-5 text-[#9fb2c6]">Your recent credit report does not contain any enquiry records.</p>
+          <p className="mt-2 text-caption leading-5 text-[#9fb2c6]">Your recent credit report does not contain any enquiry records.</p>
         </div>
       )}
     </div>
@@ -920,7 +920,7 @@ function EnquirySummaryCard({ label, value }: { label: string; value: number }) 
   return (
     <div className={cn("rounded-2xl px-3 py-2 text-white", reportCardClass)}>
       <p className="text-sm font-semibold">{value}</p>
-      <p className="mt-1 text-[12px] leading-3 text-[#9fb2c6]">{label}</p>
+      <p className="mt-1 text-caption leading-3 text-[#9fb2c6]">{label}</p>
     </div>
   );
 }
@@ -960,31 +960,31 @@ function ReportAccountCard({ account }: { account: ReportAccountItem }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="truncate text-xl font-bold">{account.lender}</h2>
-          <p className="mt-1 text-[12px] text-[#9fb2c6]">{account.loanType}</p>
+          <p className="mt-1 text-caption text-[#9fb2c6]">{account.loanType}</p>
         </div>
-        <span className={cn("shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold", account.statusTone)}>
+        <span className={cn("shrink-0 rounded-full px-3 py-1 text-caption font-semibold", account.statusTone)}>
           {account.status}
         </span>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold", account.impactTone)}>
+        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-caption font-semibold", account.impactTone)}>
           {account.impact === "High impact" ? <Zap className="size-3" fill="currentColor" strokeWidth={2.4} /> : null}
           {account.impact}
         </span>
-        <span className="rounded-full border border-white/[0.06] bg-white/[0.045] px-3 py-1.5 text-[12px] font-medium text-[#9fb2c6]">Opened {account.opened}</span>
+        <span className="rounded-full border border-white/[0.06] bg-white/[0.045] px-3 py-1.5 text-caption font-medium text-[#9fb2c6]">Opened {account.opened}</span>
       </div>
       {account.details.length ? (
         <div className="mt-4 grid grid-cols-2 gap-2">
           {account.details.map((detail) => (
             <div key={detail.label} className={cn("rounded-2xl px-3 py-2", reportMiniCardClass)}>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#6f8399]">{detail.label}</p>
-              <p className="mt-1 truncate text-[0.8rem] font-semibold text-[#dbe7f4]">{detail.value}</p>
+              <p className="text-caption font-semibold uppercase tracking-[0.12em] text-[#6f8399]">{detail.label}</p>
+              <p className="mt-1 truncate text-body-sm font-semibold text-[#dbe7f4]">{detail.value}</p>
             </div>
           ))}
         </div>
       ) : null}
       <button
-        className="mt-4 h-10 w-full rounded-2xl border border-[#1F756B]/35 bg-[#1F756B]/12 text-[12px] font-semibold text-[#22F2C2] transition hover:bg-[#1F756B]/18"
+        className="mt-4 h-10 w-full rounded-2xl border border-[#1F756B]/35 bg-[#1F756B]/12 text-caption font-semibold text-[#22F2C2] transition hover:bg-[#1F756B]/18"
         type="button"
         onClick={() => setShowHistory((current) => !current)}
       >
@@ -992,10 +992,10 @@ function ReportAccountCard({ account }: { account: ReportAccountItem }) {
       </button>
       {showHistory ? (
         <div className="mt-4 rounded-[1.35rem] border border-[#1F756B]/30 bg-[#07130F]/70 p-3">
-          <h3 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[#8AF1D4]">Payment History</h3>
+          <h3 className="text-caption font-semibold uppercase tracking-[0.14em] text-[#8AF1D4]">Payment History</h3>
           {account.history.length ? (
            <div className="mt-3 max-h-[320px] overflow-y-auto pr-1 pb-1">
-              <table className="w-full table-fixed border-separate border-spacing-y-2 text-left text-[12px]">
+              <table className="w-full table-fixed border-separate border-spacing-y-2 text-left text-caption">
                 <thead className="text-[#8FA89F]">
                   <tr>
                     <th className="w-[45%] px-2 py-1 font-semibold">Month / Year</th>
@@ -1011,7 +1011,7 @@ function ReportAccountCard({ account }: { account: ReportAccountItem }) {
                       <td className="px-2 py-3">{history.Days_Past_Due ?? "--"}</td>
                       {/* <td className="px-3 py-3">{history.Asset_Classification || "--"}</td> */}
                       <td className="rounded-r-2xl px-2 py-3">
-                        <span className={cn("inline-flex rounded-full px-2 py-1 text-[12px] font-semibold", getStatusClass(history.Days_Past_Due))}>
+                        <span className={cn("inline-flex rounded-full px-2 py-1 text-caption font-semibold", getStatusClass(history.Days_Past_Due))}>
                           {getPaymentStatus(history.Days_Past_Due)}
                         </span>
                       </td>
@@ -1021,7 +1021,7 @@ function ReportAccountCard({ account }: { account: ReportAccountItem }) {
               </table>
             </div>
           ) : (
-            <p className="mt-3 rounded-2xl bg-white/[0.055] px-3 py-3 text-[12px] font-medium text-[#9fb2c6]">No transaction history available</p>
+            <p className="mt-3 rounded-2xl bg-white/[0.055] px-3 py-3 text-caption font-medium text-[#9fb2c6]">No transaction history available</p>
           )}
         </div>
       ) : null}
@@ -1035,17 +1035,17 @@ function ReportEnquiryCard({ enquiry }: { enquiry: ReportEnquiryItem }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold">{enquiry.lender}</h2>
-          <p className="mt-1 text-[12px] text-[#9fb2c6]">{enquiry.loanType}</p>
+          <p className="mt-1 text-caption text-[#9fb2c6]">{enquiry.loanType}</p>
         </div>
-        <span className={cn("shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold", enquiry.kind === "Hard" ? "bg-[#ff4d7d]/14 text-[#ff8cab]" : "bg-[#1F756B]/12 text-[#1F756B]")}>
+        <span className={cn("shrink-0 rounded-full px-3 py-1 text-caption font-semibold", enquiry.kind === "Hard" ? "bg-[#ff4d7d]/14 text-[#ff8cab]" : "bg-[#1F756B]/12 text-[#1F756B]")}>
           {enquiry.kind}
         </span>
       </div>
-      <div className="mt-3 space-y-1 text-[12px] font-medium text-[#9fb2c6]">
+      <div className="mt-3 space-y-1 text-caption font-medium text-[#9fb2c6]">
         <p>Enquiry Date {enquiry.date}</p>
         {enquiry.amount ? <p>Requested Amount {enquiry.amount}</p> : null}
       </div>
-      <p className={cn("mt-3 text-[12px] font-medium", enquiry.kind === "Hard" ? "text-[#ff8cab]" : "text-[#1F756B]")}>{enquiry.message}</p>
+      <p className={cn("mt-3 text-caption font-medium", enquiry.kind === "Hard" ? "text-[#ff8cab]" : "text-[#1F756B]")}>{enquiry.message}</p>
     </article>
   );
 }
@@ -1075,7 +1075,7 @@ function ReportAccountsSkeleton() {
 
 function ReportLoadingCard({ label }: { label: string }) {
   return (
-    <div className={cn("rounded-[1.65rem] p-4 text-[0.75rem] font-medium text-[#9fb2c6]", reportCardClass)}>
+    <div className={cn("rounded-[1.65rem] p-4 text-caption font-medium text-[#9fb2c6]", reportCardClass)}>
       {label}
     </div>
   );
@@ -1115,7 +1115,7 @@ function ScorePanel({
             {loading ? "Loading latest report..." : lastChecked ? `Last checked: ${lastChecked}` : "Latest report is not ready"}
           </p>
         </div>
-        <span className={cn("rounded-full px-3 py-1.5 text-[12px] font-bold", hasReport ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500")}>
+        <span className={cn("rounded-full px-3 py-1.5 text-caption font-bold", hasReport ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500")}>
           {hasReport ? "PDF ready" : "No PDF"}
         </span>
       </div>
@@ -1129,7 +1129,7 @@ function ScorePanel({
       {factors.length ? (
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           {factors.slice(0, 2).map((factor) => (
-            <p key={factor} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] font-bold leading-4 text-slate-500">
+            <p key={factor} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-caption font-bold leading-4 text-slate-500">
               {toTitleCase(factor)}
             </p>
           ))}
@@ -1354,7 +1354,7 @@ function BehaviourCard({ title, value, rating, body, index, tone }: BehaviourIte
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="rounded-full border border-slate-200 px-3 py-1.5 text-[12px] font-bold text-slate-600">{rating}</span>
+          <span className="rounded-full border border-slate-200 px-3 py-1.5 text-caption font-bold text-slate-600">{rating}</span>
           <CheckCircle2 className={cn("size-7", tone === "danger" ? "text-rose-500" : tone === "warn" ? "text-amber-500" : "text-emerald-500")} />
         </div>
       </div>
@@ -1373,7 +1373,7 @@ function AccountCard({ account }: { account: CreditAccount }) {
           <p className="truncate text-sm font-bold text-slate-950">{account.member_name || "Credit account"}</p>
           <p className="mt-1 text-xs text-slate-500">Type {account.type || "--"} • Opened {formatCompactDate(account.opened)}</p>
         </div>
-        <span className={cn("shrink-0 rounded-full px-3 py-1.5 text-[12px] font-bold", overdue > 0 ? "bg-rose-100 text-rose-700" : "bg-emerald-50 text-emerald-700")}>
+        <span className={cn("shrink-0 rounded-full px-3 py-1.5 text-caption font-bold", overdue > 0 ? "bg-rose-100 text-rose-700" : "bg-emerald-50 text-emerald-700")}>
           {overdue > 0 ? "Overdue" : "Current"}
         </span>
       </div>
@@ -1394,7 +1394,7 @@ function EnquiryCard({ enquiry }: { enquiry: CreditEnquiry }) {
           <p className="text-sm font-bold text-slate-950">{enquiry.member || "Credit enquiry"}</p>
           <p className="mt-1 text-xs text-slate-500">Purpose {enquiry.enquiry_purpose || "--"} • {formatCompactDate(enquiry.enquiry_date)}</p>
         </div>
-        <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-[12px] font-bold text-slate-700">
+        <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-caption font-bold text-slate-700">
           {formatRupees(enquiry.enquiry_amount)}
         </span>
       </div>
@@ -1405,7 +1405,7 @@ function EnquiryCard({ enquiry }: { enquiry: CreditEnquiry }) {
 function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-      <p className="text-[12px] font-bold text-slate-500">{label}</p>
+      <p className="text-caption font-bold text-slate-500">{label}</p>
       <p className="mt-1 truncate text-xs font-black text-slate-900">{value}</p>
     </div>
   );

@@ -137,7 +137,7 @@ export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean 
                 <Icon className="size-5" strokeWidth={1.9} />
               </span>
               <div className="min-w-0">
-                <p className="text-[12px] font-semibold text-slate-500">{label}</p>
+                <p className="text-caption font-semibold text-slate-500">{label}</p>
                 <p className="mt-1 truncate text-xs font-bold text-slate-900">{loading ? "..." : value || "-"}</p>
               </div>
             </div>
@@ -150,7 +150,7 @@ export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean 
       type="button"
       onClick={isAdminView ? openUserView : openAdminView}
       disabled={launchingAdmin}
-      className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-blue-100 bg-white text-[15px] font-semibold text-blue-600 shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50 active:scale-[0.99]"
+      className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-blue-100 bg-white text-base font-semibold text-blue-600 shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50 active:scale-[0.99]"
     >
       <LayoutDashboard className="size-5" />
       {isAdminView ? "User Dashboard" : launchingAdmin ? "Opening Admin Panel..." : "Admin Dashboard"}
@@ -161,7 +161,7 @@ export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean 
     type="button"
     onClick={logout}
     data-dashboard-logout="true"
-    className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-rose-100 bg-white text-[15px] font-semibold text-rose-600 shadow-sm transition-all hover:border-rose-200 hover:bg-rose-50 active:scale-[0.99]"
+    className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-rose-100 bg-white text-base font-semibold text-rose-600 shadow-sm transition-all hover:border-rose-200 hover:bg-rose-50 active:scale-[0.99]"
   >
     <LogOut className="size-5" />
     Logout

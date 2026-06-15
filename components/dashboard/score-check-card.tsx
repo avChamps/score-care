@@ -365,7 +365,7 @@ function ScoreRangeLegend() {
   ];
 
   return (
-    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-[12px] font-bold text-[var(--portal-muted)]">
+    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-caption font-bold text-[var(--portal-muted)]">
       {ranges.map((item) => (
         <div key={item.label} className="flex items-center gap-2">
           <span className={`size-2.5 rounded-full ${item.color}`} />

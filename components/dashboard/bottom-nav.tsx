@@ -33,7 +33,7 @@ export function DashboardBottomNav() {
               data-dashboard-loans={href === "/dashboard/loans" ? "true" : undefined}
               data-dashboard-offers={href === "/dashboard/offers" ? "true" : undefined}
               className={cn(
-                "relative flex min-h-[46px] min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[16px] px-1 py-1 text-[11px] font-semibold tracking-normal transition duration-300",
+                "relative flex min-h-[46px] min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[16px] px-1 py-1 text-tiny font-semibold tracking-normal transition duration-300",
                 active ? "text-[#18B98E]" : "text-[#5B716A]"
               )}
             >

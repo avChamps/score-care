@@ -539,7 +539,7 @@ export function ScoreFixExperience() {
               >
                 <Bell className="size-6" strokeWidth={1.8} />
                 {notificationUnreadCount > 0 ? (
-                  <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-[12px] font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
+                  <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-caption font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
                     {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
                   </span>
                 ) : null}
@@ -547,7 +547,7 @@ export function ScoreFixExperience() {
             </div>
           </div>
           <div className="space-y-1 pt-2">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#22F2C2]">Score Simulator</p>
+            <p className="text-tiny font-bold uppercase tracking-[0.18em] text-[#22F2C2]">Score Simulator</p>
             <h1 className="text-2xl font-black tracking-normal text-white">Improve</h1>
           </div>
 
@@ -590,8 +590,8 @@ export function ScoreFixExperience() {
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-[15px] font-bold text-white">Credit Card Utilization</p>
-                    <p className="mt-1 text-[12px] font-semibold text-[#22F2C2]">Keep utilization below 30%</p>
+                    <p className="text-base font-bold text-white">Credit Card Utilization</p>
+                    <p className="mt-1 text-caption font-semibold text-[#22F2C2]">Keep utilization below 30%</p>
                   </div>
                   <span className="text-[32px] font-black leading-none text-white">{utilizationValue}%</span>
                 </div>
@@ -606,7 +606,7 @@ export function ScoreFixExperience() {
                   value={utilizationValue}
                   onChange={(event) => setUtilizationValue(Number(event.target.value))}
                 />
-                <div className="flex justify-between text-[11px] font-bold text-[#77869B]">
+                <div className="flex justify-between text-tiny font-bold text-[#77869B]">
                   <span>5% Ideal</span>
                   <span>90% Danger</span>
                 </div>
@@ -655,7 +655,7 @@ export function ScoreFixExperience() {
 function ScoreMetric({ label, tone = "text-white", value }: { label: string; tone?: string; value: string }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+      <p className="text-tiny font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p>
       <p className={cn("mt-2 text-3xl font-black", tone)}>{value}</p>
     </div>
   );
@@ -715,37 +715,37 @@ function CreditImprovementPlan({
             <div className="shrink-0 text-right">
               {typeof plan.amount === "number" ? (
                 <div>
-                  {originalAmount ? <p className="text-[14px] font-semibold leading-none text-[#9fb2c6] line-through">{formatINR(originalAmount)}</p> : null}
-                  {plan.offerTag ? <p className="mt-1 text-[12px] font-bold leading-none text-[#22F2C2]">Offer: {plan.offerTag}</p> : null}
+                  {originalAmount ? <p className="text-body font-semibold leading-none text-[#9fb2c6] line-through">{formatINR(originalAmount)}</p> : null}
+                  {plan.offerTag ? <p className="mt-1 text-caption font-bold leading-none text-[#22F2C2]">Offer: {plan.offerTag}</p> : null}
                   <p className="mt-2 text-[26px] font-black leading-none text-white">{formatINR(plan.amount)}</p>
                 </div>
               ) : null}
             </div>
           </div>
-          <p className="mt-2 text-[12px] leading-5 text-[#9fb2c6]">Expert review, disputes, lender follow-up, and score verification in one guided flow.</p>
+          <p className="mt-2 text-caption leading-5 text-[#9fb2c6]">Expert review, disputes, lender follow-up, and score verification in one guided flow.</p>
         </div>
       </section>
 
       <section className={cn("rounded-[1.75rem] p-4 text-white", reportCardClass)}>
         <h2 className="text-sm font-semibold text-white">Select issues to repair</h2>
-        <p className="mt-1 text-[12px] leading-5 text-[#9fb2c6]">Choose the accounts you want us to review and repair.</p>
+        <p className="mt-1 text-caption leading-5 text-[#9fb2c6]">Choose the accounts you want us to review and repair.</p>
         <RepairIssueCards cards={repairIssueCards} selectedIds={selectedIssueIds} onToggle={toggleIssueCard} />
       </section>
 
       <section className={cn("rounded-[1.75rem] p-4 text-white", reportCardClass)}>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#1F756B]">Dispute Centre</p>
+            <p className="text-caption font-semibold uppercase tracking-[0.16em] text-[#1F756B]">Dispute Centre</p>
             <h2 className="mt-1 text-sm font-semibold">Case progress</h2>
           </div>
-          <span className="rounded-full bg-[#ff4d7d]/14 px-3 py-1 text-[12px] font-semibold text-[#ff8cab]">Live</span>
+          <span className="rounded-full bg-[#ff4d7d]/14 px-3 py-1 text-caption font-semibold text-[#ff8cab]">Live</span>
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
           {disputeStats.map((stat) => (
             <div key={stat.label} className={cn("rounded-2xl px-3 py-3", reportMiniCardClass)}>
               <p className="text-sm font-semibold">{stat.value}</p>
-              <p className="mt-1 text-[12px] leading-3 text-[#9fb2c6]">{stat.label}</p>
+              <p className="mt-1 text-caption leading-3 text-[#9fb2c6]">{stat.label}</p>
             </div>
           ))}
         </div>
@@ -778,7 +778,7 @@ function RepairIssueCards({ cards, selectedIds, onToggle }: { cards: RepairIssue
     return (
       <div className={cn("mt-4 rounded-2xl p-4", reportMiniCardClass)}>
         <p className="text-sm font-semibold text-white">No repair issues found</p>
-        <p className="mt-1 text-[12px] leading-5 text-[#9fb2c6]">Your report has no overdue, settled, written-off, suit-filed, or negative accounts.</p>
+        <p className="mt-1 text-caption leading-5 text-[#9fb2c6]">Your report has no overdue, settled, written-off, suit-filed, or negative accounts.</p>
       </div>
     );
   }
@@ -803,7 +803,7 @@ function RepairIssueCards({ cards, selectedIds, onToggle }: { cards: RepairIssue
   //               <p className="text-sm font-bold text-white">{card.subscriberName}</p>
   //               <div className="mt-2 flex flex-wrap gap-1.5">
   //                 {card.issueLabels.map((label) => (
-  //                   <span key={label} className="rounded-full bg-[#22F2C2]/12 px-2 py-1 text-[10px] font-bold text-[#22F2C2]">
+  //                   <span key={label} className="rounded-full bg-[#22F2C2]/12 px-2 py-1 text-tiny font-bold text-[#22F2C2]">
   //                     {label}
   //                   </span>
   //                 ))}
@@ -812,7 +812,7 @@ function RepairIssueCards({ cards, selectedIds, onToggle }: { cards: RepairIssue
   //             <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border", selected ? "border-[#22F2C2] bg-[#22F2C2] text-[#04120e]" : "border-white/25 text-transparent")}>✓</span>
   //           </div>
 
-  //           <div className="mt-4 grid grid-cols-2 gap-2 text-[12px]">
+  //           <div className="mt-4 grid grid-cols-2 gap-2 text-caption">
   //             <div>
   //               <p className="text-[#7792aa]">Current balance</p>
   //               <p className="mt-1 font-bold text-white">{formatINR(card.currentBalance)}</p>
@@ -858,7 +858,7 @@ function RepairDisputeCards({ loading, requests }: { loading: boolean; requests:
     return (
       <div className={cn("mt-4 rounded-2xl p-3", reportMiniCardClass)}>
         <p className="text-xs font-semibold">No active disputes found</p>
-        <p className="mt-1 text-[12px] leading-5 text-[#9fb2c6]">You currently have no dispute cases associated with this credit report.</p>
+        <p className="mt-1 text-caption leading-5 text-[#9fb2c6]">You currently have no dispute cases associated with this credit report.</p>
       </div>
     );
   }
@@ -870,12 +870,12 @@ function RepairDisputeCards({ loading, requests }: { loading: boolean; requests:
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold">{getDisputeId(dispute)}</p>
-              <p className="mt-1 text-[12px] text-[#9fb2c6]">{dispute.lenderName || "--"}</p>
-              <p className="mt-1 text-[12px] text-[#9fb2c6]">Created {formatDisputeCreatedDate(dispute)}</p>
+              <p className="mt-1 text-caption text-[#9fb2c6]">{dispute.lenderName || "--"}</p>
+              <p className="mt-1 text-caption text-[#9fb2c6]">Created {formatDisputeCreatedDate(dispute)}</p>
             </div>
-            <span className="rounded-full bg-[#1F756B]/12 px-2.5 py-1 text-[12px] font-semibold capitalize text-[#1F756B]">{dispute.repairStatus || dispute.paymentStatus || "--"}</span>
+            <span className="rounded-full bg-[#1F756B]/12 px-2.5 py-1 text-caption font-semibold capitalize text-[#1F756B]">{dispute.repairStatus || dispute.paymentStatus || "--"}</span>
           </div>
-          {readDisputeProgress(dispute) ? <p className="mt-3 text-[12px] font-semibold text-[#1F756B]">Progress {readDisputeProgress(dispute)}</p> : null}
+          {readDisputeProgress(dispute) ? <p className="mt-3 text-caption font-semibold text-[#1F756B]">Progress {readDisputeProgress(dispute)}</p> : null}
         </div>
       ))}
     </div>
@@ -887,7 +887,7 @@ function RepairRequestsTable({ loading, requests, status }: { loading: boolean; 
 
   return (
     <div className={cn("mt-4 overflow-hidden rounded-2xl", reportMiniCardClass)}>
-      <div className="grid grid-cols-[1.1fr_0.8fr_1fr] border-b border-white/10 px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#9fb2c6]">
+      <div className="grid grid-cols-[1.1fr_0.8fr_1fr] border-b border-white/10 px-3 py-2 text-caption font-semibold uppercase tracking-[0.12em] text-[#9fb2c6]">
         <span>Date/Time</span>
         <span>Status</span>
         <span>Remarks</span>
@@ -899,14 +899,14 @@ function RepairRequestsTable({ loading, requests, status }: { loading: boolean; 
         </div>
       ) : hasRecords && requests.length ? (
         requests.map((request) => (
-          <div key={request.publicId ?? request.id} className="grid grid-cols-[1.1fr_0.8fr_1fr] gap-2 border-b border-white/8 px-3 py-2 text-[12px] text-white last:border-b-0">
+          <div key={request.publicId ?? request.id} className="grid grid-cols-[1.1fr_0.8fr_1fr] gap-2 border-b border-white/8 px-3 py-2 text-caption text-white last:border-b-0">
             <span className="text-[#c8d3e2]">{formatRepairRequestDate(request)}</span>
             <span className="font-semibold capitalize text-[#1F756B]">{request.repairStatus || request.paymentStatus || "--"}</span>
             <span className="text-[#9fb2c6]">{request.remarks || "--"}</span>
           </div>
         ))
       ) : (
-        <p className="px-3 py-3 text-[12px] text-[#9fb2c6]">No records found.</p>
+        <p className="px-3 py-3 text-caption text-[#9fb2c6]">No records found.</p>
       )}
     </div>
   );
