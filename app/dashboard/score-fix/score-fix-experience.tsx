@@ -783,60 +783,60 @@ function RepairIssueCards({ cards, selectedIds, onToggle }: { cards: RepairIssue
     );
   }
 
-  // return (
-  //   <div className="mt-4 space-y-3">
-  //     {cards.map((card) => {
-  //       const selected = selectedIds.includes(card.id);
+  return (
+    <div className="mt-4 space-y-3">
+      {cards.map((card) => {
+        const selected = selectedIds.includes(card.id);
 
-  //       return (
-  //         <button
-  //           className={cn(
-  //             "w-full rounded-2xl border p-4 text-left transition",
-  //             selected ? "border-[#22F2C2] bg-[#0B2B23] shadow-[0_0_22px_rgba(34,242,194,0.18)]" : "border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]",
-  //           )}
-  //           key={card.id}
-  //           type="button"
-  //           onClick={() => onToggle(card.id)}
-  //         >
-  //           <div className="flex items-start justify-between gap-3">
-  //             <div className="min-w-0">
-  //               <p className="text-sm font-bold text-white">{card.subscriberName}</p>
-  //               <div className="mt-2 flex flex-wrap gap-1.5">
-  //                 {card.issueLabels.map((label) => (
-  //                   <span key={label} className="rounded-full bg-[#22F2C2]/12 px-2 py-1 text-tiny font-bold text-[#22F2C2]">
-  //                     {label}
-  //                   </span>
-  //                 ))}
-  //               </div>
-  //             </div>
-  //             <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border", selected ? "border-[#22F2C2] bg-[#22F2C2] text-[#04120e]" : "border-white/25 text-transparent")}>✓</span>
-  //           </div>
+        return (
+          <button
+            className={cn(
+              "w-full rounded-2xl border p-4 text-left transition",
+              selected ? "border-[#22F2C2] bg-[#0B2B23] shadow-[0_0_22px_rgba(34,242,194,0.18)]" : "border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]",
+            )}
+            key={card.id}
+            type="button"
+            onClick={() => onToggle(card.id)}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-white">{card.subscriberName}</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {card.issueLabels.map((label) => (
+                    <span key={label} className="rounded-full bg-[#22F2C2]/12 px-2 py-1 text-tiny font-bold text-[#22F2C2]">
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border", selected ? "border-[#22F2C2] bg-[#22F2C2] text-[#04120e]" : "border-white/25 text-transparent")}>✓</span>
+            </div>
 
-  //           <div className="mt-4 grid grid-cols-2 gap-2 text-caption">
-  //             <div>
-  //               <p className="text-[#7792aa]">Current balance</p>
-  //               <p className="mt-1 font-bold text-white">{formatINR(card.currentBalance)}</p>
-  //             </div>
-  //             {card.overdueAmount > 0 ? (
-  //               <div>
-  //                 <p className="text-[#7792aa]">Amount Past Due</p>
-  //                 <p className="mt-1 font-bold text-white">{formatINR(card.overdueAmount)}</p>
-  //               </div>
-  //             ) : null}
-  //             <div>
-  //               <p className="text-[#7792aa]">Account number</p>
-  //               <p className="mt-1 font-bold text-white">{maskAccountNumber(card.accountNumber)}</p>
-  //             </div>
-  //             <div>
-  //               <p className="text-[#7792aa]">Status</p>
-  //               <p className="mt-1 font-bold text-white">{card.accountStatus || "--"}</p>
-  //             </div>
-  //           </div>
-  //         </button>
-  //       );
-  //     })}
-  //   </div>
-  // );
+            <div className="mt-4 grid grid-cols-2 gap-2 text-caption">
+              <div>
+                <p className="text-[#7792aa]">Current balance</p>
+                <p className="mt-1 font-bold text-white">{formatINR(card.currentBalance)}</p>
+              </div>
+              {card.overdueAmount > 0 ? (
+                <div>
+                  <p className="text-[#7792aa]">Amount Past Due</p>
+                  <p className="mt-1 font-bold text-white">{formatINR(card.overdueAmount)}</p>
+                </div>
+              ) : null}
+              <div>
+                <p className="text-[#7792aa]">Account number</p>
+                <p className="mt-1 font-bold text-white">{maskAccountNumber(card.accountNumber)}</p>
+              </div>
+              <div>
+                <p className="text-[#7792aa]">Status</p>
+                <p className="mt-1 font-bold text-white">{card.accountStatus || "--"}</p>
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function maskAccountNumber(accountNumber: string) {
