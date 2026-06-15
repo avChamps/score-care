@@ -145,13 +145,12 @@ function getAccountsFromDisplayData(displayData: DisplayDataResponse | null) {
   const data = displayData?.data as
     | {
         credit_report?: { CAIS_Account?: { CAIS_Account_DETAILS?: Record<string, unknown>[] } };
-        display?: { accounts?: Record<string, unknown>[] };
       }
     | undefined;
 
-  return Array.isArray(data?.display?.accounts)
-    ? data.display.accounts
-    : Array.isArray(data?.credit_report?.CAIS_Account?.CAIS_Account_DETAILS) ? data.credit_report.CAIS_Account.CAIS_Account_DETAILS : [];
+  return Array.isArray(data?.credit_report?.CAIS_Account?.CAIS_Account_DETAILS)
+    ? data.credit_report.CAIS_Account.CAIS_Account_DETAILS
+    : [];
 }
 
 function readAccountHistory(account: Record<string, unknown>) {
@@ -164,55 +163,39 @@ function hasHistoryDpd(account: Record<string, unknown>) {
   return readAccountHistory(account).some((history) => toNumber(history.Days_Past_Due ?? history.days_past_due) > 0);
 }
 
-function hasHistoryDpdAtLeast(account: Record<string, unknown>, minimumDpd: number) {
-  return readAccountHistory(account).some((history) => toNumber(history.Days_Past_Due ?? history.days_past_due) >= minimumDpd);
-}
-
 function hasOverdue(account: Record<string, unknown>) {
   return toNumber(account.Amount_Past_Due ?? account.amount_overdue) > 0 || hasHistoryDpd(account);
 }
 
 function hasSettled(account: Record<string, unknown>) {
-  const writtenStatus = String(account.Written_off_Settled_Status ?? "").toLowerCase();
+  const writtenStatus = readString(account.Written_off_Settled_Status);
 
   return (
     toNumber(account.Settlement_Amount) > 0 ||
-    (Boolean(writtenStatus.trim()) && writtenStatus !== "0")
+    Boolean(writtenStatus)
   );
 }
 
-function hasWrittenOff(account: Record<string, unknown>) {
-  return (
-    toNumber(account.Written_Off_Amt_Total) > 0 ||
-    toNumber(account.Written_Off_Amt_Principal) > 0 ||
-    Boolean(String(account.WriteOffStatusDate ?? "").trim())
-  );
+function hasNegativeAccountStatus(account: Record<string, unknown>) {
+  return ["78", "79", "80", "81", "82", "83", "84", "85"].includes(readString(account.Account_Status ?? account.account_status));
 }
 
 function hasReturnedPayment(account: Record<string, unknown>) {
   const historyProfile = String(account.Payment_History_Profile ?? account.payment_history ?? "");
-  const hasNonCleanProfile = /[^0?\s,|/]/.test(historyProfile);
 
-  return hasNonCleanProfile || hasHistoryDpd(account);
+  return /[1-9]/.test(historyProfile);
 }
 
-function hasDelinquent(account: Record<string, unknown>) {
-  const paymentRating = String(account.Payment_Rating ?? "").trim();
-  const numericPaymentRating = Number(paymentRating);
-  const hasNegativePaymentRating = paymentRating
-    ? Number.isFinite(numericPaymentRating)
-      ? numericPaymentRating > 0
-      : paymentRating !== "0"
-    : false;
+function hasNegativeAssetClassification(account: Record<string, unknown>) {
+  return ["D", "L", "W", "S"].includes(readString(account.Asset_Classification).toUpperCase());
+}
 
-  return (
-    hasHistoryDpdAtLeast(account, 30) ||
-    hasNegativePaymentRating ||
-    Boolean(String(account.DefaultStatusDate ?? "").trim()) ||
-    Boolean(String(account.Date_of_First_Delinquency ?? "").trim()) ||
-    hasSettled(account) ||
-    hasWrittenOff(account)
-  );
+function hasConsumerComments(account: Record<string, unknown>) {
+  return Boolean(readString(account.Consumer_comments));
+}
+
+function hasSuitFiledOrWilfulDefault(account: Record<string, unknown>) {
+  return Boolean(readString(account.SuitFiled_WilfulDefault));
 }
 
 function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairIssueCard[] {
@@ -222,9 +205,11 @@ function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairI
     const issueLabels = [
       hasOverdue(account) ? "Overdue" : null,
       hasSettled(account) ? "Settled" : null,
-      hasWrittenOff(account) ? "Written-off" : null,
+      hasNegativeAccountStatus(account) ? "Negative Status" : null,
       hasReturnedPayment(account) ? "Returned Payment" : null,
-      hasDelinquent(account) ? "Delinquent" : null,
+      hasNegativeAssetClassification(account) ? "Negative Classification" : null,
+      hasConsumerComments(account) ? "Consumer Comments" : null,
+      hasSuitFiledOrWilfulDefault(account) ? "Suit Filed/Wilful Default" : null,
     ].filter(Boolean) as string[];
 
     if (!issueLabels.length) return;
