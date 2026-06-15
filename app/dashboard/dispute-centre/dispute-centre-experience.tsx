@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BadgeIndianRupee, Landmark, ClipboardList,
   Building2,
-  CheckCircle2 } from "lucide-react";
+  CheckCircle2, 
+  ArrowRight} from "lucide-react";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
 import { apiRequest } from "@/lib/api";
@@ -17,6 +18,7 @@ type DisputeRequest = {
   createdAt?: string | null;
   createdDate?: string | null;
   disputeId?: string | null;
+  errorType?: string | null;
   expectedDate?: string | null;
   id?: string;
   issueDescription?: string | null;
@@ -36,6 +38,7 @@ type DisputeStatus = {
   activeDisputes?: number;
   resolvedDisputes?: number;
   pointsGained?: number;
+  pointsGainedTotal?: number;
 };
 
 const reportCardClass =
@@ -84,21 +87,18 @@ export function DisputeCentreExperience() {
       }
 
       try {
-        const [statusResponse, requestsResponse] = await Promise.all([
-          apiRequest("/cibil-repair-content/requests/me/status", { headers: { Authorization: `Bearer ${token}` } }),
-          apiRequest("/cibil-repair-content/requests/me", { headers: { Authorization: `Bearer ${token}` } }),
-        ]);
+        const response = await apiRequest("/api/disputes", { headers: { Authorization: `Bearer ${token}` } });
 
-        if (statusResponse.status === 401 || statusResponse.status === 403 || requestsResponse.status === 401 || requestsResponse.status === 403) {
+        if (response.status === 401 || response.status === 403) {
           clearScorecareSession();
           window.location.href = "/login";
           return;
         }
 
-        const [statusResult, requestsResult] = await Promise.all([statusResponse.json(), requestsResponse.json()]);
+        const result = await response.json();
 
-        setStatus(readStatus(requestsResult?.data) ?? readStatus(statusResult?.data));
-        setRequests(Array.isArray(requestsResult?.data?.requests) ? requestsResult.data.requests : []);
+        setStatus(readStatus(result?.data));
+        setRequests(Array.isArray(result?.data?.disputes) ? result.data.disputes : []);
       } catch {
         setStatus(null);
         setRequests([]);
@@ -111,9 +111,9 @@ export function DisputeCentreExperience() {
   }, []);
 
   const stats = [
-    { label: "Active disputes", value: activeCount(requests) },
-    { label: "Resolved disputes", value: requests.filter((request) => normalizeStatus(request) === "Resolved").length },
-    { label: "Points gained", value: status?.pointsGained ?? sumPoints(requests) },
+    { label: "Active disputes", value: status?.activeDisputes ?? activeCount(requests) },
+    { label: "Resolved disputes", value: status?.resolvedDisputes ?? requests.filter((request) => normalizeStatus(request) === "Resolved").length },
+    { label: "Points gained", value: status?.pointsGainedTotal ?? status?.pointsGained ?? sumPoints(requests) },
   ];
 
   return (
@@ -189,9 +189,23 @@ export function DisputeCentreExperience() {
             </section>
 
             {requests.length ? (
-              <Link className="flex h-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#22F2C2,#13B98F)] px-4 text-center text-sm font-black text-[#04120e] shadow-[0_14px_28px_rgba(34,242,194,0.22)]" data-dashboard-dispute="true" href="/dashboard/dispute-centre/new">
-                File New Dispute
-              </Link>
+         <Link
+  href="/dashboard/dispute-centre/new"
+  className="flex items-center justify-between rounded-[20px] border border-[#0F6A52]/50 bg-[linear-gradient(135deg,#08241C,#0D3328)] px-5 py-4 shadow-[0_14px_32px_rgba(0,0,0,0.28)]"
+>
+  <div>
+    <p className="text-sm font-black text-white">
+      Raise New Dispute
+    </p>
+    <p className="mt-1 text-[11px] font-medium text-[#9CB8B0]">
+      Report incorrect credit information
+    </p>
+  </div>
+
+  <div className="flex size-11 items-center justify-center rounded-2xl border border-[#1E5B49] bg-[#0F2A22]">
+    <ArrowRight className="size-5 text-[#22F2C2]" />
+  </div>
+</Link>
             ) : null}
           </div>
         </PageContent>
@@ -202,40 +216,34 @@ export function DisputeCentreExperience() {
 }
 
 function DisputeCard({ request }: { request: DisputeRequest }) {
-  const progress = readProgress(request.progress);
   const submittedDate = request.submittedDate || request.submittedAt || request.createdDate || request.createdAt;
   const resolutionDate = request.resolutionDate || request.resolvedAt;
   const bureaus = readBureaus(request);
+  const errorType = request.errorType || request.issueDescription;
 
   return (
     <article className={cn("rounded-2xl p-4", reportMiniCardClass)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-bold">{request.lenderName || request.disputeId || request.publicId || request.id}</p>
-          {request.issueDescription ? <p className="mt-1 text-caption leading-5 text-[#9fb2c6]">{request.issueDescription}</p> : null}
         </div>
         <span className="shrink-0 rounded-full bg-[#22F2C2]/12 px-2.5 py-1 text-caption font-bold text-[#22F2C2]">{normalizeStatus(request)}</span>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-caption text-[#9fb2c6]">
         <span>Bureau <b className="block text-white">{bureaus || "--"}</b></span>
         <span>Status <b className="block text-white">{normalizeStatus(request)}</b></span>
-        <span>Progress <b className="block text-white">{progress !== null ? `${progress}%` : "--"}</b></span>
+        <span className="min-w-0">Error Type <b className="block truncate text-white">{errorType || "--"}</b></span>
         <span>Submitted <b className="block text-white">{formatDate(submittedDate)}</b></span>
         {resolutionDate ? <span>Resolution <b className="block text-white">{formatDate(resolutionDate)}</b></span> : null}
         {request.pointsGained ? <span>Points <b className="block text-[#22F2C2]">+{request.pointsGained}</b></span> : null}
       </div>
-      {progress !== null ? (
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-          <div className="h-full rounded-full bg-[#22F2C2]" style={{ width: `${progress}%` }} />
-        </div>
-      ) : null}
     </article>
   );
 }
 
 function readStatus(data: unknown): DisputeStatus | null {
   const status = data as DisputeStatus | null;
-  return status && (status.activeDisputes !== undefined || status.resolvedDisputes !== undefined || status.pointsGained !== undefined) ? status : null;
+  return status && (status.activeDisputes !== undefined || status.resolvedDisputes !== undefined || status.pointsGained !== undefined || status.pointsGainedTotal !== undefined) ? status : null;
 }
 
 function normalizeStatus(request: DisputeRequest) {
@@ -251,14 +259,6 @@ function activeCount(requests: DisputeRequest[]) {
 
 function sumPoints(requests: DisputeRequest[]) {
   return requests.reduce((total, request) => total + (Number(request.pointsGained) || 0), 0);
-}
-
-function readProgress(value: DisputeRequest["progress"]) {
-  if (value === null || value === undefined || value === "") return null;
-
-  const progress = Number(value);
-
-  return Number.isFinite(progress) ? Math.max(0, Math.min(100, progress)) : null;
 }
 
 function readBureaus(request: DisputeRequest) {

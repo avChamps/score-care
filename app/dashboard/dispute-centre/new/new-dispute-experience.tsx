@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
-import { apiRequest } from "@/lib/api";
+import { apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
 import { cn } from "@/lib/utils";
@@ -118,30 +118,50 @@ export function NewDisputeExperience() {
     if (!selectedAccount || !canContinue || submitting) return;
 
     const token = localStorage.getItem("scorecare_token");
-    const payload = {
-      account: selectedAccount,
-      additionalDetails: details.trim(),
-      bureaus: selectedBureaus,
-      errorType,
-      evidence: evidenceRows
-        .map((row) => files[row.key] ? { field: row.key, fileName: files[row.key]?.name, size: files[row.key]?.size, type: files[row.key]?.type } : null)
-        .filter(Boolean),
-    };
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
+    const payload = new FormData();
+    payload.append("accountData", JSON.stringify({
+      lenderName: selectedAccount.lenderName,
+      accountNumber: selectedAccount.accountNumber,
+      accountType: selectedAccount.accountType,
+    }));
+    payload.append("errorType", errorType);
+    payload.append("bureaus", JSON.stringify(selectedBureaus));
+
+    if (details.trim()) {
+      payload.append("additionalDetails", details.trim());
+    }
+
+    evidenceRows.forEach((row) => {
+      const file = files[row.key];
+      if (file) payload.append(row.key, file);
+    });
 
     setSubmitting(true);
 
     try {
-      if (token && !isTokenExpired(token)) {
-        await apiRequest("/cibil-repair-content/requests", {
-          body: payload,
-          headers: { Authorization: `Bearer ${token}` },
-          method: "POST",
-        });
+      const response = await fetch(apiUrl("/api/disputes"), {
+        body: payload,
+        headers: { Authorization: `Bearer ${token}` },
+        method: "POST",
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
       }
-    } catch {
-      // TODO: Replace with dispute-case API when backend upload/create route is available.
-    } finally {
+
+      if (!response.ok) return;
+
       router.push("/dashboard/dispute-centre");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -171,22 +191,38 @@ export function NewDisputeExperience() {
           {step === 4 ? <EvidenceStep files={files} requiresClosureCertificate={requiresClosureCertificate} onFiles={setFiles} /> : null}
         </div>
 
-        <div className="sticky bottom-24 z-20 mt-4 rounded-2xl border border-[#0D5A3F]/70 bg-[#071812]/95 p-4 shadow-[0_18px_36px_rgba(0,0,0,0.42)] backdrop-blur">
-          <div className="grid grid-cols-2 gap-3">
-            <button className="h-12 rounded-2xl bg-white/10 text-sm font-bold text-white disabled:opacity-40" data-dashboard-dispute="true" disabled={step === 1} type="button" onClick={() => setStep((current) => Math.max(1, current - 1))}>
-              Back
-            </button>
-            <button
-              className="h-12 rounded-2xl bg-[linear-gradient(135deg,#22F2C2,#13B98F)] text-sm font-black text-[#04120e] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-[#6F7B8E]"
-              data-dashboard-dispute="true"
-              disabled={!canContinue || submitting}
-              type="button"
-              onClick={() => step === 4 ? void submitDispute() : setStep((current) => Math.min(4, current + 1))}
-            >
-              {step === 4 ? submitting ? "Submitting..." : "Submit" : "Next"}
-            </button>
-          </div>
-        </div>
+       <div className="sticky bottom-24 z-20 mt-4 rounded-[26px] border border-[#1F756B]/35 bg-[#08110D]/88 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.42),inset_0_0_28px_rgba(31,117,107,0.08)] backdrop-blur-2xl">
+  <div className="grid grid-cols-2 gap-3">
+    <button
+      className="h-12 rounded-[18px] border border-white/5 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] text-sm font-semibold text-[#DCE7E2] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200 hover:bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] disabled:opacity-40"
+      data-dashboard-dispute="true"
+      disabled={step === 1}
+      type="button"
+      onClick={() => setStep((current) => Math.max(1, current - 1))}
+    >
+      Back
+    </button>
+
+    <button
+      className="h-12 rounded-[18px] bg-[linear-gradient(135deg,#22F2C2,#18C79E)] text-sm font-bold text-[#042018] shadow-[0_10px_24px_rgba(34,242,194,0.28)] transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:border disabled:disabled:border-white/5 disabled:bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] disabled:text-[#6F7B8E] disabled:shadow-none"
+      data-dashboard-dispute="true"
+      disabled={!canContinue || submitting}
+      type="button"
+      onClick={() =>
+        step === 4
+          ? void submitDispute()
+          : setStep((current) => Math.min(4, current + 1))
+      }
+    >
+      {step === 4
+        ? submitting
+          ? "Submitting..."
+          : "Submit"
+        : "Next"}
+    </button>
+  </div>
+</div>
+
           </div>
         </PageContent>
         <DashboardBottomNav />
