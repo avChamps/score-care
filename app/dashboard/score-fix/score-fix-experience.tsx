@@ -11,6 +11,7 @@ import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboa
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
+import { writeSelectedCibilRepairAccounts } from "@/lib/cibil-repair-selection";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
 import { cn } from "@/lib/utils";
 
@@ -46,7 +47,7 @@ type CibilRepairContent = {
     amount?: number | null;
     currency?: string;
     offerTag?: string | null;
-    billingCycle: string;
+    billingCycle?: string;
     buttonLabel?: string | null;
     displayOrder?: number;
     isActive?: boolean;
@@ -380,9 +381,16 @@ export function ScoreFixExperience() {
         return;
       }
 
+      const plans = (result.data?.plans ?? [])
+        .filter((plan: CibilRepairContent["plans"][number]) => plan.isActive !== false)
+        .sort((firstPlan: CibilRepairContent["plans"][number], secondPlan: CibilRepairContent["plans"][number]) => (firstPlan.displayOrder ?? 0) - (secondPlan.displayOrder ?? 0));
+      const timelines = (result.data?.timelines ?? [])
+        .filter((timeline: CibilRepairContent["timelines"][number]) => timeline.isActive !== false)
+        .sort((firstTimeline: CibilRepairContent["timelines"][number], secondTimeline: CibilRepairContent["timelines"][number]) => firstTimeline.displayOrder - secondTimeline.displayOrder);
+
       setRepairContent({
-        plans: (result.data?.plans ?? []).filter((plan: CibilRepairContent["plans"][number]) => plan.isActive !== false),
-        timelines: (result.data?.timelines ?? []).filter((timeline: CibilRepairContent["timelines"][number]) => timeline.isActive),
+        plans: plans.length ? plans : fallbackRepairContent.plans,
+        timelines: timelines.length ? timelines : fallbackRepairContent.timelines,
       });
     } catch {
       setRepairContent(fallbackRepairContent);
@@ -451,18 +459,26 @@ export function ScoreFixExperience() {
   useEffect(() => {
     if (subscriptionLoading) return;
 
+    let tabTimer: number | undefined;
+
     if (!initialTabHandledRef.current) {
       initialTabHandledRef.current = true;
 
       if (!isFreeTier) {
-        setActiveTab("Credit Improvement Plan");
-        return;
+        tabTimer = window.setTimeout(() => setActiveTab("Credit Improvement Plan"), 0);
+        return () => {
+          if (tabTimer) window.clearTimeout(tabTimer);
+        };
       }
     }
 
     if (isFreeTier && activeTab === "Credit Improvement Plan") {
-      setActiveTab("Simulator");
+      tabTimer = window.setTimeout(() => setActiveTab("Simulator"), 0);
     }
+
+    return () => {
+      if (tabTimer) window.clearTimeout(tabTimer);
+    };
   }, [activeTab, isFreeTier, subscriptionLoading]);
 
   function handleTabChange(tab: ImproveTab) {
@@ -688,22 +704,33 @@ function CreditImprovementPlan({
   repairRequestsLoading: boolean;
   repairStatus: CibilRepairStatus | null;
 }) {
+  const router = useRouter();
   const [selectedIssueIds, setSelectedIssueIds] = useState<string[]>([]);
   const disputeStats = buildDisputeStats(repairStatus);
   const plan = repairContent.plans.find((repairPlan) => repairPlan.isActive) ?? repairContent.plans[0] ?? fallbackRepairContent.plans[0];
   const originalAmount = getOriginalAmount(plan.amount, plan.offerTag);
   const repairIssueCards = useMemo(() => buildRepairIssueCards(displayData), [displayData]);
-  const selectedCount = selectedIssueIds.length;
-  const finalAmount = (plan.amount ?? 0) * selectedCount;
-
-  useEffect(() => {
-    const repairIssueCardIds = new Set(repairIssueCards.map((card) => card.id));
-
-    setSelectedIssueIds((currentIds) => currentIds.filter((issueId) => repairIssueCardIds.has(issueId)));
-  }, [repairIssueCards]);
+  const selectedAccounts = useMemo(() => repairIssueCards.filter((card) => selectedIssueIds.includes(card.id)), [repairIssueCards, selectedIssueIds]);
+  const selectedCount = selectedAccounts.length;
 
   function toggleIssueCard(issueId: string) {
     setSelectedIssueIds((currentIds) => (currentIds.includes(issueId) ? currentIds.filter((id) => id !== issueId) : [...currentIds, issueId]));
+  }
+
+  function continueToRepairSummary() {
+    if (!selectedAccounts.length) return;
+
+    writeSelectedCibilRepairAccounts(
+      selectedAccounts.map((account) => ({
+        id: account.id,
+        accountNumber: account.accountNumber,
+        accountStatus: account.accountStatus,
+        currentBalance: account.currentBalance,
+        issueLabels: account.issueLabels,
+        subscriberName: account.subscriberName,
+      })),
+    );
+    router.push("/dashboard/score-fix/cibil-repair-summary");
   }
 
   return (
@@ -725,6 +752,21 @@ function CreditImprovementPlan({
           <p className="mt-2 text-caption leading-5 text-[#9fb2c6]">Expert review, disputes, lender follow-up, and score verification in one guided flow.</p>
         </div>
       </section>
+
+      {/* <section className={cn("rounded-[1.75rem] p-4 text-white", reportCardClass)}>
+        <p className="text-caption font-semibold uppercase tracking-[0.16em] text-[#1F756B]">Repair Timeline</p>
+        <div className="mt-4 space-y-3">
+          {repairContent.timelines.map((timeline) => (
+            <div key={timeline.id} className={cn("flex gap-3 rounded-2xl p-3", reportMiniCardClass)}>
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#22F2C2]/12 text-caption font-bold text-[#22F2C2]">{timeline.displayOrder}</span>
+              <div>
+                <p className="text-sm font-semibold text-white">{timeline.title}</p>
+                <p className="mt-1 text-caption leading-5 text-[#9fb2c6]">{timeline.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section> */}
 
       <section className={cn("rounded-[1.75rem] p-4 text-white", reportCardClass)}>
         <h2 className="text-sm font-semibold text-white">Select issues to repair</h2>
@@ -755,19 +797,17 @@ function CreditImprovementPlan({
       </section>
 
       <div className="sticky bottom-24 z-20 rounded-2xl border border-[#0D5A3F]/70 bg-[#071812]/95 p-4 shadow-[0_18px_36px_rgba(0,0,0,0.42)] backdrop-blur">
-        {selectedCount ? (
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-bold text-white">{selectedCount} selected</p>
-              <p className="mt-1 text-xl font-black text-white">{formatINR(finalAmount)} total</p>
-            </div>
-            <button className="rounded-full bg-[#22F2C2] px-4 py-2 text-sm font-black text-[#04120e]" type="button">
-              Continue Repair
-            </button>
-          </div>
-        ) : (
-          <p className="text-sm font-semibold text-[#9fb2c6]">Select accounts to see repair cost</p>
-        )}
+        <button
+          className={cn(
+            "h-12 w-full rounded-2xl text-sm font-black transition",
+            selectedCount ? "bg-[linear-gradient(135deg,#22F2C2,#13B98F)] text-[#04120e] shadow-[0_14px_28px_rgba(34,242,194,0.22)]" : "cursor-not-allowed bg-white/10 text-[#6F7B8E]",
+          )}
+          disabled={!selectedCount}
+          type="button"
+          onClick={continueToRepairSummary}
+        >
+          {selectedCount ? "Continue" : "Continue"}
+        </button>
       </div>
     </div>
   );
