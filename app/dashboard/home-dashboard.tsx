@@ -140,7 +140,7 @@ type GeneralSettings = {
 };
 
 const appTiles = [
-  { href: "/dashboard/score-fix", Icon: Wrench, title: "Dispute Centre", value: "0", meta: "active", alert: true },
+  { href: "/dashboard/dispute-centre", Icon: Wrench, title: "Dispute Centre", value: "0", meta: "active", alert: true },
   { href: "/dashboard/loans", Icon: BadgeIndianRupee, title: "Pay EMIs", value: "-", meta: "-" },
   { href: "/dashboard/score-fix?tab=credit-improvement-plan", Icon: ChartNoAxesCombined, title: "Improve Score", value: "-", meta: "-" },
   { href: "/dashboard/offers", Icon: CreditCard, title: "Get Offers", value: "0", meta: "pre-approved", offer: true },
@@ -1365,7 +1365,7 @@ function buildAppTiles(dashboard: DashboardData, unavailable: boolean) {
 function QuickCard({ disabled = false, href, Icon, title, value, meta, alert = false, locked = false, offer = false, onLockedClick }: { disabled?: boolean; href: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; title: string; value: string; meta: string; alert?: boolean; locked?: boolean; offer?: boolean; onLockedClick?: () => void }) {
   const className = "min-h-[122px] rounded-[20px] border border-white/10 bg-white/[0.07] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_36px_rgba(0,0,0,0.24)] backdrop-blur-xl transition hover:bg-white/[0.1]";
 
-  if (disabled || title === "Dispute Centre") {
+  if (disabled) {
     return (
       <div className={className}>
         <QuickCardContent Icon={Icon} alert={alert} meta={meta} offer={offer} title={title} value={value} />
@@ -1382,7 +1382,7 @@ function QuickCard({ disabled = false, href, Icon, title, value, meta, alert = f
   }
 
   return (
-    <Link className={className} href={href}>
+    <Link className={className} data-dashboard-dispute={title === "Dispute Centre" ? "true" : undefined} href={href}>
       <QuickCardContent Icon={Icon} alert={alert} meta={meta} offer={offer} title={title} value={value} />
     </Link>
   );

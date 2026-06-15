@@ -98,25 +98,8 @@ type RepairIssueCard = {
 const notificationsPageSize = 10;
 const baselineUtilization = 42;
 const fallbackRepairContent: CibilRepairContent = {
-  plans: [
-    {
-      id: "cibil-full-repair-monthly",
-      planName: "Full Repair",
-      amount: 499,
-      currency: "INR",
-      billingCycle: "monthly",
-      buttonLabel: "Start Full Repair",
-      displayOrder: 1,
-      isActive: true,
-    },
-  ],
-  timelines: [
-    { id: "report-analysis", title: "Report Analysis", description: "Review accounts, enquiries, balances, and negative signals.", displayOrder: 1, isActive: true },
-    { id: "error-detection", title: "Error Detection", description: "Find wrong ownership, duplicate entries, late marks, and closure gaps.", displayOrder: 2, isActive: true },
-    { id: "dispute-submission", title: "Dispute Submission", description: "Prepare bureau-ready disputes with supporting documents.", displayOrder: 3, isActive: true },
-    { id: "lender-follow-up", title: "Lender Follow-up", description: "Coordinate lender follow-up until account correction is confirmed.", displayOrder: 4, isActive: true },
-    { id: "score-verification", title: "Score Verification", description: "Verify bureau update and score movement after resolution.", displayOrder: 5, isActive: true },
-  ],
+  plans: [],
+  timelines: [],
 };
 const reportCardClass =
   "border border-[#103A2B]/50 bg-[linear-gradient(135deg,#06120E_0%,#081712_50%,#091813_100%)] shadow-[0_20px_45px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]";
@@ -166,11 +149,9 @@ function getAccountsFromDisplayData(displayData: DisplayDataResponse | null) {
       }
     | undefined;
 
-  if (Array.isArray(data?.credit_report?.CAIS_Account?.CAIS_Account_DETAILS)) {
-    return data.credit_report.CAIS_Account.CAIS_Account_DETAILS;
-  }
-
-  return Array.isArray(data?.display?.accounts) ? data.display.accounts : [];
+  return Array.isArray(data?.display?.accounts)
+    ? data.display.accounts
+    : Array.isArray(data?.credit_report?.CAIS_Account?.CAIS_Account_DETAILS) ? data.credit_report.CAIS_Account.CAIS_Account_DETAILS : [];
 }
 
 function readAccountHistory(account: Record<string, unknown>) {
@@ -249,7 +230,10 @@ function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairI
     if (!issueLabels.length) return;
 
     const accountNumber = String(account.Account_Number ?? account.account_number ?? account.AccountNumber ?? "");
-    const subscriberName = String(account.Subscriber_Name ?? account.member_name ?? "Unknown lender");
+    const subscriberName = readString(account.Subscriber_Name ?? account.subscriberName ?? account.member_name);
+
+    if (!accountNumber || !subscriberName) return;
+
     const id = `${subscriberName.toLowerCase()}-${accountNumber || index}`;
 
     if (cards.has(id)) {
@@ -707,8 +691,8 @@ function CreditImprovementPlan({
   const router = useRouter();
   const [selectedIssueIds, setSelectedIssueIds] = useState<string[]>([]);
   const disputeStats = buildDisputeStats(repairStatus);
-  const plan = repairContent.plans.find((repairPlan) => repairPlan.isActive) ?? repairContent.plans[0] ?? fallbackRepairContent.plans[0];
-  const originalAmount = getOriginalAmount(plan.amount, plan.offerTag);
+  const plan = repairContent.plans.find((repairPlan) => repairPlan.isActive) ?? repairContent.plans[0] ?? null;
+  const originalAmount = getOriginalAmount(plan?.amount, plan?.offerTag);
   const repairIssueCards = useMemo(() => buildRepairIssueCards(displayData), [displayData]);
   const selectedAccounts = useMemo(() => repairIssueCards.filter((card) => selectedIssueIds.includes(card.id)), [repairIssueCards, selectedIssueIds]);
   const selectedCount = selectedAccounts.length;
@@ -727,6 +711,7 @@ function CreditImprovementPlan({
         accountStatus: account.accountStatus,
         currentBalance: account.currentBalance,
         issueLabels: account.issueLabels,
+        rawAccount: account.rawAccount,
         subscriberName: account.subscriberName,
       })),
     );
@@ -740,7 +725,7 @@ function CreditImprovementPlan({
           <div className="flex items-start justify-between gap-3">
             <h2 className="whitespace-nowrap text-base font-bold uppercase leading-none">Credit Repair Service</h2>
             <div className="shrink-0 text-right">
-              {typeof plan.amount === "number" ? (
+              {typeof plan?.amount === "number" ? (
                 <div>
                   {originalAmount ? <p className="text-body font-semibold leading-none text-[#9fb2c6] line-through">{formatINR(originalAmount)}</p> : null}
                   {plan.offerTag ? <p className="mt-1 text-caption font-bold leading-none text-[#22F2C2]">Offer: {plan.offerTag}</p> : null}
@@ -885,6 +870,10 @@ function maskAccountNumber(accountNumber: string) {
   if (/x/i.test(accountNumber)) return accountNumber;
 
   return accountNumber.length > 4 ? `${"X".repeat(Math.max(accountNumber.length - 4, 3))}${accountNumber.slice(-4)}` : accountNumber;
+}
+
+function readString(value: unknown) {
+  return typeof value === "string" ? value.trim() : value === null || value === undefined ? "" : String(value).trim();
 }
 
 function RepairDisputeCards({ loading, requests }: { loading: boolean; requests: CibilRepairRequest[] }) {

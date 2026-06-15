@@ -6,6 +6,7 @@ export type SelectedCibilRepairAccount = {
   accountStatus: string;
   currentBalance: number;
   issueLabels: string[];
+  rawAccount: Record<string, unknown>;
   subscriberName: string;
 };
 
@@ -35,6 +36,8 @@ function isSelectedCibilRepairAccount(value: unknown): value is SelectedCibilRep
     typeof account.accountStatus === "string" &&
     typeof account.currentBalance === "number" &&
     Array.isArray(account.issueLabels) &&
+    Boolean(account.rawAccount) &&
+    typeof account.rawAccount === "object" &&
     typeof account.subscriberName === "string"
   );
 }
