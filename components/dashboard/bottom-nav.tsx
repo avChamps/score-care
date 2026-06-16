@@ -73,7 +73,7 @@ export function DashboardBottomNav() {
 
               <span
                 className={cn(
-                  "relative z-10 whitespace-nowrap text-[11px] font-semibold leading-none tracking-[-0.01em]",
+                  "relative z-10 whitespace-nowrap text-[11px] font-medium leading-none",
                   active ? "text-[#18B98E]" : "text-[#6F7B8E]"
                 )}
               >
