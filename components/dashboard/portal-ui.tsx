@@ -87,7 +87,7 @@ export function DashboardHeaderHomeControl({ className, iconClassName, onMenuCli
 
   return (
     <button
-      className={className}
+      className={cn(className, !isDashboardHome && "transition-transform duration-150 active:scale-95")}
       type="button"
       aria-label={isDashboardHome ? "Open profile menu" : "Go to dashboard home"}
       onClick={isDashboardHome ? onMenuClick : () => router.push("/dashboard")}
