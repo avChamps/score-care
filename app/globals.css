@@ -109,6 +109,7 @@ html.translated-rtl body {
 
 .native-shell,
 .native-shell body {
+  --native-status-offset: max(env(safe-area-inset-top, 0px), 24px);
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -126,7 +127,20 @@ html.translated-rtl body {
 
 .native-shell .portal-theme {
   min-height: 100dvh;
-  padding-top: 0;
+  padding-top: var(--native-status-offset);
+}
+
+.native-shell .portal-theme::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 50;
+  height: var(--native-status-offset);
+  background: #050912;
+}
+
+.native-shell .hero-header {
+  top: var(--native-status-offset);
 }
 
 .native-shell .portal-theme .sticky.top-0 {

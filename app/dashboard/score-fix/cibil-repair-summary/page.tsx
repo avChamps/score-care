@@ -30,6 +30,12 @@ type RazorpaySuccessResponse = {
   razorpay_signature: string;
 };
 
+type RazorpayPrefill = {
+  name: string;
+  email: string;
+  contact: string;
+};
+
 declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
@@ -47,6 +53,33 @@ type CibilRepairTimeline = {
 const reportCardClass =
   "border border-[#103A2B]/50 bg-[linear-gradient(135deg,#06120E_0%,#081712_50%,#091813_100%)] shadow-[0_20px_45px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]";
 const reportMiniCardClass = "border border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]";
+
+function cleanRazorpayContact(value: unknown) {
+  const digits = String(value || "").replace(/\D/g, "");
+  const contact = digits.length > 10 ? digits.slice(-10) : digits;
+
+  return /^\d{10}$/.test(contact) ? contact : "";
+}
+
+async function getRazorpayPrefill(token: string, apiPrefill?: Partial<RazorpayPrefill>) {
+  let name = String(apiPrefill?.name || localStorage.getItem("scorecare_full_name") || "").trim();
+  let email = String(apiPrefill?.email || localStorage.getItem("scorecare_email") || "").trim();
+  let contact = cleanRazorpayContact(apiPrefill?.contact || localStorage.getItem("scorecare_mobile_number"));
+
+  if (!email || !contact) {
+    const profileResponse = await apiRequest("/users/me/profile", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const profileResult = await profileResponse.json();
+    const profile = profileResult?.data?.user ?? profileResult?.data?.profile ?? profileResult?.user ?? profileResult?.profile ?? null;
+
+    name = String(name || profile?.fullName || profile?.full_name || profile?.name || "").trim();
+    email = String(email || profile?.email || "").trim();
+    contact = cleanRazorpayContact(contact || profile?.mobileNumber || profile?.mobile_number || profile?.phone);
+  }
+
+  return { name, email, contact };
+}
 
 export default function CibilRepairSummaryPage() {
   const router = useRouter();
@@ -141,10 +174,13 @@ export default function CibilRepairSummaryPage() {
 
       const orderResult = await orderResponse.json();
       const order = orderResult?.data?.order;
+      const prefill = await getRazorpayPrefill(token, orderResult?.data?.prefill);
 
       if (!orderResponse.ok || !order?.id || !window.Razorpay) {
         throw new Error("Unable to create payment order.");
       }
+
+      console.log("Razorpay Prefill", prefill);
 
       const checkout = new window.Razorpay({
         key: orderResult?.data?.keyId || orderResult?.data?.razorpayKeyId || order.key,
@@ -153,6 +189,7 @@ export default function CibilRepairSummaryPage() {
         name: "ScoreCare",
         description: planName,
         order_id: order.id,
+        prefill,
         method: {
           upi: true,
           card: true,

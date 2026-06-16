@@ -36,6 +36,12 @@ type RazorpaySubscriptionResponse = {
   razorpay_signature: string;
 };
 
+type RazorpayPrefill = {
+  name: string;
+  email: string;
+  contact: string;
+};
+
 declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
@@ -97,6 +103,33 @@ const subscriptionPlans: SubscriptionPlan[] = [
 ];
 
 let subscriptionPlansRequest: Promise<SubscriptionPlan[]> | null = null;
+
+function cleanRazorpayContact(value: unknown) {
+  const digits = String(value || "").replace(/\D/g, "");
+  const contact = digits.length > 10 ? digits.slice(-10) : digits;
+
+  return /^\d{10}$/.test(contact) ? contact : "";
+}
+
+async function getRazorpayPrefill(token: string, apiPrefill?: Partial<RazorpayPrefill>) {
+  let name = String(apiPrefill?.name || localStorage.getItem("scorecare_full_name") || "").trim();
+  let email = String(apiPrefill?.email || localStorage.getItem("scorecare_email") || "").trim();
+  let contact = cleanRazorpayContact(apiPrefill?.contact || localStorage.getItem("scorecare_mobile_number"));
+
+  if (!email || !contact) {
+    const profileResponse = await apiRequest("/users/me/profile", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const profileResult = await profileResponse.json();
+    const profile = profileResult?.data?.user ?? profileResult?.data?.profile ?? profileResult?.user ?? profileResult?.profile ?? null;
+
+    name = String(name || profile?.fullName || profile?.full_name || profile?.name || "").trim();
+    email = String(email || profile?.email || "").trim();
+    contact = cleanRazorpayContact(contact || profile?.mobileNumber || profile?.mobile_number || profile?.phone);
+  }
+
+  return { name, email, contact };
+}
 
 export async function getSubscriptionPlans() {
   if (!subscriptionPlansRequest) {
@@ -217,10 +250,13 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
       const data = subscriptionResult?.data ?? subscriptionResult;
       const order = data?.order;
       const plan = data?.plan ?? selectedPlan;
+      const prefill = await getRazorpayPrefill(token, data?.prefill);
 
       if (!subscriptionResponse.ok || !data?.keyId || !order?.id || !data?.customerId || data?.recurring !== "1" || !window.Razorpay) {
         throw new Error("Unable to create subscription.");
       }
+
+      console.log("Razorpay Prefill", prefill);
 
       const checkout = new window.Razorpay({
         key: data.keyId,
@@ -229,6 +265,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
         recurring: data.recurring,
         name: "ScoreCare",
         description: plan.planName ?? selectedPlan.planName,
+        prefill,
         handler: async (response: RazorpaySubscriptionResponse) => {
           try {
             const confirmResponse = await apiRequest("/subscription-plans/razorpay/confirm", {

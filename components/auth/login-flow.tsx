@@ -27,6 +27,42 @@ type WebOtpRequestOptions = CredentialRequestOptions & {
   otp: { transport: string[] };
 };
 
+const defaultLegalContent: LegalContent = {
+  termsAndConditions: `
+    <h2>Terms and Conditions</h2>
+    <p>ScoreCare provides credit score access, credit report summaries, report analysis, repayment reminders, dispute support, and credit improvement workflows for personal financial awareness.</p>
+    <ul>
+      <li>You must provide accurate, complete, and current information, including your mobile number, PAN, name, email, and date of birth wherever required.</li>
+      <li>You authorize ScoreCare and its service providers to verify your identity and request credit information from authorized credit bureaus or report providers when you give consent.</li>
+      <li>ScoreCare insights are informational and do not guarantee loan approval, credit card approval, score improvement, bureau correction, or any lender decision.</li>
+      <li>You are responsible for keeping your device, OTPs, and account access secure.</li>
+      <li>Paid services are governed by the plan details and refund terms shown at the time of purchase.</li>
+    </ul>
+  `,
+  privacyPolicy: `
+    <h2>Privacy Policy</h2>
+    <p>ScoreCare collects and uses personal and credit information only to provide, secure, support, and improve credit-related services.</p>
+    <ul>
+      <li>We may collect your name, mobile number, email address, date of birth, PAN, login data, payment status, support data, device data, and consent-based credit report information.</li>
+      <li>We use this information to verify identity, fetch or display credit information, provide report analysis, generate insights, manage subscriptions, send service messages, prevent fraud, and meet legal obligations.</li>
+      <li>We may share required information with credit bureaus, authorized report providers, payment processors, cloud and security providers, communication vendors, support tools, legal advisors, and regulators where necessary.</li>
+      <li>We do not sell your PAN, credit report, or personal information.</li>
+      <li>You may request access, correction, deletion, or withdrawal of consent by contacting care@scorecare.in, subject to identity verification, legal obligations, and service limitations.</li>
+    </ul>
+  `,
+  consent: `
+    <h2>PAN and Credit Report Consent</h2>
+    <p>By continuing, I voluntarily authorize ScoreCare and its authorized service providers to use my PAN, name, date of birth, mobile number, email address, and other submitted details to verify my identity and fetch, access, process, store, and display my credit score, credit report, and related credit information from authorized credit bureaus or report providers.</p>
+    <ul>
+      <li>I understand that this consent is required to provide credit score checks, report summaries, score insights, eligibility indicators, dispute support, and credit improvement recommendations.</li>
+      <li>I confirm that the PAN and personal details submitted belong to me and are accurate.</li>
+      <li>I understand that ScoreCare does not guarantee any loan, credit card, financial product approval, score increase, or bureau correction.</li>
+      <li>I may withdraw this consent by contacting care@scorecare.in, but withdrawal may stop or limit credit report refreshes and related services.</li>
+      <li>I authorize ScoreCare to retain consent records and related data as required for service delivery, audit, fraud prevention, dispute resolution, and legal compliance.</li>
+    </ul>
+  `,
+};
+
 export function LoginFlow() {
   const router = useRouter();
   const [step, setStep] = useState<"mobile" | "otp" | "pan">("mobile");
@@ -303,7 +339,8 @@ export function LoginFlow() {
 
       setLegalContent(result.data);
     } catch {
-      setLegalContentError("Could not load legal content. Please try again.");
+      setLegalContent(defaultLegalContent);
+      setLegalContentError("");
     } finally {
       setIsLoadingLegalContent(false);
     }
@@ -795,7 +832,7 @@ export function LoginFlow() {
                   <div
                     className="rounded-[24px] border border-white/10 bg-[#071626]/92 p-5 text-body-sm font-medium leading-7 text-[#AAB6C8] shadow-[0_14px_32px_rgba(0,0,0,0.2)] sm:p-7 sm:text-sm [&_a]:font-semibold [&_a]:text-[#22F2C2] [&_h1]:mb-4 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-white [&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-white [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-white [&_li]:mb-2 [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-4 [&_strong]:text-white [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-5"
                     dangerouslySetInnerHTML={{
-                      __html: legalContent?.[legalMeta[legalPopup].key] ?? "",
+                      __html: legalContent?.[legalMeta[legalPopup].key] ?? defaultLegalContent[legalMeta[legalPopup].key] ?? "",
                     }}
                   />
                 )}
