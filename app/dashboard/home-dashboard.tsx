@@ -2675,7 +2675,7 @@ async function loadNotifications(token: string) {
 
 async function loadActiveDisputes(token: string) {
   try {
-    const response = await apiRequest("/cibil-repair-content/requests/me/status", {
+    const response = await apiRequest("/api/disputes", {
       headers: {
         Authorization: `Bearer ${token}`,
       },

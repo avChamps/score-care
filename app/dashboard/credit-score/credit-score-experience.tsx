@@ -879,12 +879,12 @@ function ReportAccountsTab({ accounts, activeFilter, loading }: { accounts: Cred
   );
 }
 
-function ReportNoRecords() {
+function ReportNoRecords({ description = "No report records available." }: { description?: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <FileSearch className="size-12 text-[#AAB6C8]" strokeWidth={1.6} />
       <p className="mt-4 text-base font-semibold text-white">No Records Found</p>
-      <p className="mt-1 text-body-sm text-[#AAB6C8]">No report records available.</p>
+      <p className="mt-1 text-body-sm text-[#AAB6C8]">{description}</p>
     </div>
   );
 }
@@ -910,9 +910,7 @@ function ReportEnquiriesTab({ enquiries, loading }: { enquiries: CreditEnquiry[]
           <ReportEnquirySection enquiries={softEnquiries} title="Soft Enquiries" />
         </>
       ) : (
-        <div className={cn("rounded-[1.65rem] p-4 text-white", reportCardClass)}>
-          <p className="text-sm font-semibold">No enquiries found</p>
-        </div>
+        <ReportNoRecords description="No loan applications available." />
       )}
     </div>
   );
