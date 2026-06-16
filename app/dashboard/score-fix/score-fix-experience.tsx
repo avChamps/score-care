@@ -526,8 +526,8 @@ export function ScoreFixExperience() {
             </div>
           </div>
           <div className="space-y-1 pt-2">
-            <p className="text-tiny font-bold uppercase tracking-[0.18em] text-[#22F2C2]">Score Simulator</p>
-            <h1 className="text-2xl font-black tracking-normal text-white">Improve</h1>
+            {/* <p className="text-tiny font-bold uppercase tracking-[0.18em] text-[#22F2C2]">Score Simulator</p> */}
+            <h1 className="text-2xl font-black tracking-normal text-white">Score Improvement</h1>
           </div>
 
           <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(145deg,#071522,#0A1725)] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
