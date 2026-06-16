@@ -301,7 +301,7 @@ function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairI
     });
   });
 
-  return Array.from(cards.values());
+  return Array.from(cards.values()).filter((card) => card.currentBalance > 0 || card.overdueAmount > 0);
 }
 
 export function ScoreFixExperience() {
@@ -695,7 +695,7 @@ function ActionRow({ action, checked, onChange }: { action: SimulatorAction; che
   return (
     <button className="flex w-full items-center justify-between gap-4 border-b border-white/10 py-4 text-left last:border-b-0" type="button" onClick={onChange}>
       <span className="min-w-0">
-        <span className="block text-sm font-bold text-white">{action.title}</span>
+        <span className="block text-lg font-bold text-white">{action.title}</span>
         
       </span>
       <span className={cn("relative h-7 w-12 shrink-0 rounded-full border transition", checked ? "border-[#22F2C2]/60 bg-[#22F2C2]/30" : "border-white/10 bg-slate-800")}>
@@ -721,6 +721,7 @@ function CreditImprovementPlan({
   const router = useRouter();
   const [selectedIssueIds, setSelectedIssueIds] = useState<string[]>([]);
   const disputeStats = buildDisputeStats(repairStatus);
+  const showDisputeCentre = hasRepairCounts(repairStatus);
   const plan = repairContent.plans.find((repairPlan) => repairPlan.isActive) ?? repairContent.plans[0] ?? null;
   const originalAmount = getOriginalAmount(plan?.amount, plan?.offerTag);
   const repairIssueCards = useMemo(() => buildRepairIssueCards(displayData), [displayData]);
@@ -784,32 +785,34 @@ function CreditImprovementPlan({
       </section> */}
 
       <section className={cn("rounded-[2rem] p-4 text-white", reportHighlightCardClass)}>
-        <h2 className="text-sm font-semibold text-white">Select issues to repair</h2>
-        <p className="mt-1 text-caption leading-5 text-[#9fb2c6]">Choose the accounts you want us to review and repair.</p>
+        <h2 className="text-base font-semibold text-white">Select issues to repair</h2>
+        <p className="mt-1 text-body leading-5 text-[#9fb2c6]">Choose the accounts you want us to review and repair.</p>
         <RepairIssueCards cards={repairIssueCards} selectedIds={selectedIssueIds} onToggle={toggleIssueCard} />
       </section>
 
-      <section className={cn("rounded-[2rem] p-4 text-white", reportHighlightCardClass)}>
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-caption font-semibold uppercase tracking-[0.16em] text-[#1F756B]">Dispute Centre</p>
-            <h2 className="mt-1 text-sm font-semibold">Case progress</h2>
-          </div>
-          <span className="rounded-full bg-[#ff4d7d]/14 px-3 py-1 text-caption font-semibold text-[#ff8cab]">Live</span>
-        </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {disputeStats.map((stat) => (
-            <div key={stat.label} className={cn("rounded-2xl px-3 py-3", reportMiniCardClass)}>
-              <p className="text-sm font-semibold"><AnimatedNumber value={stat.value} /></p>
-              <p className="mt-1 text-caption leading-3 text-[#9fb2c6]">{stat.label}</p>
+      {showDisputeCentre ? (
+        <section className={cn("rounded-[2rem] p-4 text-white", reportHighlightCardClass)}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-body font-bold uppercase tracking-[0.16em] text-[#1F756B]">Dispute Centre</p>
+              <h2 className="mt-1 text-lg font-semibold">Case progress</h2>
             </div>
-          ))}
-        </div>
+            <span className="rounded-full bg-[#ff4d7d]/14 px-3 py-1 text-body font-semibold text-[#ff8cab]">Live</span>
+          </div>
 
-        <RepairRequestsTable loading={repairRequestsLoading} requests={repairRequests} status={repairStatus} />
-        <RepairDisputeCards loading={repairRequestsLoading} requests={repairRequests} status={repairStatus} />
-      </section>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {disputeStats.map((stat) => (
+              <div key={stat.label} className={cn("rounded-2xl px-3 py-3", reportMiniCardClass)}>
+                <p className="text-lg font-semibold"><AnimatedNumber value={stat.value} /></p>
+                <p className="mt-1 text-body leading-3 text-[#9fb2c6]">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+
+          <RepairRequestsTable loading={repairRequestsLoading} requests={repairRequests} status={repairStatus} />
+          <RepairDisputeCards loading={repairRequestsLoading} requests={repairRequests} status={repairStatus} />
+        </section>
+      ) : null}
 
       <div className="sticky bottom-24 z-20 rounded-2xl border border-[#0D5A3F]/70 bg-[#071812]/95 p-4 shadow-[0_18px_36px_rgba(0,0,0,0.42)] backdrop-blur">
         <button
@@ -855,10 +858,10 @@ function RepairIssueCards({ cards, selectedIds, onToggle }: { cards: RepairIssue
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-bold text-white">{card.subscriberName}</p>
+                <p className="text-lg font-bold text-white">{card.subscriberName}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {card.issueLabels.map((label) => (
-                    <span key={label} className="rounded-full bg-[#22F2C2]/12 px-2 py-1 text-tiny font-bold text-[#22F2C2]">
+                    <span key={label} className="rounded-full bg-[#22F2C2]/12 px-2 py-1 text-body font-bold text-[#22F2C2]">
                       {label}
                     </span>
                   ))}
@@ -867,11 +870,13 @@ function RepairIssueCards({ cards, selectedIds, onToggle }: { cards: RepairIssue
               <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border", selected ? "border-[#22F2C2] bg-[#22F2C2] text-[#04120e]" : "border-white/25 text-transparent")}>✓</span>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 text-caption">
-              <div>
-                <p className="text-[#7792aa]">Current balance</p>
-                <p className="mt-1 font-bold text-white"><AnimatedNumber value={formatINR(card.currentBalance)} /></p>
-              </div>
+            <div className="mt-4 grid grid-cols-2 gap-2 text-body">
+              {card.currentBalance > 0 ? (
+                <div>
+                  <p className="text-[#7792aa]">Current balance</p>
+                  <p className="mt-1 font-bold text-white"><AnimatedNumber value={formatINR(card.currentBalance)} /></p>
+                </div>
+              ) : null}
               {card.overdueAmount > 0 ? (
                 <div>
                   <p className="text-[#7792aa]">Amount Past Due</p>
