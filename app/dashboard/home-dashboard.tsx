@@ -54,6 +54,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { initializePushNotifications, type PushNotificationInitState } from "@/src/lib/pushNotifications";
 import { cn } from "@/lib/utils";
 
 type DashboardData = {
@@ -219,6 +220,13 @@ export function HomeDashboard() {
   const [showActionPlan, setShowActionPlan] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  const [pushNotificationState, setPushNotificationState] = useState<PushNotificationInitState>({
+    error: null,
+    fcmToken: null,
+    isLoading: false,
+    isNativeAndroid: false,
+    permission: null,
+  });
   const [homepageBackgroundImages, setHomepageBackgroundImages] = useState<string[]>([dashboardBg.src]);
   const [homepageBackgroundIndex, setHomepageBackgroundIndex] = useState(0);
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
@@ -355,6 +363,41 @@ export function HomeDashboard() {
       window.removeEventListener("scorecare:cibil-display-updated", handleDisplayUpdate);
     };
   }, [profile]);
+
+  useEffect(() => {
+    let cleanup: { remove: () => Promise<void> } | null = null;
+    let isMounted = true;
+    let shouldRemoveAfterInit = false;
+    const token = localStorage.getItem("scorecare_token");
+
+    if (!profile || !token || isTokenExpired(token)) {
+      return;
+    }
+
+    // Push notifications are initialized only after authenticated dashboard data is available.
+    void initializePushNotifications(token, (state) => {
+      if (isMounted) {
+        setPushNotificationState(state);
+      }
+    }).then((removeListeners) => {
+      cleanup = removeListeners;
+      if (shouldRemoveAfterInit) {
+        void cleanup?.remove();
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      shouldRemoveAfterInit = true;
+      void cleanup?.remove();
+    };
+  }, [profile]);
+
+  useEffect(() => {
+    if (pushNotificationState.isNativeAndroid) {
+      console.debug("[ScoreCare Push] State changed", pushNotificationState);
+    }
+  }, [pushNotificationState]);
 
   useEffect(() => {
     function handleNativeBackRoot() {

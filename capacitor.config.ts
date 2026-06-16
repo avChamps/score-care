@@ -1,3 +1,5 @@
+/// <reference types="@capacitor/push-notifications" />
+
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
@@ -10,6 +12,9 @@ const config: CapacitorConfig = {
   plugins: {
     CapacitorHttp: {
       enabled: true,
+    },
+    PushNotifications: {
+      presentationOptions: ["alert", "sound"],
     },
   },
 };

@@ -13,6 +13,8 @@ const SCORECARE_SESSION_KEYS = [
   "scorecare_cibil_score_check_data",
   "scorecare_cibil_score_check_token",
   "scorecare_cibil_score_check_payload",
+  "scorecare_registered_fcm_token",
+  "scorecare_android_device_id",
   "scorecare_admin_view",
 ];
 
