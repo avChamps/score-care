@@ -73,28 +73,48 @@ type DisplayDataResponse = {
       CAIS_Account?: {
         CAIS_Account_DETAILS?: CreditAccount[] | null;
       };
+      RESPONSES?: {
+        RESPONSE?: CrifResponse | CrifResponse[] | null;
+      };
     };
   };
 };
+type CrifResponse = {
+  "LOAN-DETAILS"?: CreditAccount | CreditAccount[] | null;
+};
 type CreditAccount = {
+  "ACCOUNT-STATUS"?: string | number | null;
+  "ACCT-TYPE"?: string | number | null;
   Account_Status?: string | number | null;
   Account_Type?: string | number | null;
   Account_Number?: string | number | null;
+  "ACCT-NUMBER"?: string | number | null;
   Amount_Past_Due?: string | number | null;
+  "CREDIT-GUARANTOR"?: string | null;
+  "CURRENT-BAL"?: string | number | null;
   Current_Balance?: string | number | null;
   Date_Closed?: string | null;
   Date_Reported?: string | null;
+  "DATE-REPORTED"?: string | number | null;
+  "DISBURSED-AMT"?: string | number | null;
   Highest_Credit_or_Original_Loan_Amount?: string | number | null;
   Identification_Number?: string | number | null;
+  "LAST-PAYMENT-DATE"?: string | number | null;
   Open_Date?: string | null;
   Payment_Frequency?: string | null;
   Portfolio_Type?: string | null;
+  "REPAYMENT-TENURE"?: string | number | null;
   Repayment_Tenure?: string | number | null;
   Scheduled_Monthly_Payment_Amount?: string | number | null;
   Subscriber_Name?: string | null;
   Terms_Duration?: string | number | null;
   Terms_Frequency?: string | null;
   Date_of_Last_Payment?: string | number | null;
+  "ACTUAL-PAYMENT"?: string | number | null;
+  "INSTALLMENT-AMT"?: string | number | null;
+  "LAST-PAID-AMOUNT"?: string | number | null;
+  OBLIGATION?: string | number | null;
+  "OVERDUE-AMT"?: string | number | null;
   account_status?: string | number | null;
   account_closed?: string | null;
   amount_overdue?: string | number | null;
@@ -131,6 +151,7 @@ type LoanSummary = {
   lastChecked: string;
   overdueAmount: string;
   overdueCount: number;
+  totalEmiDue: number;
 };
 type LoanToast = {
   message: string;
@@ -507,7 +528,6 @@ function RepaymentsView({
   score: number | null;
   summary: LoanSummary;
 }) {
-  const totalEmiDue = loans.reduce((total, loan) => total + readNumericValue(loan.emi), 0);
   const paidOnTime = loans.filter((loan) => loan.status === "Active" || loan.status === "Completed").length;
   const historyRows = buildPaymentHistoryRows(loans);
 
@@ -583,7 +603,7 @@ function RepaymentsView({
 
         </div>
         <div className="mt-5 grid grid-cols-2 gap-3">
-          <SummaryStat label="Total EMI Due" value={loading ? "..." : formatRupees(totalEmiDue)} />
+          <SummaryStat label="Total EMI Due" value={loading ? "..." : formatRupees(summary.totalEmiDue)} />
           <SummaryStat label="Active Loans" value={loading ? "..." : String(summary.activeCount)} />
           <SummaryStat label="Due This Month" value={loading ? "..." : String(summary.overdueCount)} />
           <SummaryStat label="Paid On Time" value={loading ? "..." : String(paidOnTime)} />
@@ -974,7 +994,7 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
         <div className="pt-3">
           <button
             disabled
-            className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[16px] border border-[#A78BFA]/55 bg-[linear-gradient(135deg,#7C3AED,rgba(59,130,246,0.94))] text-body-sm font-bold text-white shadow-[0_12px_28px_rgba(124,58,237,0.3),0_0_22px_rgba(59,130,246,0.2)] transition hover:scale-[1.01] active:scale-[0.99]"
+            className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[16px] bg-[#1FA787] text-body-sm font-bold text-white transition hover:scale-[1.01] active:scale-[0.99]"
             type="button"
           >
             <BadgeIndianRupee className="size-4" strokeWidth={2} />
@@ -1028,7 +1048,7 @@ function StatusPill({ status }: { status: "On Time" | "Due Soon" | "Overdue" }) 
   return (
     <span
       className={cn(
-        "inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-caption font-semibold",
+        "inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-xs font-semibold",
         status === "On Time" && "border-[#08DB69]/30 bg-[#08DB69]/12 text-[#08DB69]",
         status === "Due Soon" && "border-[#FFD34D]/30 bg-[#FFD34D]/12 text-[#FFD34D]",
         status === "Overdue" && "border-[#FF3B30]/30 bg-[#FF3B30]/12 text-[#FF3B30]",
@@ -1589,29 +1609,33 @@ function buildLoans(result: DisplayDataResponse | null): Loan[] {
   const accounts = readLoanAccounts(result).filter(isActiveLoanPageAccount);
 
   return accounts.map((account, index) => {
-    const overdueAmount = readNumericValue(account.amount_overdue ?? account.Amount_Past_Due);
+    if (process.env.NODE_ENV === "development") {
+      console.log(account["CREDIT-GUARANTOR"], account["INSTALLMENT-AMT"], account);
+    }
+
+    const overdueAmount = readNumericValue(account.amount_overdue ?? account.Amount_Past_Due ?? account["OVERDUE-AMT"]);
     const closed = isLoanClosed(account);
     const status = overdueAmount > 0 ? "Overdue" : closed ? "Completed" : "Active";
-    const emi = formatOptionalRupees(readAccountEmiValue(account));
-    const currentBalance = readNumericValue(account.current_balance ?? account.Current_Balance);
-    const originalAmount = readNumericValue(account.high_credit_amount ?? account.Highest_Credit_or_Original_Loan_Amount);
+    const emi = getEmiDetails(account);
+    const currentBalance = readNumericValue(account.current_balance ?? account.Current_Balance ?? account["CURRENT-BAL"]);
+    const originalAmount = readNumericValue(account.high_credit_amount ?? account.Highest_Credit_or_Original_Loan_Amount ?? account["DISBURSED-AMT"]);
     const amount = currentBalance || originalAmount;
 
     return {
       accountType: readAccountType(account),
       amount: formatRupees(amount),
-      bank: account.member_name || account.Subscriber_Name || formatAccountType(account.Account_Type) || "Credit lender",
+      bank: account["CREDIT-GUARANTOR"] || account.member_name || account.Subscriber_Name || formatAccountType(account.Account_Type) || "Credit lender",
       borrower,
-      disbursed: formatCompactDate(account.opened || account.Open_Date),
-      emi,
-      id: `${account.Identification_Number ?? account.Account_Number ?? account.member_name ?? account.Subscriber_Name ?? "loan"}-${account.type ?? account.Account_Type ?? "account"}-${index}`,
-      loanType: formatAccountType(account.type ?? account.Account_Type) || "Loan Account",
-      nextEmi: formatCompactDate(account.last_payment ?? account.Date_of_Last_Payment),
+      disbursed: formatCompactDate(account.opened || account.Open_Date || account["DATE-REPORTED"]),
+      emi: emi.amountLabel,
+      id: `${account.Identification_Number ?? account.Account_Number ?? account["ACCT-NUMBER"] ?? account.member_name ?? account.Subscriber_Name ?? account["CREDIT-GUARANTOR"] ?? "loan"}-${account.type ?? account.Account_Type ?? account["ACCT-TYPE"] ?? "account"}-${index}`,
+      loanType: formatAccountType(account.type ?? account.Account_Type ?? account["ACCT-TYPE"]) || "Loan Account",
+      nextEmi: formatCompactDate(account.last_payment ?? account.Date_of_Last_Payment ?? account["LAST-PAYMENT-DATE"] ?? account["DATE-REPORTED"]),
       overdue: overdueAmount > 0 ? `${formatRupees(overdueAmount)} overdue - Affects CIBIL` : "",
-      paymentFrequency: formatPaymentFrequency(account.payment_frequency ?? account.Payment_Frequency ?? account.Terms_Frequency),
-      sanctioned: formatCompactDate(account.opened || account.Open_Date),
+      paymentFrequency: emi.frequencyLabel,
+      sanctioned: formatCompactDate(account.opened || account.Open_Date || account["DATE-REPORTED"]),
       status,
-      tenure: account.repayment_tenure || account.Repayment_Tenure || account.Terms_Duration ? String(account.repayment_tenure ?? account.Repayment_Tenure ?? account.Terms_Duration) : "--",
+      tenure: account.repayment_tenure || account.Repayment_Tenure || account.Terms_Duration || account["REPAYMENT-TENURE"] ? String(account.repayment_tenure ?? account.Repayment_Tenure ?? account.Terms_Duration ?? account["REPAYMENT-TENURE"]) : "--",
     };
   });
 }
@@ -1622,7 +1646,8 @@ function buildLoanSummary(loans: Loan[], result: DisplayDataResponse | null): Lo
   const accounts = readLoanAccounts(result).filter(isActiveLoanPageAccount);
   const activeAmount = accounts
     .reduce((total, account) => total + readNumericValue(account.current_balance ?? account.Current_Balance), 0);
-  const overdueAmount = accounts.reduce((total, account) => total + readNumericValue(account.amount_overdue ?? account.Amount_Past_Due), 0);
+  const overdueAmount = accounts.reduce((total, account) => total + readNumericValue(account.amount_overdue ?? account.Amount_Past_Due ?? account["OVERDUE-AMT"]), 0);
+  const totalEmiDue = accounts.reduce((total, account) => total + parseInstallmentAmount(account["INSTALLMENT-AMT"]).amount, 0);
 
   return {
     activeAmount: formatRupees(activeAmount),
@@ -1630,6 +1655,7 @@ function buildLoanSummary(loans: Loan[], result: DisplayDataResponse | null): Lo
     lastChecked: readLastChecked(result) ?? "--",
     overdueAmount: formatRupees(overdueAmount),
     overdueCount: overdueLoans.length,
+    totalEmiDue,
   };
 }
 
@@ -1656,6 +1682,12 @@ function formatPaymentHistoryMonth(value: string, index: number) {
 }
 
 function readLoanAccounts(result: DisplayDataResponse | null) {
+  const crifAccounts = readCrifLoanAccounts(result);
+
+  if (crifAccounts.length) {
+    return crifAccounts;
+  }
+
   const reportAccounts = result?.data?.credit_report?.CAIS_Account?.CAIS_Account_DETAILS;
 
   if (Array.isArray(reportAccounts)) {
@@ -1665,19 +1697,31 @@ function readLoanAccounts(result: DisplayDataResponse | null) {
   return result?.data?.display?.accounts ?? [];
 }
 
+function readCrifLoanAccounts(result: DisplayDataResponse | null) {
+  const responses = result?.data?.credit_report?.RESPONSES?.RESPONSE;
+  const responseList = Array.isArray(responses) ? responses : responses ? [responses] : [];
+
+  return responseList.flatMap((response) => {
+    const loanDetails = response["LOAN-DETAILS"];
+
+    return Array.isArray(loanDetails) ? loanDetails : loanDetails ? [loanDetails] : [];
+  });
+}
+
 function isLoanClosed(account: CreditAccount) {
+  const accountStatus = String(account["ACCOUNT-STATUS"] ?? account.account_status ?? account.Account_Status ?? "").trim().toLowerCase();
   const closedValue = String(account.account_closed ?? account.Date_Closed ?? "").trim();
 
-  return Boolean(closedValue && closedValue !== "00000000" && closedValue !== "11111111");
+  return accountStatus === "closed" || Boolean(closedValue && closedValue !== "00000000" && closedValue !== "11111111");
 }
 
 function isActiveLoanPageAccount(account: CreditAccount) {
   const accountType = readAccountType(account);
-  const accountStatus = normalizeAccountCode(account.account_status ?? account.Account_Status);
+  const accountStatus = normalizeAccountCode(account["ACCOUNT-STATUS"] ?? account.account_status ?? account.Account_Status);
 
   return (
     !isLoanClosed(account) &&
-    ACTIVE_ACCOUNT_STATUSES.has(accountStatus) &&
+    (ACTIVE_ACCOUNT_STATUSES.has(accountStatus) || accountStatus.toLowerCase() === "active") &&
     (
       LOAN_ACCOUNT_TYPES.has(accountType) ||
       CREDIT_CARD_ACCOUNT_TYPES.has(accountType) ||
@@ -1687,7 +1731,7 @@ function isActiveLoanPageAccount(account: CreditAccount) {
 }
 
 function readAccountType(account: CreditAccount) {
-  return normalizeAccountCode(account.type ?? account.Account_Type);
+  return normalizeAccountCode(account.type ?? account.Account_Type ?? account["ACCT-TYPE"]);
 }
 
 function isCrifLoanAccountType(accountType: string) {
@@ -1741,20 +1785,15 @@ function readLastChecked(result: DisplayDataResponse | null) {
 function readNumericValue(value: unknown) {
   if (value === null || value === undefined || value === "") return 0;
 
-  const numericValue = typeof value === "number" ? value : Number(String(value).replace(/[^\d.-]/g, ""));
+  const numericValue = typeof value === "number" ? value : Number(String(value).replace(/,/g, "").replace(/[^\d.-]/g, ""));
 
   return Number.isFinite(numericValue) ? numericValue : 0;
 }
 
-function readAccountEmiValue(account: CreditAccount) {
-  const crifAccount = account as CreditAccount & {
-    "ACTUAL-PAYMENT"?: string | number | null;
-    "INSTALLMENT-AMT"?: string | number | null;
-    OBLIGATION?: string | number | null;
-  };
+function formatEmiRupees(value: unknown) {
+  if (!value) return "--";
 
-  return [crifAccount.OBLIGATION, crifAccount["INSTALLMENT-AMT"], crifAccount["ACTUAL-PAYMENT"], account.emi, account.Scheduled_Monthly_Payment_Amount]
-    .find((value) => value !== null && value !== undefined && String(value).trim() !== "");
+  return `Rs. ${Number(value).toLocaleString("en-IN")}`;
 }
 
 function formatRupees(value: unknown) {
@@ -1769,10 +1808,38 @@ function formatRupees(value: unknown) {
   }).format(amount).replace("₹", "Rs. ");
 }
 
-function formatOptionalRupees(value: unknown) {
-  const amount = readNumericValue(value);
+function parseInstallmentAmount(value: unknown) {
+  if (!value) return { amount: 0, frequency: "--" };
 
-  return amount ? formatRupees(amount) : "--";
+  const parts = String(value).split("/").map((item) => item.trim());
+  const rawAmount = parts[0]?.replace(/,/g, "");
+  const amount = Number(rawAmount);
+
+  return {
+    amount: Number.isFinite(amount) && amount > 0 ? amount : 0,
+    frequency: parts[1] || parts[2] || "--",
+  };
+}
+
+function getEmiDetails(loan: CreditAccount) {
+  const installment = parseInstallmentAmount(loan["INSTALLMENT-AMT"]);
+  const emi = {
+    amountLabel: installment.amount ? formatEmiRupees(installment.amount) : "--",
+    frequencyLabel: installment.frequency,
+  };
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("Loan EMI mapping", {
+      account: loan["ACCT-NUMBER"],
+      installment: loan["INSTALLMENT-AMT"],
+      obligation: loan.OBLIGATION,
+      actualPayment: loan["ACTUAL-PAYMENT"],
+      lastPaidAmount: loan["LAST-PAID-AMOUNT"],
+      emi,
+    });
+  }
+
+  return emi;
 }
 
 function formatAccountType(value: unknown) {
@@ -1842,15 +1909,4 @@ function formatCompactDate(value?: string | number | null) {
   }
 
   return raw;
-}
-
-function formatPaymentFrequency(value?: string | null) {
-  const frequencies: Record<string, string> = {
-    "01": "Weekly",
-    "02": "Fortnightly",
-    "03": "Monthly",
-    "04": "Quarterly",
-  };
-
-  return value ? frequencies[value] ?? value : "--";
 }
