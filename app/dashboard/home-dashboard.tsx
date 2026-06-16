@@ -52,7 +52,7 @@ import { SupportDrawer } from "@/components/dashboard/topbar-actions";
 import { SubscribePromptOverlay, getSubscriptionPlans, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
-import { apiRequest } from "@/lib/api";
+import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { cn } from "@/lib/utils";
 
@@ -139,6 +139,12 @@ type GeneralSettings = {
   whatsappNumber: string;
 };
 
+type HomepageImageTheme = {
+  imageName?: string | null;
+  fileName?: string | null;
+  isActive?: boolean | null;
+};
+
 const appTiles = [
   { href: "/dashboard/dispute-centre", Icon: Wrench, title: "Dispute Centre", value: "0", meta: "active", alert: true },
   { href: "/dashboard/loans", Icon: BadgeIndianRupee, title: "Pay EMIs", value: "-", meta: "-" },
@@ -213,6 +219,8 @@ export function HomeDashboard() {
   const [showActionPlan, setShowActionPlan] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  const [homepageBackgroundImages, setHomepageBackgroundImages] = useState<string[]>([dashboardBg.src]);
+  const [homepageBackgroundIndex, setHomepageBackgroundIndex] = useState(0);
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
   useEffect(() => {
@@ -265,6 +273,55 @@ export function HomeDashboard() {
 
     loadDashboard();
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadHomepageImageTheme() {
+      try {
+        const response = await apiRequest("/general/homepage-image-themes");
+
+        if (!response.ok) {
+          return;
+        }
+
+        const imageUrls = readHomepageImageThemeUrls(await response.json());
+
+        if (isMounted && imageUrls.length) {
+          setHomepageBackgroundImages(imageUrls);
+          setHomepageBackgroundIndex(0);
+        }
+      } catch {
+        if (isMounted) {
+          setHomepageBackgroundImages([dashboardBg.src]);
+          setHomepageBackgroundIndex(0);
+        }
+      }
+    }
+
+    void loadHomepageImageTheme();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    homepageBackgroundImages.forEach((imageUrl) => {
+      const image = new Image();
+      image.src = imageUrl;
+    });
+
+    if (homepageBackgroundImages.length < 2) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setHomepageBackgroundIndex((currentIndex) => (currentIndex + 1) % homepageBackgroundImages.length);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [homepageBackgroundImages]);
 
   useEffect(() => {
     let isMounted = true;
@@ -389,10 +446,17 @@ export function HomeDashboard() {
     <div className="page min-h-screen overflow-x-hidden bg-[#050912] pb-32 text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
       <div id="google_translate_element" className="hidden" />
       <section
-        className="hero-header fixed inset-x-0 top-0 z-0 min-h-[340px] bg-cover bg-center px-5 pb-16 pt-6 shadow-[0_26px_58px_rgba(94,99,235,0.34)] sm:min-h-[430px] sm:px-8 sm:pb-28 sm:pt-7"
-        style={{ backgroundImage: `linear-gradient(135deg, rgba(104,111,242,0.86), rgba(178,167,255,0.62) 48%, rgba(116,112,255,0.78)), url(${dashboardBg.src})` }}
+        className="hero-header fixed inset-x-0 top-0 z-0 min-h-[340px] overflow-hidden px-5 pb-16 pt-6 shadow-[0_26px_58px_rgba(94,99,235,0.34)] sm:min-h-[430px] sm:px-8 sm:pb-28 sm:pt-7"
       >
-        <div className="mx-auto max-w-5xl">
+        {homepageBackgroundImages.map((imageUrl, index) => (
+          <div
+            key={`${imageUrl}-${index}`}
+            className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out ${index === homepageBackgroundIndex ? "opacity-100" : "opacity-0"}`}
+            style={{ backgroundImage: `url(${imageUrl})` }}
+          />
+        ))}
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(104,111,242,0.86),rgba(178,167,255,0.62)_48%,rgba(116,112,255,0.78))]" />
+        <div className="relative z-10 mx-auto max-w-5xl">
           <div className="flex items-center justify-between">
             <DashboardHeaderHomeControl className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl sm:size-16" iconClassName="size-5 sm:size-6" onMenuClick={() => setShowProfile(true)} />
             <div className="flex items-center gap-3">
@@ -1253,6 +1317,37 @@ function readGeneralSettings(result: unknown): GeneralSettings {
     mobileNumber: String(value.data?.mobileNumber ?? ""),
     whatsappNumber: String(value.data?.whatsappNumber ?? ""),
   };
+}
+
+function readHomepageImageThemeUrls(result: unknown) {
+  const value = result as { data?: unknown; homepageImageThemes?: unknown; themes?: unknown };
+  const source = value.data ?? value.homepageImageThemes ?? value.themes ?? result;
+  const themes = Array.isArray(source) ? source : [source];
+  const activeThemeUrls = themes
+    .map((theme) => theme as HomepageImageTheme)
+    .filter((theme) => theme.isActive !== false && theme.fileName)
+    .map((theme) => resolveHomepageImageFileUrl(theme.fileName))
+    .filter(Boolean);
+
+  return activeThemeUrls.length ? activeThemeUrls : [dashboardBg.src];
+}
+
+function resolveHomepageImageFileUrl(fileName: unknown) {
+  const value = String(fileName ?? "").trim();
+
+  if (!value) {
+    return "";
+  }
+
+  if (/^(https?:)?\/\//.test(value) || value.startsWith("data:") || value.startsWith("blob:")) {
+    return value;
+  }
+
+  if (value.startsWith("/") || value.includes("/")) {
+    return apiUrl(value);
+  }
+
+  return apiUrl(`/uploads/homepage-image-themes/${value}`);
 }
 
 function toDialNumber(value: string) {
