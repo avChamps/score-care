@@ -183,9 +183,9 @@ export function NewDisputeExperience() {
           {step === 4 ? <EvidenceStep /> : null}
         </div>
 
-       <div className="sticky bottom-24 z-20 px-4 py-2">
+       <div className="sticky bottom-24 z-20 py-2">
     <button
-      className="h-12 w-full rounded-[18px] bg-[linear-gradient(135deg,#22F2C2,#18C79E)] text-sm font-bold text-[#042018] shadow-[0_10px_24px_rgba(34,242,194,0.28)] transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:border disabled:disabled:border-white/5 disabled:bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] disabled:text-[#6F7B8E] disabled:shadow-none"
+      className="h-12 w-full rounded-[18px] bg-[linear-gradient(135deg,#22F2C2,#18C79E)] text-sm font-bold text-white shadow-[0_10px_24px_rgba(34,242,194,0.28)] transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:border disabled:disabled:border-white/5 disabled:bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] disabled:text-[#6F7B8E] disabled:shadow-none"
       data-dashboard-dispute="true"
       disabled={!canContinue || submitting}
       type="button"
@@ -237,16 +237,16 @@ function AccountStep({ accounts, hasDisputeEligibleAccounts, selectedAccountId, 
           <button className={cn("w-full rounded-2xl border p-4 text-left transition", selected ? "border-[#22F2C2] bg-[#0B2B23]" : reportMiniCardClass)} data-dashboard-dispute="true" key={account.id} type="button" onClick={() => onSelect(account.id)}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-bold">{account.lenderName}</p>
-                <p className="mt-1 text-caption text-[#9fb2c6]">{account.accountType} - {maskAccountNumber(account.accountNumber)}</p>
+                <p className="truncate text-base font-bold">{account.lenderName}</p>
+                <p className="mt-1 text-sm text-[#9fb2c6]">{account.accountType} - {maskAccountNumber(account.accountNumber)}</p>
               </div>
               <span className={cn("grid size-6 shrink-0 place-items-center rounded-md border text-caption font-black", selected ? "border-[#22F2C2] bg-[#22F2C2] text-[#04120e]" : "border-white/25 text-transparent")}>✓</span>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-caption">
-              <span className="text-[#9fb2c6]">Status <b className="block text-white">{account.status || "--"}</b></span>
-              <span className="text-[#9fb2c6]">Balance <b className="block text-white"><AnimatedNumber value={formatINR(account.balance)} /></b></span>
-              {account.ownershipType ? <span className="text-[#9fb2c6]">Ownership <b className="block text-white">{account.ownershipType}</b></span> : null}
-              {account.overdueAmount !== null ? <span className="text-[#9fb2c6]">Overdue <b className="block text-white"><AnimatedNumber value={formatINR(account.overdueAmount)} /></b></span> : null}
+            <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+              <span className="text-[#9fb2c6]">Status <b className="block text-base text-white">{account.status || "--"}</b></span>
+              <span className="text-[#9fb2c6]">Balance <b className="block text-base text-white"><AnimatedNumber value={formatINR(account.balance)} /></b></span>
+              {account.ownershipType ? <span className="text-[#9fb2c6]">Ownership <b className="block text-base text-white">{account.ownershipType}</b></span> : null}
+              {account.overdueAmount !== null ? <span className="text-[#9fb2c6]">Overdue <b className="block text-base text-white"><AnimatedNumber value={formatINR(account.overdueAmount)} /></b></span> : null}
             </div>
           </button>
         );
