@@ -10,6 +10,7 @@ import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
 import { cn } from "@/lib/utils";
 import {
+  ArrowLeft,
   Building2,
   Landmark,
   ShieldCheck,
@@ -151,7 +152,17 @@ export function NewDisputeExperience() {
       <div className="min-h-screen bg-[#050912] pb-28 text-white">
         <PortalTopBar title="Raise Dispute" />
         <PageContent className="px-4 py-5">
-          <div className="mx-auto max-w-md">
+          <div className="mx-auto max-w-md space-y-4">
+            <button
+              aria-label="Go back"
+              className="grid size-10 place-items-center rounded-full border border-white/10 bg-white/10 text-white backdrop-blur-xl transition hover:border-[#22F2C2]/45"
+              data-dashboard-dispute="true"
+              type="button"
+              onClick={() => router.push("/dashboard/dispute-centre")}
+            >
+              <ArrowLeft className="size-6" strokeWidth={2.2} />
+            </button>
+
         <section className={cn("rounded-[2rem] p-4", reportCardClass)}>
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -165,27 +176,16 @@ export function NewDisputeExperience() {
           </div>
         </section>
 
-        <div className="mt-4">
+        <div>
           {step === 1 ? <AccountStep accounts={visibleAccounts} hasDisputeEligibleAccounts={disputeEligibleAccounts.length > 0} selectedAccountId={selectedAccountId} onSelect={setSelectedAccountId} onViewAllAccounts={() => setShowAllAccounts(true)} /> : null}
           {step === 2 ? <OptionStep options={errorTypes} selected={errorType} onSelect={setErrorType} /> : null}
           {step === 3 ? <BureauStep bureaus={availableBureaus} details={details} selectedBureaus={selectedBureaus} onDetails={setDetails} onToggle={setSelectedBureaus} /> : null}
           {step === 4 ? <EvidenceStep /> : null}
         </div>
 
-       <div className="sticky bottom-24 z-20 mt-4 rounded-[26px] border border-[#1F756B]/35 bg-[#08110D]/88 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.42),inset_0_0_28px_rgba(31,117,107,0.08)] backdrop-blur-2xl">
-  <div className="grid grid-cols-2 gap-3">
+       <div className="sticky bottom-24 z-20 px-4 py-2">
     <button
-      className="h-12 rounded-[18px] border border-white/5 bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] text-sm font-semibold text-[#DCE7E2] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200 hover:bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] disabled:opacity-40"
-      data-dashboard-dispute="true"
-      disabled={step === 1}
-      type="button"
-      onClick={() => setStep((current) => Math.max(1, current - 1))}
-    >
-      Back
-    </button>
-
-    <button
-      className="h-12 rounded-[18px] bg-[linear-gradient(135deg,#22F2C2,#18C79E)] text-sm font-bold text-[#042018] shadow-[0_10px_24px_rgba(34,242,194,0.28)] transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:border disabled:disabled:border-white/5 disabled:bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] disabled:text-[#6F7B8E] disabled:shadow-none"
+      className="h-12 w-full rounded-[18px] bg-[linear-gradient(135deg,#22F2C2,#18C79E)] text-sm font-bold text-[#042018] shadow-[0_10px_24px_rgba(34,242,194,0.28)] transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:border disabled:disabled:border-white/5 disabled:bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] disabled:text-[#6F7B8E] disabled:shadow-none"
       data-dashboard-dispute="true"
       disabled={!canContinue || submitting}
       type="button"
@@ -201,7 +201,6 @@ export function NewDisputeExperience() {
           : "Submit"
         : "Next"}
     </button>
-  </div>
 </div>
 
           </div>

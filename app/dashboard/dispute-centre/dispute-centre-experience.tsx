@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BadgeIndianRupee, Landmark, ClipboardList,
+import { ArrowLeft, Landmark, ClipboardList,
   Building2,
   CheckCircle2, 
   ArrowRight} from "lucide-react";
@@ -73,6 +74,7 @@ const howItWorksSteps = [
 ];
 
 export function DisputeCentreExperience() {
+  const router = useRouter();
   const [requests, setRequests] = useState<DisputeRequest[]>([]);
   const [status, setStatus] = useState<DisputeStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -125,6 +127,16 @@ export function DisputeCentreExperience() {
         <PortalTopBar title="Dispute Centre" />
         <PageContent className="px-4 py-5">
           <div className="mx-auto max-w-md space-y-4">
+            <button
+              aria-label="Go back"
+              className="grid size-10 place-items-center rounded-full border border-white/10 bg-white/10 text-white backdrop-blur-xl transition hover:border-[#22F2C2]/45"
+              data-dashboard-dispute="true"
+              type="button"
+              onClick={() => router.push("/dashboard")}
+            >
+              <ArrowLeft className="size-6" strokeWidth={2.2} />
+            </button>
+
             <section className={cn("rounded-[2rem] p-4", reportCardClass)}>
               <h1 className="text-lg font-black tracking-tight">Dispute Centre</h1>
               <p className="mt-1 text-caption text-[#9fb2c6]">Fight errors • Protect your score</p>
@@ -180,7 +192,7 @@ export function DisputeCentreExperience() {
                   <div className={cn("rounded-2xl p-4 text-center", reportMiniCardClass)}>
                     <p className="text-sm font-semibold">No active disputes found</p>
                     <p className="mx-auto mt-1 max-w-xs text-caption leading-5 text-[#9fb2c6]">Review your credit accounts and raise a dispute if you find incorrect information.</p>
-                    <Link className="mt-4 flex h-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#22F2C2,#13B98F)] px-4 text-center text-sm font-black text-[#04120e] shadow-[0_14px_28px_rgba(34,242,194,0.22)]" data-dashboard-dispute="true" href="/dashboard/dispute-centre/new">
+                    <Link className="mt-4 flex h-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#22F2C2,#13B98F)] px-4 text-center text-sm  font-medium text-[#ffff] shadow-[0_14px_28px_rgba(34,242,194,0.22)]" data-dashboard-dispute="true" href="/dashboard/dispute-centre/new">
                       File New Dispute
                     </Link>
                   </div>
