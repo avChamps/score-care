@@ -4,10 +4,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api";
+import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
 
 export type SubscriptionPlan = {
   id: string;
+  publicId?: string;
   planName: string;
   amount: number;
   billingCycle?: string;
@@ -24,6 +28,19 @@ export type SubscriptionPlan = {
   moreFeatures?: string;
   theme: "blue" | "purple" | "green" | "orange" | "pink" | "cyan";
 };
+
+type RazorpaySubscriptionResponse = {
+  razorpay_payment_id: string;
+  razorpay_order_id?: string;
+  razorpay_subscription_id?: string;
+  razorpay_signature: string;
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
 
 const subscriptionPlanThemes: Array<SubscriptionPlan["theme"]> = ["blue", "purple", "green", "orange", "pink", "cyan"];
 const subscriptionPlanThemeStyles: Record<SubscriptionPlan["theme"], { accent: string; header: string; selectedRing: string }> = {
@@ -112,10 +129,13 @@ export function useSubscribePrompt() {
 }
 
 export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void; show: boolean }) {
+  const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState(subscriptionPlans[0].id);
   const [showPlans, setShowPlans] = useState(false);
   const [showSkipMessage, setShowSkipMessage] = useState(false);
   const [plans, setPlans] = useState(subscriptionPlans);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState("");
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) ?? plans[0];
   const premiumBenefits = Array.from(new Set(plans.flatMap((plan) => (plan.benefits.length ? plan.benefits : plan.features)).filter(Boolean)));
 
@@ -124,8 +144,11 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
       return;
     }
 
-    setShowPlans(false);
-    setShowSkipMessage(false);
+    const resetTimer = window.setTimeout(() => {
+      setShowPlans(false);
+      setShowSkipMessage(false);
+      setPaymentMessage("");
+    }, 0);
 
     async function loadSubscriptionPlans() {
       try {
@@ -141,6 +164,8 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
     }
 
     void loadSubscriptionPlans();
+
+    return () => window.clearTimeout(resetTimer);
   }, [show]);
 
   function closePrompt(event: MouseEvent) {
@@ -152,6 +177,100 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
     event.stopPropagation();
     setShowSkipMessage(false);
     onClose();
+  }
+
+  async function handleSubscriptionPayment() {
+    if (!selectedPlan || paymentLoading) return;
+
+    const token = localStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
+    const planPublicId = selectedPlan.publicId || selectedPlan.id;
+
+    setPaymentLoading(true);
+    setPaymentMessage("");
+
+    try {
+      await loadRazorpayCheckout();
+
+      const subscriptionResponse = await apiRequest(`/subscription-plans/${encodeURIComponent(planPublicId)}/razorpay-subscription`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: {
+          totalCount: 36,
+          customerNotify: true,
+        },
+      });
+
+      if (subscriptionResponse.status === 401 || subscriptionResponse.status === 403) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
+      }
+
+      const subscriptionResult = await subscriptionResponse.json();
+      const data = subscriptionResult?.data ?? subscriptionResult;
+      const order = data?.order;
+      const plan = data?.plan ?? selectedPlan;
+
+      if (!subscriptionResponse.ok || !data?.keyId || !order?.id || !data?.customerId || data?.recurring !== "1" || !window.Razorpay) {
+        throw new Error("Unable to create subscription.");
+      }
+
+      const checkout = new window.Razorpay({
+        key: data.keyId,
+        order_id: order.id,
+        customer_id: data.customerId,
+        recurring: data.recurring,
+        name: "ScoreCare",
+        description: plan.planName ?? selectedPlan.planName,
+        handler: async (response: RazorpaySubscriptionResponse) => {
+          try {
+            const confirmResponse = await apiRequest("/subscription-plans/razorpay/confirm", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+              body: {
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpayOrderId: response.razorpay_order_id ?? order?.id,
+                razorpaySignature: response.razorpay_signature,
+                amount: Number(plan.amount ?? selectedPlan.amount),
+                currency: plan.currency ?? selectedPlan.currency ?? "INR",
+              },
+            });
+
+            if (confirmResponse.status === 401 || confirmResponse.status === 403) {
+              clearScorecareSession();
+              router.replace("/login");
+              return;
+            }
+
+            if (!confirmResponse.ok) {
+              throw new Error("Unable to confirm subscription.");
+            }
+
+            onClose();
+            void getCachedCibilDisplayData(token, { forceRefresh: true }).catch(() => {});
+          } catch (error) {
+            setPaymentMessage(error instanceof Error ? error.message : "Unable to confirm subscription.");
+          } finally {
+            setPaymentLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: () => setPaymentLoading(false),
+        },
+      });
+
+      checkout.open();
+    } catch (error) {
+      setPaymentMessage(error instanceof Error ? error.message : "Payment failed. Please try again.");
+      setPaymentLoading(false);
+    }
   }
 
   const sheet: ReactNode = (
@@ -207,8 +326,9 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
                 </div>
 
                 <div className="relative border-t border-white/8 bg-[#0D131C] px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6">
-                  <button className="mx-auto block h-[3.25rem] w-full max-w-md rounded-2xl bg-[linear-gradient(135deg,#FF7A00,#FFD34D)] text-sm font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)] transition disabled:opacity-60" disabled={!selectedPlanId} type="button">
-                    {selectedPlan.buttonLabel}
+                  {paymentMessage ? <p className="mx-auto mb-3 max-w-md text-center text-caption font-semibold text-red-400">{paymentMessage}</p> : null}
+                  <button className="mx-auto block h-[3.25rem] w-full max-w-md rounded-2xl bg-[linear-gradient(135deg,#FF7A00,#FFD34D)] text-sm font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)] transition disabled:opacity-60" disabled={!selectedPlanId || paymentLoading} type="button" onClick={handleSubscriptionPayment}>
+                    {paymentLoading ? "Processing..." : selectedPlan.buttonLabel ?? "Subscribe"}
                   </button>
                   <button className="mx-auto mt-3 block text-xs font-semibold text-[#AAB6C8] transition hover:text-white" onClick={closePrompt} type="button">
                     {selectedPlan.skipLabel}
@@ -327,7 +447,7 @@ export function readSubscriptionPlans(result: unknown): SubscriptionPlan[] {
 
   plans.forEach((plan, index) => {
     const item = plan as Partial<SubscriptionPlan> & { name?: string; offerTag?: string; price?: number; monthlyPrice?: number };
-    const id = String(item.id ?? item.planName ?? item.name ?? index);
+    const id = String(item.publicId ?? item.id ?? item.planName ?? item.name ?? index);
     const planName = String(item.planName ?? item.name ?? "");
     const amount = Number(item.amount ?? item.price ?? item.monthlyPrice ?? 0);
 
@@ -337,6 +457,7 @@ export function readSubscriptionPlans(result: unknown): SubscriptionPlan[] {
 
     normalizedPlans.push({
       id,
+      publicId: item.publicId,
       planName,
       amount,
       billingCycle: item.billingCycle,
@@ -364,6 +485,29 @@ function formatPlanAmount(plan: SubscriptionPlan) {
   }
 
   return `${plan.currency} ${plan.amount}`;
+}
+
+function loadRazorpayCheckout() {
+  if (window.Razorpay) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+
+    if (existingScript) {
+      existingScript.addEventListener("load", () => resolve(), { once: true });
+      existingScript.addEventListener("error", () => reject(new Error("Unable to load payment gateway.")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Unable to load payment gateway."));
+    document.body.appendChild(script);
+  });
 }
 
 function formatBillingCycle(billingCycle?: string) {

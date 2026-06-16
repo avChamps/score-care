@@ -267,6 +267,39 @@ export function HomeDashboard() {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function handleDisplayUpdate(event: Event) {
+      const token = localStorage.getItem("scorecare_token");
+
+      if (!token || isTokenExpired(token)) {
+        return;
+      }
+
+      const displayData = (event as CustomEvent<unknown>).detail;
+      const latestProfile = profile ?? await loadProfile(token).catch(() => profile);
+      const activeDisputes = await loadActiveDisputes(token);
+
+      if (!isMounted) {
+        return;
+      }
+
+      setName(latestProfile?.fullName?.trim() || readDisplayName(displayData) || "there");
+      setProfile(latestProfile);
+      setIsFreeTier(false);
+      setDashboard(buildDashboardData(displayData, latestProfile, activeDisputes));
+      setError("");
+    }
+
+    window.addEventListener("scorecare:cibil-display-updated", handleDisplayUpdate);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("scorecare:cibil-display-updated", handleDisplayUpdate);
+    };
+  }, [profile]);
+
+  useEffect(() => {
     function handleNativeBackRoot() {
       setShowBenefitsPrompt(true);
     }
@@ -2722,6 +2755,8 @@ function buildDashboardData(result: unknown, profile: UserProfile | null, active
   const fallbackTrend = score && reportMonths.length ? buildFallbackJourneyScores(score, reportMonths.length) : [];
   const hasReportData = accounts.length > 0 || enquiries.length > 0 || Boolean(summary.outstandingBalance || summary.activeAccounts || summary.defaultAccounts || summary.recentEnquiries);
   const improvement = calculateImprovement(score);
+  const crifLoanAccounts = readCrifLoanAccounts(result);
+  const totalActiveEmi = calculateActiveEmiTotal(crifLoanAccounts.length ? crifLoanAccounts : accounts);
 
   return {
     score,
@@ -2733,8 +2768,8 @@ function buildDashboardData(result: unknown, profile: UserProfile | null, active
     targetMonth: getTargetMonth(),
     activeDisputes: disputeCount,
     scoreGain: 0,
-    emiDue: summary.outstandingBalance ? formatCurrency(summary.outstandingBalance) : "--",
-    dueMonth: summary.outstandingBalance ? "due" : "--",
+    emiDue: totalActiveEmi ? formatCurrency(totalActiveEmi) : "--",
+    dueMonth: totalActiveEmi ? "due" : "--",
     improvement,
     offers: 0,
     hasReportData,
@@ -2953,6 +2988,26 @@ function readAccounts(result: unknown) {
   return Array.isArray(data?.data?.display?.accounts) ? data.data.display.accounts : [];
 }
 
+function readCrifLoanAccounts(result: unknown) {
+  const data = result as {
+    data?: {
+      credit_report?: {
+        RESPONSES?: {
+          RESPONSE?: Record<string, unknown> | Array<Record<string, unknown>>;
+        };
+      };
+    };
+  } | null;
+  const responses = data?.data?.credit_report?.RESPONSES?.RESPONSE;
+  const responseList = Array.isArray(responses) ? responses : responses ? [responses] : [];
+
+  return responseList.flatMap((response) => {
+    const loanDetails = response["LOAN-DETAILS"];
+
+    return Array.isArray(loanDetails) ? loanDetails : loanDetails ? [loanDetails as Record<string, unknown>] : [];
+  });
+}
+
 function readEnquiries(result: unknown) {
   const data = result as {
     data?: {
@@ -3006,6 +3061,29 @@ function isActiveAccount(account: Record<string, unknown>) {
   }
 
   return !parseExperianDate(closedValue);
+}
+
+function isCrifActiveAccount(account: Record<string, unknown>) {
+  return String(account["ACCOUNT-STATUS"] ?? "").trim() === "Active";
+}
+
+function calculateActiveEmiTotal(accounts: Array<Record<string, unknown>>) {
+  const total = accounts
+    .filter(isCrifActiveAccount)
+    .filter((account) => String(account["ACCT-TYPE"] ?? "").trim() !== "Credit Card")
+    .reduce((sum, account) => sum + readAccountEmiAmount(account), 0);
+
+  return Math.round(total);
+}
+
+function readAccountEmiAmount(account: Record<string, unknown>) {
+  const value = account["INSTALLMENT-AMT"];
+
+  if (value === null || value === undefined || value === "") return 0;
+
+  const amount = Number(String(value).split("/")[0].trim().replace(/[^\d.-]/g, ""));
+
+  return Number.isFinite(amount) ? amount : 0;
 }
 
 function readReportSummary(result: unknown) {
@@ -3179,7 +3257,7 @@ function parseRecordDate(value: unknown) {
 function readNumber(value: unknown) {
   if (value === null || value === undefined || value === "") return 0;
 
-  const number = typeof value === "number" ? value : Number(String(value).trim().replace(/[^\d.-]/g, ""));
+  const number = typeof value === "number" ? value : Number(String(value).split("/")[0].trim().replace(/[^\d.-]/g, ""));
 
   return Number.isFinite(number) ? number : 0;
 }

@@ -1379,7 +1379,7 @@ function AccountCard({ account }: { account: CreditAccount }) {
       </div>
       <div className="mt-4 grid grid-cols-3 gap-2">
         <MiniMetric label="Balance" value={formatRupees(account.current_balance)} />
-        <MiniMetric label="EMI" value={formatRupees(account.emi)} />
+        <MiniMetric label="EMI" value={formatRupees(readAccountEmiValue(account))} />
         <MiniMetric label="Overdue" value={formatRupees(account.amount_overdue)} />
       </div>
     </AppCard>
@@ -1821,7 +1821,7 @@ function buildReportAccountDetails(account: CreditAccount) {
     { label: "Balance", value: formatRupees(account.current_balance) },
     { label: "High credit", value: formatRupees(account.high_credit_amount) },
     { label: "Overdue", value: formatRupees(account.amount_overdue) },
-    { label: "EMI", value: formatRupees(account.emi) },
+    { label: "EMI", value: formatRupees(readAccountEmiValue(account)) },
     { label: "Last payment", value: formatCompactDate(account.last_payment) },
     { label: "Reported", value: formatCompactDate(account.reported_and_certified) },
     { label: "Tenure", value: formatTenure(account.repayment_tenure) },
@@ -1900,9 +1900,23 @@ function readLastChecked(result: DisplayDataResponse | null) {
 }
 
 function readNumericValue(value: unknown) {
-  const numericValue = typeof value === "number" ? value : Number(value);
+  if (value === null || value === undefined || value === "") return 0;
+
+  const numericValue = typeof value === "number" ? value : Number(String(value).split("/")[0].replace(/[^\d.-]/g, ""));
 
   return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
+function readAccountEmiValue(account: CreditAccount) {
+  const crifAccount = account as CreditAccount & {
+    "ACTUAL-PAYMENT"?: string | number | null;
+    "INSTALLMENT-AMT"?: string | number | null;
+    OBLIGATION?: string | number | null;
+    Scheduled_Monthly_Payment_Amount?: string | number | null;
+  };
+
+  return [crifAccount.OBLIGATION, crifAccount["INSTALLMENT-AMT"], crifAccount["ACTUAL-PAYMENT"], account.emi, crifAccount.Scheduled_Monthly_Payment_Amount]
+    .find((value) => value !== null && value !== undefined && String(value).trim() !== "");
 }
 
 function scoreToNeedleAngle(score: number) {

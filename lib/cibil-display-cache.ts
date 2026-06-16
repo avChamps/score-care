@@ -348,6 +348,7 @@ type CrifLoanDetails = {
   "ACCOUNT-STATUS"?: unknown;
   "ACCT-NUMBER"?: unknown;
   "ACCT-TYPE"?: unknown;
+  "ACTUAL-PAYMENT"?: unknown;
   "CLOSED-DATE"?: unknown;
   "COMBINED-PAYMENT-HISTORY"?: unknown;
   "CREDIT-GUARANTOR"?: unknown;
@@ -417,7 +418,7 @@ function mapCrifAccounts(response: CrifResponse | CrifResponse[] | undefined): E
 function mapCrifAccount(account: CrifLoanDetails): ExperianAccount {
   const accountType = stringifyValue(account["ACCT-TYPE"]).trim();
   const status = stringifyValue(account["ACCOUNT-STATUS"]).trim();
-  const emi = account["INSTALLMENT-AMT"] ?? account.OBLIGATION;
+  const emi = readFirstFilledValue([account.OBLIGATION, account["INSTALLMENT-AMT"], account["ACTUAL-PAYMENT"]]);
 
   return {
     Account_Number: account["ACCT-NUMBER"],
@@ -432,7 +433,7 @@ function mapCrifAccount(account: CrifLoanDetails): ExperianAccount {
     Open_Date: normalizeCrifDate(account["DISBURSED-DT"]),
     Portfolio_Type: accountType === "Credit Card" ? "R" : "I",
     Repayment_Tenure: account["REPAYMENT-TENURE"],
-    Scheduled_Monthly_Payment_Amount: normalizeAmount(emi),
+    Scheduled_Monthly_Payment_Amount: normalizeCrifEmiAmount(emi),
     Subscriber_Name: stringifyValue(account["CREDIT-GUARANTOR"]).trim() || null,
     CAIS_Account_History: parseCrifPaymentHistory(account["COMBINED-PAYMENT-HISTORY"]),
   };
@@ -472,6 +473,20 @@ function normalizeAmount(value: unknown) {
   const amount = typeof value === "number" ? value : Number(String(value).replace(/[^\d.-]/g, ""));
 
   return Number.isFinite(amount) ? amount : 0;
+}
+
+function normalizeCrifEmiAmount(value: unknown) {
+  if (value === null || value === undefined || value === "") {
+    return 0;
+  }
+
+  const amountValue = typeof value === "string" ? value.split("/")[0] : value;
+
+  return normalizeAmount(amountValue);
+}
+
+function readFirstFilledValue(values: unknown[]) {
+  return values.find((value) => value !== null && value !== undefined && String(value).trim() !== "");
 }
 
 function normalizeCrifDate(value: unknown) {

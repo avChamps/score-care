@@ -1598,7 +1598,7 @@ function buildLoans(result: DisplayDataResponse | null): Loan[] {
     const overdueAmount = readNumericValue(account.amount_overdue ?? account.Amount_Past_Due);
     const closed = isLoanClosed(account);
     const status = overdueAmount > 0 ? "Overdue" : closed ? "Completed" : "Active";
-    const emi = formatOptionalRupees(account.emi ?? account.Scheduled_Monthly_Payment_Amount);
+    const emi = formatOptionalRupees(readAccountEmiValue(account));
     const currentBalance = readNumericValue(account.current_balance ?? account.Current_Balance);
     const originalAmount = readNumericValue(account.high_credit_amount ?? account.Highest_Credit_or_Original_Loan_Amount);
     const amount = currentBalance || originalAmount;
@@ -1750,6 +1750,17 @@ function readNumericValue(value: unknown) {
   const numericValue = typeof value === "number" ? value : Number(String(value).replace(/[^\d.-]/g, ""));
 
   return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
+function readAccountEmiValue(account: CreditAccount) {
+  const crifAccount = account as CreditAccount & {
+    "ACTUAL-PAYMENT"?: string | number | null;
+    "INSTALLMENT-AMT"?: string | number | null;
+    OBLIGATION?: string | number | null;
+  };
+
+  return [crifAccount.OBLIGATION, crifAccount["INSTALLMENT-AMT"], crifAccount["ACTUAL-PAYMENT"], account.emi, account.Scheduled_Monthly_Payment_Amount]
+    .find((value) => value !== null && value !== undefined && String(value).trim() !== "");
 }
 
 function formatRupees(value: unknown) {
