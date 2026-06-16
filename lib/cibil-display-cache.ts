@@ -130,12 +130,10 @@ function readCachedCibilScoreCheckData(token: string, payloadKey: string) {
 }
 
 async function fetchCibilScoreCheckData(token: string, payload: unknown, payloadKey: string) {
-  const response = await apiRequest("/credit-reports/cibil", {
-    method: "POST",
+  const response = await apiRequest("/credit-reports/crif", {
     headers: {
       Authorization: `Bearer ${token}`,
     },
-    body: payload,
   });
   const result = normalizeCibilDisplayData(parseApiResult(await readResponseJson(response)));
 

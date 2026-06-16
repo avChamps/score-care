@@ -2,22 +2,39 @@
 
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
 import { apiRequest } from "@/lib/api";
+import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { readSelectedCibilRepairAccounts, type SelectedCibilRepairAccount } from "@/lib/cibil-repair-selection";
 import { cn } from "@/lib/utils";
 
 type CibilRepairPlan = {
   id?: string;
+  publicId?: string;
+  planPublicId?: string;
   planName: string;
   amount?: number | null;
   currency?: string;
+  gstPercentage?: number | null;
   offerTag?: string | null;
   displayOrder?: number;
   isActive?: boolean;
 };
+
+type RazorpaySuccessResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
 
 type CibilRepairTimeline = {
   id: string;
@@ -32,14 +49,19 @@ const reportCardClass =
 const reportMiniCardClass = "border border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]";
 
 export default function CibilRepairSummaryPage() {
-  const [accounts] = useState<SelectedCibilRepairAccount[]>(() => readSelectedCibilRepairAccounts());
+  const router = useRouter();
+  const [accounts, setAccounts] = useState<SelectedCibilRepairAccount[]>([]);
   const [plans, setPlans] = useState<CibilRepairPlan[]>([]);
   const [timelines, setTimelines] = useState<CibilRepairTimeline[]>([]);
   const [paymentMessage, setPaymentMessage] = useState("");
+  const [toast, setToast] = useState("");
+  const [paymentLoading, setPaymentLoading] = useState(false);
   const plan = plans.find((repairPlan) => repairPlan.isActive !== false) ?? plans[0] ?? null;
   const selectedCount = accounts.length;
   const perAccountAmount = plan?.amount ?? 0;
   const finalAmount = selectedCount * perAccountAmount;
+  const gstAmount = (finalAmount * (plan?.gstPercentage ?? 0)) / 100;
+  const payableAmount = Number((finalAmount + gstAmount).toFixed(2));
 
   useEffect(() => {
     async function loadRepairContent() {
@@ -70,9 +92,152 @@ export default function CibilRepairSummaryPage() {
 
   const issueCount = useMemo(() => accounts.reduce((total, account) => total + account.issueLabels.length, 0), [accounts]);
 
-  function handlePayment() {
-    setPaymentMessage("Payment gateway will open here.");
-    // TODO: Connect CIBIL repair payment API when backend route is available.
+  useEffect(() => {
+    setAccounts(readSelectedCibilRepairAccounts());
+  }, []);
+
+  async function handlePayment() {
+    if (!selectedCount || !payableAmount || !plan || paymentLoading) return;
+
+    const token = localStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return;
+    }
+
+    const planPublicId = plan.planPublicId || plan.publicId || plan.id;
+    const planName = plan.planName;
+    const currency = plan.currency || "INR";
+
+    if (!planPublicId) {
+      setPaymentMessage("Plan is missing. Please try again.");
+      return;
+    }
+
+    setPaymentLoading(true);
+    setPaymentMessage("");
+
+    try {
+      await loadRazorpayCheckout();
+
+      const orderResponse = await apiRequest("/cibil-repair-content/payments/orders", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: {
+          planPublicId,
+          planName,
+          amount: payableAmount,
+          currency,
+        },
+      });
+
+      if (orderResponse.status === 401 || orderResponse.status === 403) {
+        clearScorecareSession();
+        router.replace("/login");
+        return;
+      }
+
+      const orderResult = await orderResponse.json();
+      const order = orderResult?.data?.order;
+
+      if (!orderResponse.ok || !order?.id || !window.Razorpay) {
+        throw new Error("Unable to create payment order.");
+      }
+
+      const checkout = new window.Razorpay({
+        key: orderResult?.data?.keyId || orderResult?.data?.razorpayKeyId || order.key,
+        amount: order.amount,
+        currency: order.currency || currency,
+        name: "ScoreCare",
+        description: planName,
+        order_id: order.id,
+        method: {
+          upi: true,
+          card: true,
+          netbanking: true,
+          wallet: true,
+        },
+        config: {
+          display: {
+            blocks: {
+              upiIntent: {
+                name: "Pay with mobile UPI apps",
+                instruments: [
+                  {
+                    method: "upi",
+                    flows: ["intent"],
+                  },
+                ],
+              },
+              razorpayOptions: {
+                name: "Pay with Razorpay",
+                instruments: [
+                  { method: "card" },
+                  { method: "netbanking" },
+                  { method: "wallet" },
+                  {
+                    method: "upi",
+                    flows: ["collect"],
+                  },
+                ],
+              },
+            },
+            sequence: ["block.upiIntent", "block.razorpayOptions"],
+            preferences: {
+              show_default_blocks: true,
+            },
+          },
+        },
+        handler: async (response: RazorpaySuccessResponse) => {
+          try {
+            const requestResponse = await apiRequest("/cibil-repair-content/requests", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+              body: {
+                planPublicId,
+                planName,
+                amount: payableAmount,
+                currency,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+                remarks: "",
+              },
+            });
+
+            if (requestResponse.status === 401 || requestResponse.status === 403) {
+              clearScorecareSession();
+              router.replace("/login");
+              return;
+            }
+
+            if (!requestResponse.ok) {
+              throw new Error("Unable to create repair request.");
+            }
+
+            const requestResult = await requestResponse.json();
+            setToast(requestResult?.message || "CIBIL repair request submitted successfully.");
+            window.setTimeout(() => {
+              router.replace("/dashboard/score-fix?tab=credit-improvement-plan");
+            }, 1200);
+          } catch (error) {
+            setPaymentMessage(error instanceof Error ? error.message : "Unable to create repair request.");
+          } finally {
+            setPaymentLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: () => setPaymentLoading(false),
+        },
+      });
+
+      checkout.open();
+    } catch (error) {
+      setPaymentMessage(error instanceof Error ? error.message : "Payment failed. Please try again.");
+      setPaymentLoading(false);
+    }
   }
 
   return (
@@ -148,21 +313,26 @@ export default function CibilRepairSummaryPage() {
 
         <div className="fixed inset-x-0 bottom-[4.75rem] z-30 mx-auto w-full max-w-md px-4 pb-[env(safe-area-inset-bottom)]">
           <div className="rounded-2xl border border-[#0D5A3F]/70 bg-[#071812]/95 p-4 shadow-[0_18px_36px_rgba(0,0,0,0.42)] backdrop-blur">
-            {paymentMessage ? <p className="mb-3 text-center text-caption font-semibold text-[#22F2C2]">{paymentMessage}</p> : null}
+            {paymentMessage ? <p className="mb-3 text-center text-caption font-semibold text-red-400">{paymentMessage}</p> : null}
             <button
               className={cn(
                 "h-12 w-full rounded-2xl text-sm font-black transition",
-                selectedCount && finalAmount ? "bg-[linear-gradient(135deg,#22F2C2,#13B98F)] text-[#04120e] shadow-[0_14px_28px_rgba(34,242,194,0.22)]" : "cursor-not-allowed bg-white/10 text-[#6F7B8E]",
+                selectedCount && payableAmount && !paymentLoading ? "bg-[linear-gradient(135deg,#22F2C2,#13B98F)] text-[#04120e] shadow-[0_14px_28px_rgba(34,242,194,0.22)]" : "cursor-not-allowed bg-white/10 text-[#6F7B8E]",
               )}
-              disabled={!selectedCount || !finalAmount}
+              disabled={!selectedCount || !payableAmount || paymentLoading}
               type="button"
               onClick={handlePayment}
             >
-              Pay {formatINR(finalAmount)}
+              {paymentLoading ? "Processing..." : `Pay ${formatINR(finalAmount)}`}
             </button>
           </div>
         </div>
       </div>
+      {toast ? (
+        <div className="fixed left-4 right-4 top-4 z-[10000] mx-auto max-w-sm rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-700 shadow-[0_14px_34px_rgba(16,185,129,0.22)]">
+          {toast}
+        </div>
+      ) : null}
       <DashboardBottomNav />
     </PortalShell>
   );
@@ -175,6 +345,29 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
       <span className="text-right font-bold text-white">{value}</span>
     </div>
   );
+}
+
+function loadRazorpayCheckout() {
+  if (window.Razorpay) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+
+    if (existingScript) {
+      existingScript.addEventListener("load", () => resolve(), { once: true });
+      existingScript.addEventListener("error", () => reject(new Error("Unable to load payment gateway.")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Unable to load payment gateway."));
+    document.body.appendChild(script);
+  });
 }
 
 function formatINR(amount: number) {
