@@ -102,8 +102,8 @@ const fallbackRepairContent: CibilRepairContent = {
   plans: [],
   timelines: [],
 };
-const reportCardClass =
-  "border border-[#103A2B]/50 bg-[linear-gradient(135deg,#06120E_0%,#081712_50%,#091813_100%)] shadow-[0_20px_45px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]";
+const reportHighlightCardClass =
+  "border border-[#0F5D43]/60 bg-[radial-gradient(circle_at_84%_0%,rgba(34,242,194,0.09),transparent_36%),linear-gradient(135deg,rgba(8,54,37,0.98),rgba(9,38,25,0.98))] shadow-[0_0_34px_rgba(34,242,194,0.07),0_18px_40px_rgba(0,0,0,0.32)] backdrop-blur-xl";
 const reportMiniCardClass = "border border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]";
 const staticSimulatorActions: SimulatorAction[] = [
   { id: "miss-emi", impact: -20, subtitle: "Drops score by 20 pts", title: "Miss EMI this month" },
@@ -530,7 +530,7 @@ export function ScoreFixExperience() {
             <h1 className="text-2xl font-black tracking-normal text-white">Score Improvement</h1>
           </div>
 
-          <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(145deg,#071522,#0A1725)] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+          <section className={cn("rounded-[2rem] p-4 text-white", reportHighlightCardClass)}>
             <div className="grid grid-cols-2 gap-3">
               <ScoreMetric label="Current Score" value={currentScore ? String(currentScore) : "--"} />
               <ScoreMetric label="Projected Score" value={projectedScore ? String(projectedScore) : "--"} tone={projectedScore ? scoreStatus.tone : undefined} />
@@ -565,7 +565,7 @@ export function ScoreFixExperience() {
           </div>
 
           {activeTab === "Simulator" ? (
-            <section className="space-y-5 rounded-[28px] border border-white/10 bg-[#111821] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.38)]">
+            <section className={cn("space-y-5 rounded-[2rem] p-4 text-white", reportHighlightCardClass)}>
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
@@ -699,16 +699,16 @@ function CreditImprovementPlan({
 
   return (
     <div className="space-y-4">
-      <section className={cn("overflow-hidden rounded-[1.75rem] text-white", reportCardClass)}>
-        <div className="bg-[radial-gradient(circle_at_85%_0%,rgba(31,117,107,0.28),transparent_34%),linear-gradient(160deg,#10243a,#081625)] px-4 py-5">
+      <section className={cn("overflow-hidden rounded-[2rem] text-white", reportHighlightCardClass)}>
+        <div className="px-4 py-5">
           <div className="flex items-start justify-between gap-3">
             <h2 className="whitespace-nowrap text-base font-bold uppercase leading-none">Credit Repair Service</h2>
             <div className="shrink-0 text-right">
               {typeof plan?.amount === "number" ? (
                 <div>
-                  {originalAmount ? <p className="text-body font-semibold leading-none text-[#9fb2c6] line-through"><AnimatedNumber value={formatINR(originalAmount)} /></p> : null}
+                  {originalAmount ? <p className="text-title font-semibold leading-none text-[#9fb2c6] line-through"><AnimatedNumber value={formatINR(originalAmount)} /></p> : null}
                   {plan.offerTag ? <p className="mt-1 text-caption font-bold leading-none text-[#22F2C2]">Offer: {plan.offerTag}</p> : null}
-                  <p className="mt-2 text-[26px] font-black leading-none text-white"><AnimatedNumber value={formatINR(plan.amount)} /></p>
+                  <p className="mt-2 text-[24px] font-black leading-none text-white"><AnimatedNumber value={formatINR(plan.amount)} /></p>
                 </div>
               ) : null}
             </div>
@@ -732,13 +732,13 @@ function CreditImprovementPlan({
         </div>
       </section> */}
 
-      <section className={cn("rounded-[1.75rem] p-4 text-white", reportCardClass)}>
+      <section className={cn("rounded-[2rem] p-4 text-white", reportHighlightCardClass)}>
         <h2 className="text-sm font-semibold text-white">Select issues to repair</h2>
         <p className="mt-1 text-caption leading-5 text-[#9fb2c6]">Choose the accounts you want us to review and repair.</p>
         <RepairIssueCards cards={repairIssueCards} selectedIds={selectedIssueIds} onToggle={toggleIssueCard} />
       </section>
 
-      <section className={cn("rounded-[1.75rem] p-4 text-white", reportCardClass)}>
+      <section className={cn("rounded-[2rem] p-4 text-white", reportHighlightCardClass)}>
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-caption font-semibold uppercase tracking-[0.16em] text-[#1F756B]">Dispute Centre</p>
