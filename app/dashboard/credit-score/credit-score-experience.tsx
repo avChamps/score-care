@@ -1963,17 +1963,24 @@ function formatDateTime(value: string) {
 }
 
 function formatCompactDate(value?: string | null) {
-  if (!value) return "--";
+  const raw = String(value ?? "").trim();
 
-  if (/^\d{8}$/.test(value)) {
-    const day = value.slice(0, 2);
-    const month = value.slice(2, 4);
-    const year = value.slice(4);
+  if (!raw) return "--";
+
+  if (/^\d{8}$/.test(raw)) {
+    if (raw === "11111111" || raw === "00000000") {
+      return "--";
+    }
+
+    const firstFour = Number(raw.slice(0, 4));
+    const year = firstFour >= 1900 ? raw.slice(0, 4) : raw.slice(4);
+    const month = firstFour >= 1900 ? raw.slice(4, 6) : raw.slice(2, 4);
+    const day = firstFour >= 1900 ? raw.slice(6, 8) : raw.slice(0, 2);
 
     return `${day}/${month}/${year}`;
   }
 
-  return value;
+  return raw.replace(/^(\d{2})-(\d{2})-(\d{4})$/, "$1/$2/$3");
 }
 
 function formatRupees(value: unknown) {

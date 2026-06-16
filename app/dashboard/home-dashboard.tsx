@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ComponentType } from "react";
 import type { KeyboardEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dashboardBg from "@/assets/dashboard-bg.jpg";
 
 import {
@@ -330,7 +330,7 @@ export function HomeDashboard() {
 
   const visibleDashboard = dashboard;
   const score = visibleDashboard.score;
-  const scorePercent = score ? Math.min(100, Math.max(0, ((score - 300) / 600) * 100)) : 0;
+  const { arcPercent, displayScore, meterRef } = useAnimatedCreditScoreMeter(score);
   const hasJourneyMonths = visibleDashboard.trend.length > 0 && visibleDashboard.trendMonths.length > 0;
   const currentScore = hasJourneyMonths ? visibleDashboard.trend[visibleDashboard.trend.length - 1] : score;
   const firstScore = visibleDashboard.hasScoreHistory && visibleDashboard.trend.length ? visibleDashboard.trend[0] : currentScore;
@@ -447,6 +447,7 @@ export function HomeDashboard() {
           <>
 
             <section
+              ref={meterRef}
               {...premiumClickProps}
               className={cn(
                 "mt-3 overflow-hidden rounded-[14px] bg-[radial-gradient(circle_at_10%_100%,rgba(24,72,96,0.20),transparent_32%),radial-gradient(circle_at_86%_0%,rgba(28,61,95,0.24),transparent_34%),linear-gradient(145deg,#071522,#0A1725)] shadow-[0_18px_42px_rgba(0,0,0,0.30)]",
@@ -492,10 +493,9 @@ export function HomeDashboard() {
                       strokeLinecap="round"
                       strokeWidth="14"
                       pathLength="100"
-                      strokeDasharray={`${scorePercent * 0.75} 100`}
+                      strokeDasharray={`${arcPercent * 0.75} 100`}
                       transform="rotate(135 110 110)"
                       filter="url(#scoreArcGlow)"
-                      className="transition-all duration-500"
                     />
                   </svg>
 
@@ -503,7 +503,7 @@ export function HomeDashboard() {
 
                   <div className="relative -mt-5 text-center">
                     <p className="text-[34px] font-black leading-none tracking-[-0.04em] text-white sm:text-[40px]">
-                      <AnimatedNumber value={score} />
+                      {displayScore}
                     </p>
 
                     <p className="mt-1 text-caption font-black tracking-[0.18em] text-[#08DB69] sm:text-caption">
@@ -1257,6 +1257,113 @@ function readGeneralSettings(result: unknown): GeneralSettings {
 
 function toDialNumber(value: string) {
   return value.replace(/\D/g, "");
+}
+
+function useAnimatedCreditScoreMeter(score: number | null) {
+  const meterRef = useRef<HTMLElement | null>(null);
+  const [animatedScore, setAnimatedScore] = useState(300);
+  const hasAnimated = useRef(false);
+
+  useEffect(() => {
+    if (!score) {
+      return;
+    }
+
+    const actualScore = clampCreditScore(score);
+
+    if (hasAnimated.current) {
+      const frame = requestAnimationFrame(() => {
+        setAnimatedScore(actualScore);
+      });
+
+      return () => cancelAnimationFrame(frame);
+    }
+
+    let frame = 0;
+    let observer: IntersectionObserver | null = null;
+    let started = false;
+    const keyframes = [
+      { progress: 0, score: 300, ease: easeInOutCubic },
+      { progress: 0.36, score: 900, ease: easeInOutCubic },
+      { progress: 0.72, score: 300, ease: easeOutCubic },
+      { progress: 1, score: actualScore, ease: easeOutCubic },
+    ];
+
+    function startAnimation() {
+      if (started) return;
+
+      started = true;
+      hasAnimated.current = true;
+      const startedAt = performance.now();
+
+      function update(now: number) {
+        const progress = Math.min(1, (now - startedAt) / 2800);
+        const currentScore = readCreditScoreKeyframe(keyframes, progress);
+
+        setAnimatedScore(currentScore);
+
+        if (progress < 1) {
+          frame = requestAnimationFrame(update);
+          return;
+        }
+
+        setAnimatedScore(actualScore);
+      }
+
+      frame = requestAnimationFrame(update);
+    }
+
+    const node = meterRef.current;
+
+    if (!node || typeof IntersectionObserver === "undefined") {
+      startAnimation();
+    } else {
+      observer = new IntersectionObserver((entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          observer?.disconnect();
+          startAnimation();
+        }
+      }, { threshold: 0.35 });
+      observer.observe(node);
+    }
+
+    return () => {
+      observer?.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [score]);
+
+  return {
+    arcPercent: ((clampCreditScore(animatedScore) - 300) / 600) * 100,
+    displayScore: Math.round(clampCreditScore(animatedScore)),
+    meterRef,
+  };
+}
+
+function readCreditScoreKeyframe(keyframes: Array<{ progress: number; score: number; ease: (progress: number) => number }>, progress: number) {
+  const nextIndex = keyframes.findIndex((keyframe) => keyframe.progress >= progress);
+  const currentIndex = Math.max(1, nextIndex === -1 ? keyframes.length - 1 : nextIndex);
+  const previous = keyframes[currentIndex - 1];
+  const next = keyframes[currentIndex];
+  const segmentProgress = (progress - previous.progress) / Math.max(0.001, next.progress - previous.progress);
+
+  return clampCreditScore(lerp(previous.score, next.score, next.ease(segmentProgress)));
+}
+
+function lerp(start: number, end: number, progress: number) {
+  return start + (end - start) * progress;
+}
+
+function easeOutCubic(progress: number) {
+  return 1 - Math.pow(1 - progress, 3);
+}
+
+function easeInOutCubic(progress: number) {
+  return progress < 0.5 ? 4 * progress ** 3 : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+}
+
+function clampCreditScore(score: number) {
+  return Math.min(900, Math.max(300, Math.round(score)));
 }
 
 function ContactCard({ color, Icon, label, onClick, sub }: { color: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; label: string; onClick: () => void; sub: string }) {
