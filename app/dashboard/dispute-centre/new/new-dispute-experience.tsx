@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
 import { apiUrl } from "@/lib/api";
@@ -264,9 +265,9 @@ function AccountStep({ accounts, hasDisputeEligibleAccounts, selectedAccountId, 
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-caption">
               <span className="text-[#9fb2c6]">Status <b className="block text-white">{account.status || "--"}</b></span>
-              <span className="text-[#9fb2c6]">Balance <b className="block text-white">{formatINR(account.balance)}</b></span>
+              <span className="text-[#9fb2c6]">Balance <b className="block text-white"><AnimatedNumber value={formatINR(account.balance)} /></b></span>
               {account.ownershipType ? <span className="text-[#9fb2c6]">Ownership <b className="block text-white">{account.ownershipType}</b></span> : null}
-              {account.overdueAmount !== null ? <span className="text-[#9fb2c6]">Overdue <b className="block text-white">{formatINR(account.overdueAmount)}</b></span> : null}
+              {account.overdueAmount !== null ? <span className="text-[#9fb2c6]">Overdue <b className="block text-white"><AnimatedNumber value={formatINR(account.overdueAmount)} /></b></span> : null}
             </div>
           </button>
         );

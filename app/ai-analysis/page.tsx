@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bot, BrainCircuit, FileUp, Sparkles, WandSparkles } from "lucide-react";
 import { PageHero } from "@/components/sections/page-hero";
 import { AiShowcase } from "@/components/sections/shared";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Section } from "@/components/ui/section";
@@ -15,7 +16,7 @@ export default function AiAnalysisPage() {
   return (
     <>
       <PageHero eyebrow="AI analysis" title="Turn dense credit reports into clean decisions." body="SCORECARE AI reads repayment behavior, utilization, inquiry risk, and dispute markers to give you a prioritized action plan." primary="Upload report" href="#upload">
-        <Card><Bot className="size-12 text-cyan-500" /><p className="mt-6 text-4xl font-black sm:text-5xl">8</p><p className="text-slate-600 dark:text-slate-300">high-impact recommendations found</p></Card>
+        <Card><Bot className="size-12 text-cyan-500" /><p className="mt-6 text-4xl font-black sm:text-5xl"><AnimatedNumber value={8} /></p><p className="text-slate-600 dark:text-slate-300">high-impact recommendations found</p></Card>
       </PageHero>
       <Section id="upload">
         <div className="grid gap-8 lg:grid-cols-2">

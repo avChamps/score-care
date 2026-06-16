@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { type ComponentPropsWithoutRef } from "react";
 import { ArrowLeft, CreditCard, Headphones, Home, Menu, MessageCircle, Plus, ReceiptText, Users, WalletCards } from "lucide-react";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
 import { useDashboardActionsDisabled } from "@/lib/dashboard-lock";
 import { cn } from "@/lib/utils";
@@ -161,8 +162,8 @@ export function ScoreGauge({ compact = false }: { compact?: boolean }) {
       <div className="absolute left-1/2 top-[7.55rem] size-5 -translate-x-1/2 rounded-full bg-[var(--portal-blue)]" />
       <div className="absolute left-[34%] top-[7.65rem] h-3 w-24 origin-right -rotate-5 rounded-full bg-[var(--portal-blue)] [clip-path:polygon(0_50%,100%_0,100%_100%)]" />
       <div className="absolute inset-x-0 bottom-8 flex justify-between text-base font-semibold text-[var(--portal-muted)]">
-        <span>300</span>
-        <span>900</span>
+        <span><AnimatedNumber value={300} /></span>
+        <span><AnimatedNumber value={900} /></span>
       </div>
       <div className="absolute bottom-7 left-1/2 -translate-x-1/2 text-xl text-[var(--portal-muted)]/60">-</div>
     </div>
@@ -225,7 +226,7 @@ export function LoanSummaryCard({ tone, title, value, caption }: { tone: "green"
         <p className="text-base font-bold leading-tight text-slate-950">{title}</p>
         {tone === "green" ? <ReceiptText className="size-8 text-emerald-600" /> : <InfoIcon className="border-rose-300 text-rose-500" />}
       </div>
-      <p className="mt-3 text-2xl font-bold text-slate-950">{value}</p>
+      <p className="mt-3 text-2xl font-bold text-slate-950"><AnimatedNumber value={value} /></p>
       <p className="mt-3 text-sm text-slate-600">{caption}</p>
     </div>
   );
@@ -244,16 +245,16 @@ export function LoanCard({ overdue = false }: { overdue?: boolean }) {
         </span>
       </div>
       <div className="flex flex-wrap items-end gap-3">
-        <p className="text-2xl font-bold">Rs.500,000</p>
+        <p className="text-2xl font-bold"><AnimatedNumber value="Rs.500,000" /></p>
         <p className="pb-1 text-sm text-slate-500">Loan Amount</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <MiniMetric title="EMI Amount" value="Rs.500,000" />
         <MiniMetric title="Next EMI" value="5 Feb" />
       </div>
-      {overdue ? <div className="rounded-full bg-white px-4 py-3 text-center text-sm font-semibold text-rose-600">Rs.23,200 overdue - Affects CIBIL</div> : null}
+      {overdue ? <div className="rounded-full bg-white px-4 py-3 text-center text-sm font-semibold text-rose-600"><AnimatedNumber value="Rs.23,200 overdue - Affects CIBIL" /></div> : null}
       <PrimaryPortalButton className={cn("w-full", overdue && "bg-none bg-rose-500 shadow-rose-200")}>
-        <CreditCard className="size-6" /> Pay EMI 15,000
+        <CreditCard className="size-6" /> Pay EMI <AnimatedNumber value="15,000" />
       </PrimaryPortalButton>
       <div className="grid grid-cols-3 gap-3 text-sm text-slate-600">
         <span>Sanctioned<br />5/1/2025</span>
@@ -295,7 +296,7 @@ function MiniMetric({ title, value }: { title: string; value: string }) {
   return (
     <div className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-surface-soft)] p-4">
       <p className="text-sm font-bold text-[var(--portal-muted)]">{title}</p>
-      <p className="mt-1 text-base font-black text-[var(--portal-ink)]">{value}</p>
+      <p className="mt-1 text-base font-black text-[var(--portal-ink)]"><AnimatedNumber value={value} /></p>
     </div>
   );
 }

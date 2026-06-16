@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProfilePanel, type UserProfile } from "@/app/dashboard/home-dashboard";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { DashboardHeaderHomeControl, PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
 import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
@@ -518,7 +519,7 @@ export function ScoreFixExperience() {
                 <Bell className="size-6" strokeWidth={1.8} />
                 {notificationUnreadCount > 0 ? (
                   <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-caption font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
-                    {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
+                  <AnimatedNumber value={notificationUnreadCount > 99 ? "99+" : notificationUnreadCount} />
                   </span>
                 ) : null}
               </Link>
@@ -537,7 +538,7 @@ export function ScoreFixExperience() {
             <div className="mt-5 flex items-end justify-between gap-4">
               <div>
                 <p className={cn("text-3xl font-black", difference > 0 && "text-[#22F2C2]", difference < 0 && "text-[#FF3B30]", difference === 0 && "text-slate-300")}>
-                  {formatSigned(difference)} pts
+                  <AnimatedNumber value={`${formatSigned(difference)} pts`} />
                 </p>
                 <p className="mt-1 text-xs font-semibold text-slate-400">{scoreStatusLabel}</p>
               </div>
@@ -571,7 +572,7 @@ export function ScoreFixExperience() {
                     <p className="text-base font-bold text-white">Credit Card Utilization</p>
                     <p className="mt-1 text-caption font-semibold text-[#22F2C2]">Keep utilization below 30%</p>
                   </div>
-                  <span className="text-[32px] font-black leading-none text-white">{utilizationValue}%</span>
+                  <span className="text-[32px] font-black leading-none text-white"><AnimatedNumber value={`${utilizationValue}%`} /></span>
                 </div>
 
                 <input
@@ -585,8 +586,8 @@ export function ScoreFixExperience() {
                   onChange={(event) => setUtilizationValue(Number(event.target.value))}
                 />
                 <div className="flex justify-between text-tiny font-bold text-[#77869B]">
-                  <span>5% Ideal</span>
-                  <span>90% Danger</span>
+                  <span><AnimatedNumber value="5%" /> Ideal</span>
+                  <span><AnimatedNumber value="90%" /> Danger</span>
                 </div>
               </div>
 
@@ -634,7 +635,7 @@ function ScoreMetric({ label, tone = "text-white", value }: { label: string; ton
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
       <p className="text-tiny font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p>
-      <p className={cn("mt-2 text-3xl font-black", tone)}>{value}</p>
+      <p className={cn("mt-2 text-3xl font-black", tone)}><AnimatedNumber value={value} /></p>
     </div>
   );
 }
@@ -705,9 +706,9 @@ function CreditImprovementPlan({
             <div className="shrink-0 text-right">
               {typeof plan?.amount === "number" ? (
                 <div>
-                  {originalAmount ? <p className="text-body font-semibold leading-none text-[#9fb2c6] line-through">{formatINR(originalAmount)}</p> : null}
+                  {originalAmount ? <p className="text-body font-semibold leading-none text-[#9fb2c6] line-through"><AnimatedNumber value={formatINR(originalAmount)} /></p> : null}
                   {plan.offerTag ? <p className="mt-1 text-caption font-bold leading-none text-[#22F2C2]">Offer: {plan.offerTag}</p> : null}
-                  <p className="mt-2 text-[26px] font-black leading-none text-white">{formatINR(plan.amount)}</p>
+                  <p className="mt-2 text-[26px] font-black leading-none text-white"><AnimatedNumber value={formatINR(plan.amount)} /></p>
                 </div>
               ) : null}
             </div>
@@ -749,7 +750,7 @@ function CreditImprovementPlan({
         <div className="mt-4 grid grid-cols-3 gap-2">
           {disputeStats.map((stat) => (
             <div key={stat.label} className={cn("rounded-2xl px-3 py-3", reportMiniCardClass)}>
-              <p className="text-sm font-semibold">{stat.value}</p>
+              <p className="text-sm font-semibold"><AnimatedNumber value={stat.value} /></p>
               <p className="mt-1 text-caption leading-3 text-[#9fb2c6]">{stat.label}</p>
             </div>
           ))}
@@ -818,12 +819,12 @@ function RepairIssueCards({ cards, selectedIds, onToggle }: { cards: RepairIssue
             <div className="mt-4 grid grid-cols-2 gap-2 text-caption">
               <div>
                 <p className="text-[#7792aa]">Current balance</p>
-                <p className="mt-1 font-bold text-white">{formatINR(card.currentBalance)}</p>
+                <p className="mt-1 font-bold text-white"><AnimatedNumber value={formatINR(card.currentBalance)} /></p>
               </div>
               {card.overdueAmount > 0 ? (
                 <div>
                   <p className="text-[#7792aa]">Amount Past Due</p>
-                  <p className="mt-1 font-bold text-white">{formatINR(card.overdueAmount)}</p>
+                  <p className="mt-1 font-bold text-white"><AnimatedNumber value={formatINR(card.overdueAmount)} /></p>
                 </div>
               ) : null}
               <div>
@@ -884,7 +885,7 @@ function RepairDisputeCards({ loading, requests, status }: { loading: boolean; r
             </div>
             <span className="rounded-full bg-[#1F756B]/12 px-2.5 py-1 text-caption font-semibold capitalize text-[#1F756B]">{dispute.repairStatus || dispute.paymentStatus || "--"}</span>
           </div>
-          {readDisputeProgress(dispute) ? <p className="mt-3 text-caption font-semibold text-[#1F756B]">Progress {readDisputeProgress(dispute)}</p> : null}
+          {readDisputeProgress(dispute) ? <p className="mt-3 text-caption font-semibold text-[#1F756B]">Progress <AnimatedNumber value={readDisputeProgress(dispute)} /></p> : null}
         </div>
       ))}
     </div>

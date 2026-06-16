@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CalendarCheck, CheckCircle2, Headphones, ShieldCheck } from "lucide-react";
 import { PageHero } from "@/components/sections/page-hero";
 import { ImageFeature } from "@/components/sections/shared";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { repairTimeline } from "@/lib/site";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,7 +17,7 @@ export default function CibilRepairPage() {
   return (
     <>
       <PageHero eyebrow="CIBIL repair" title="Repair credit issues with expert-backed precision." body="From inaccurate accounts to duplicate inquiries, SCORECARE structures the documentation and follow-through needed for a cleaner bureau profile." primary="Book consultation" href="#consultation">
-        <Card><Headphones className="size-10 text-cyan-500" /><p className="mt-5 text-4xl font-black">4-step</p><p className="text-slate-600 dark:text-slate-300">guided repair workflow</p></Card>
+        <Card><Headphones className="size-10 text-cyan-500" /><p className="mt-5 text-4xl font-black"><AnimatedNumber value="4-step" /></p><p className="text-slate-600 dark:text-slate-300">guided repair workflow</p></Card>
       </PageHero>
       <Section>
         <SectionHeader eyebrow="Repair plans" title="Specialist support for serious credit recovery." />
@@ -25,7 +26,7 @@ export default function CibilRepairPage() {
             <Card key={plan}>
               <ShieldCheck className="size-8 text-cyan-500" />
               <h3 className="mt-4 text-xl font-bold">{plan}</h3>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{index + 2} bureau workflows, expert review, and progress tracking.</p>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300"><AnimatedNumber value={index + 2} /> bureau workflows, expert review, and progress tracking.</p>
               <Button className="mt-6 w-full" variant={index === 1 ? "primary" : "secondary"}>Select plan</Button>
             </Card>
           ))}
@@ -36,7 +37,7 @@ export default function CibilRepairPage() {
         <div className="grid gap-4 md:grid-cols-4">
           {repairTimeline.map((step, index) => (
             <Card key={step} className="border-white/10 bg-white/[0.06] text-white">
-              <span className="grid size-10 place-items-center rounded-full bg-cyan-300 text-sm font-black text-slate-950">{index + 1}</span>
+              <span className="grid size-10 place-items-center rounded-full bg-cyan-300 text-sm font-black text-slate-950"><AnimatedNumber value={index + 1} /></span>
               <p className="mt-5 text-sm leading-7 text-slate-200">{step}</p>
             </Card>
           ))}

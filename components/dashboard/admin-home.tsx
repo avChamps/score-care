@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import type { ElementType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { AppCard } from "@/components/dashboard/portal-ui";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 
@@ -140,7 +141,7 @@ export function AdminHome() {
             <p className="mt-1 text-xs leading-5 text-[var(--portal-muted)]">Applied, approved, rejected, and pending applications.</p>
           </div>
           <span className="rounded-full bg-[var(--portal-blue-soft)] px-3 py-1 text-xs font-black text-[var(--portal-blue)]">
-            {loading ? "Loading" : `${formatCount(analytics?.loans?.pending)} pending`}
+            {loading ? "Loading" : <><AnimatedNumber value={formatCount(analytics?.loans?.pending)} /> pending</>}
           </span>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-4">
@@ -152,7 +153,7 @@ export function AdminHome() {
           ].map(([label, value]) => (
             <div key={label} className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-surface-soft)] p-4">
               <p className="text-xs font-bold text-[var(--portal-muted)]">{label}</p>
-              <p className="mt-2 text-2xl font-black text-[var(--portal-ink)]">{loading ? "..." : formatCount(value as number | undefined)}</p>
+              <p className="mt-2 text-2xl font-black text-[var(--portal-ink)]">{loading ? "..." : <AnimatedNumber value={formatCount(value as number | undefined)} />}</p>
             </div>
           ))}
         </div>
@@ -190,7 +191,7 @@ function AdminMetricCard({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-xs font-bold text-[var(--portal-muted)]">{label}</p>
-          <p className="mt-3 truncate text-2xl font-black text-[var(--portal-ink)]">{loading ? "..." : value}</p>
+          <p className="mt-3 truncate text-2xl font-black text-[var(--portal-ink)]">{loading ? "..." : <AnimatedNumber value={value} />}</p>
         </div>
         <span className={`grid size-11 shrink-0 place-items-center rounded-2xl border ${toneClass}`}>
           <Icon className="size-5" />

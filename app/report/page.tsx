@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Download, Lock, ReceiptText } from "lucide-react";
 import { PageHero } from "@/components/sections/page-hero";
 import { ComparisonTable, PricingCards } from "@/components/sections/shared";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { Card } from "@/components/ui/card";
 import { Section, SectionHeader } from "@/components/ui/section";
 
@@ -22,7 +23,7 @@ export default function ReportPage() {
           <div className="mt-8 space-y-4">
             {["Account mix", "Payment history", "Inquiries", "Dispute opportunities"].map((item, index) => (
               <div key={item} className="rounded-2xl bg-slate-100 p-4 dark:bg-white/10">
-                <div className="flex justify-between text-sm font-semibold"><span>{item}</span><span>{92 - index * 8}%</span></div>
+                <div className="flex justify-between text-sm font-semibold"><span>{item}</span><span><AnimatedNumber value={`${92 - index * 8}%`} /></span></div>
                 <div className="mt-3 h-2 rounded-full bg-white/70 dark:bg-slate-950/70"><div className="h-2 rounded-full bg-gradient-to-r from-blue-600 to-cyan-400" style={{ width: `${92 - index * 8}%` }} /></div>
               </div>
             ))}

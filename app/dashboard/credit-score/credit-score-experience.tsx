@@ -24,6 +24,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProfilePanel, type UserProfile } from "@/app/dashboard/home-dashboard";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import {
   AppCard,
@@ -613,7 +614,7 @@ export function CreditScoreExperience() {
                   <Bell className="size-6" strokeWidth={1.8} />
                   {notificationUnreadCount > 0 ? (
                     <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-caption font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
-                      {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
+                      <AnimatedNumber value={notificationUnreadCount > 99 ? "99+" : notificationUnreadCount} />
                     </span>
                   ) : null}
                 </Link>
@@ -662,7 +663,7 @@ export function CreditScoreExperience() {
                   type="button"
                   onClick={() => handleAccountFilterClick(item.filter)}
                 >
-                  <p className="text-3xl font-black leading-none">{item.value}</p>
+                  <p className="text-3xl font-black leading-none"><AnimatedNumber value={item.value} /></p>
                   <p className={cn("mt-2 text-caption font-semibold", activeTab === "accounts" && activeAccountFilter === item.filter ? "text-[#8AF1D4]/75" : "text-[#8FA89F]")}>{item.label}</p>
                 </button>
               ))}
@@ -912,7 +913,7 @@ function ReportEnquiriesTab({ enquiries, loading }: { enquiries: CreditEnquiry[]
 function EnquirySummaryCard({ label, value }: { label: string; value: number }) {
   return (
     <div className={cn("rounded-2xl px-3 py-2 text-white", reportCardClass)}>
-      <p className="text-sm font-semibold">{value}</p>
+      <p className="text-sm font-semibold"><AnimatedNumber value={value} /></p>
       <p className="mt-1 text-caption leading-3 text-[#9fb2c6]">{label}</p>
     </div>
   );
@@ -971,7 +972,7 @@ function ReportAccountCard({ account }: { account: ReportAccountItem }) {
           {account.details.map((detail) => (
             <div key={detail.label} className={cn("rounded-2xl px-3 py-2", reportMiniCardClass)}>
               <p className="text-caption font-semibold uppercase tracking-[0.12em] text-[#6f8399]">{detail.label}</p>
-              <p className="mt-1 truncate text-body-sm font-semibold text-[#dbe7f4]">{detail.value}</p>
+              <p className="mt-1 truncate text-body-sm font-semibold text-[#dbe7f4]"><AnimatedNumber value={detail.value} /></p>
             </div>
           ))}
         </div>
@@ -1260,13 +1261,13 @@ function CreditMeter({ score }: { score: number | null }) {
       </svg>
 
       <div className="absolute inset-x-3 bottom-10 flex justify-between px-2 text-xs font-black text-[var(--portal-muted)]">
-        <span>300</span>
-        <span>900</span>
+        <span><AnimatedNumber value={300} /></span>
+        <span><AnimatedNumber value={900} /></span>
       </div>
 
       <div className="absolute inset-x-0 bottom-0 text-center">
         <p className="text-2xl font-black text-[var(--portal-ink)]">
-          {score ? displayScore : "--"}
+          <AnimatedNumber value={score ? displayScore : "--"} />
         </p>
         <p className="text-xs font-bold text-[var(--portal-muted)]">{scoreLabel}</p>
       </div>
@@ -1343,7 +1344,7 @@ function BehaviourCard({ title, value, rating, body, index, tone }: BehaviourIte
           <Clock3 className="mt-0.5 size-6 shrink-0 text-cyan-600" />
           <div>
             <h3 className="text-sm font-bold text-slate-950">{title}</h3>
-            <p className="mt-1 text-xl font-bold text-slate-800">{value}</p>
+            <p className="mt-1 text-xl font-bold text-slate-800"><AnimatedNumber value={value} /></p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -1388,7 +1389,7 @@ function EnquiryCard({ enquiry }: { enquiry: CreditEnquiry }) {
           <p className="mt-1 text-xs text-slate-500">Purpose {enquiry.enquiry_purpose || "--"} • {formatCompactDate(enquiry.enquiry_date)}</p>
         </div>
         <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-caption font-bold text-slate-700">
-          {formatRupees(enquiry.enquiry_amount)}
+          <AnimatedNumber value={formatRupees(enquiry.enquiry_amount)} />
         </span>
       </div>
     </AppCard>
@@ -1399,7 +1400,7 @@ function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
       <p className="text-caption font-bold text-slate-500">{label}</p>
-      <p className="mt-1 truncate text-xs font-black text-slate-900">{value}</p>
+      <p className="mt-1 truncate text-xs font-black text-slate-900"><AnimatedNumber value={value} /></p>
     </div>
   );
 }
@@ -1457,11 +1458,11 @@ function PredictorPanel({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-bold text-slate-500">Predicted score</p>
-            <p className="mt-1 text-3xl font-black text-slate-950">{disabled ? "--" : predictedScore}</p>
+            <p className="mt-1 text-3xl font-black text-slate-950"><AnimatedNumber value={disabled ? "--" : predictedScore} /></p>
           </div>
           <span className={cn("inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold", delta >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700")}>
             {delta >= 0 ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />}
-            {disabled ? "No score" : `${delta >= 0 ? "+" : ""}${delta} points`}
+            {disabled ? "No score" : <><AnimatedNumber value={`${delta >= 0 ? "+" : ""}${delta}`} /> points</>}
           </span>
         </div>
         <p className="mt-3 text-xs leading-5 text-slate-500">

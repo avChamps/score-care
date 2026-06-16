@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Landmark, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
@@ -186,7 +187,7 @@ function VisualBanner({
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm font-black tracking-tight text-[var(--portal-ink)]">{title}</p>
             <span className={`shrink-0 rounded-full px-2.5 py-1 text-caption font-black ${isBlue ? "bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]" : "bg-[var(--portal-orange-soft)] text-[var(--portal-orange)]"}`}>
-              {metric}
+              <AnimatedNumber value={metric} />
             </span>
           </div>
           <p className="mt-1.5 text-xs leading-5 text-[var(--portal-muted)]">{body}</p>

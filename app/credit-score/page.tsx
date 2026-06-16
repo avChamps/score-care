@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { BadgeIndianRupee, CheckCircle2, LockKeyhole, Smartphone } from "lucide-react";
 import { PageHero } from "@/components/sections/page-hero";
 import { TrustBadges } from "@/components/sections/shared";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Section, SectionHeader } from "@/components/ui/section";
@@ -24,11 +25,11 @@ export default function CreditScorePage() {
         <Card className="relative overflow-hidden">
           <div className="mx-auto grid size-56 place-items-center rounded-full score-arc">
             <div className="grid size-32 place-items-center rounded-full bg-white shadow-inner dark:bg-slate-950">
-              <span className="text-4xl font-black text-slate-950 dark:text-white sm:text-5xl">782</span>
+              <span className="text-4xl font-black text-slate-950 dark:text-white sm:text-5xl"><AnimatedNumber value={782} /></span>
               <span className="-mt-5 text-xs font-bold text-emerald-500">Excellent</span>
             </div>
           </div>
-          <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">Estimated approval readiness: 92%</p>
+          <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">Estimated approval readiness: <AnimatedNumber value="92%" /></p>
         </Card>
       </PageHero>
       <Section id="score-form">

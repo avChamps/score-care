@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { AppCard } from "@/components/dashboard/portal-ui";
 import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
@@ -140,7 +141,7 @@ export function CreditHealthCard() {
       <div className="mt-5 grid grid-cols-3 gap-2">
         {items.map((item) => (
           <div key={item.label} className="rounded-2xl border border-[var(--portal-border)] bg-white/85 p-3">
-            <p className={`text-lg font-black leading-none ${item.tone}`}>{item.value}</p>
+            <p className={`text-lg font-black leading-none ${item.tone}`}><AnimatedNumber value={item.value} /></p>
             <p className="mt-1 text-caption font-bold leading-tight text-[var(--portal-muted)]">{item.label}</p>
           </div>
         ))}

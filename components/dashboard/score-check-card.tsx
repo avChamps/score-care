@@ -7,6 +7,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { AppCard, PrimaryPortalButton } from "@/components/dashboard/portal-ui";
 import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { apiRequest, apiUrl } from "@/lib/api";
@@ -512,13 +513,13 @@ function ScoreMeter({
       </svg>
 
       <div className="absolute inset-x-3 bottom-10 flex justify-between px-2 text-xs font-black text-[var(--portal-muted)]">
-        <span>300</span>
-        <span>900</span>
+        <span><AnimatedNumber value={300} /></span>
+        <span><AnimatedNumber value={900} /></span>
       </div>
 
       <div className="absolute inset-x-0 bottom-0 text-center">
         <p className="text-2xl font-black text-[var(--portal-ink)]">
-          {checked ? displayScore : "--"}
+          <AnimatedNumber value={checked ? displayScore : "--"} />
         </p>
         <p className="text-xs font-bold text-[var(--portal-muted)]">
           {checked ? scoreLabel : "Check to view score"}

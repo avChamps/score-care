@@ -1,5 +1,6 @@
 import { ArrowRight, BadgeCheck, CheckCircle2, FileText, Gauge, Sparkles, UploadCloud } from "lucide-react";
 import { Accordion } from "@/components/ui/accordion";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Reveal } from "@/components/ui/motion";
@@ -75,7 +76,7 @@ export function CreditJourneyBand() {
         <div className="grid gap-4 sm:grid-cols-2">
           {steps.map((step, index) => (
             <div key={step} className="rounded-[2rem] border border-[#fff7e8]/12 bg-[#fff7e8]/8 p-5">
-              <span className="grid size-11 place-items-center rounded-full bg-[#f8d96b] text-sm font-black text-[#2d2119]">{index + 1}</span>
+              <span className="grid size-11 place-items-center rounded-full bg-[#f8d96b] text-sm font-black text-[#2d2119]"><AnimatedNumber value={index + 1} /></span>
               <h3 className="mt-5 text-2xl font-black">{step}</h3>
               <p className="mt-2 text-sm leading-6 text-[#f7e7c6]">
                 {index === 0 ? "Secure and consent-first onboarding." : index === 1 ? "CIBIL score and bureau snapshot." : index === 2 ? "AI report diagnosis and risk factors." : "Guided actions and repair workflows."}
@@ -93,7 +94,7 @@ export function StatsBand() {
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (
         <Card key={stat.label} className="p-5">
-          <p className="text-3xl font-black text-[#2d2119]">{stat.value}</p>
+          <p className="text-3xl font-black text-[#2d2119]"><AnimatedNumber value={stat.value} /></p>
           <p className="mt-2 text-sm font-semibold text-[#6f5948]">{stat.label}</p>
         </Card>
       ))}
@@ -161,7 +162,7 @@ export function AiShowcase() {
                 <div key={item.title} className="rounded-[1.5rem] border border-[#fff7e8]/10 bg-[#fff7e8]/8 p-4">
                   <item.icon className="size-5 text-[#8bd8b6]" />
                   <p className="mt-4 text-sm text-[#f7e7c6]">{item.title}</p>
-                  <p className="text-3xl font-black">{item.value}</p>
+                  <p className="text-3xl font-black"><AnimatedNumber value={item.value} /></p>
                 </div>
               ))}
             </div>
@@ -198,7 +199,7 @@ export function PricingCards({ showToggle = false }: { showToggle?: boolean }) {
             <h3 className="text-2xl font-black">{plan.name}</h3>
             <p className={plan.highlight ? "mt-2 text-[#f7e7c6]" : "mt-2 text-[#6f5948]"}>{plan.description}</p>
             <div className="mt-6 flex items-end gap-2">
-              <span className="text-4xl font-black sm:text-5xl">{showToggle ? plan.yearly : plan.price}</span>
+              <span className="text-4xl font-black sm:text-5xl"><AnimatedNumber value={showToggle ? plan.yearly : plan.price} /></span>
               <span className={plan.highlight ? "pb-2 text-[#f7e7c6]" : "pb-2 text-[#6f5948]"}>{showToggle ? "/year" : "/month"}</span>
             </div>
             <div className="mt-6 space-y-3">

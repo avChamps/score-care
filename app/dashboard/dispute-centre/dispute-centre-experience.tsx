@@ -6,6 +6,7 @@ import { BadgeIndianRupee, Landmark, ClipboardList,
   Building2,
   CheckCircle2, 
   ArrowRight} from "lucide-react";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
 import { apiRequest } from "@/lib/api";
@@ -133,7 +134,7 @@ export function DisputeCentreExperience() {
               <div className="grid grid-cols-3 gap-2">
                 {stats.map((stat) => (
                   <div key={stat.label} className={cn("rounded-2xl px-3 py-3", reportMiniCardClass)}>
-                    <p className="text-lg font-black">{stat.value}</p>
+                    <p className="text-lg font-black"><AnimatedNumber value={stat.label === "Points gained" ? `+${stat.value}` : stat.value} /></p>
                     <p className="mt-1 text-caption leading-3 text-[#9fb2c6]">{stat.label}</p>
                   </div>
                 ))}
@@ -237,7 +238,7 @@ function DisputeCard({ request }: { request: DisputeRequest }) {
         <span className="min-w-0">Error Type <b className="block truncate text-white">{errorType || "--"}</b></span>
         <span>Submitted <b className="block text-white">{formatDate(submittedDate)}</b></span>
         {resolutionDate ? <span>Resolution <b className="block text-white">{formatDate(resolutionDate)}</b></span> : null}
-        {request.pointsGained ? <span>Points <b className="block text-[#22F2C2]">+{request.pointsGained}</b></span> : null}
+        {request.pointsGained ? <span>Points <b className="block text-[#22F2C2]"><AnimatedNumber value={`+${request.pointsGained}`} /></b></span> : null}
       </div>
     </article>
   );

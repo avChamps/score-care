@@ -3,6 +3,7 @@
 import { Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { AppCard } from "@/components/dashboard/portal-ui";
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
@@ -247,7 +248,7 @@ export function AdminSubscriptions() {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--portal-border)] px-4 py-3">
           <p className="text-xs font-bold text-[var(--portal-muted)]">
-            Page {pagination.page} of {pagination.totalPages} • {pagination.total} total
+            Page <AnimatedNumber value={pagination.page} /> of <AnimatedNumber value={pagination.totalPages} /> • <AnimatedNumber value={pagination.total} /> total
           </p>
           <div className="flex gap-2">
             <button className="rounded-xl border border-[var(--portal-border)] bg-white px-3 py-2 text-xs font-black text-[var(--portal-ink)] disabled:opacity-50" disabled={loading || pagination.page <= 1} onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))} type="button">
@@ -290,8 +291,8 @@ export function AdminSubscriptions() {
                       onClick={() => setSelectedPlan(plan)}
                       type="button"
                     >
-                      <span>{plan.label}</span>
-                      <span>{plan.amount}</span>
+                      <span><AnimatedNumber value={plan.label} /></span>
+                      <span><AnimatedNumber value={plan.amount} /></span>
                     </button>
                   );
                 })}

@@ -4,6 +4,7 @@ import { Download, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppCard } from "@/components/dashboard/portal-ui";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 
@@ -218,7 +219,7 @@ export function AdminDataTable({ columns, description, emptyMessage, endpoint, e
                   <tr key={String(readValue(row, "id") ?? readValue(row, "_id") ?? index)} className="border-b border-[var(--portal-border)]">
                     {columns.map((column) => (
                       <td key={column.key} className="whitespace-nowrap border-b border-[var(--portal-border)] px-4 py-3 text-sm font-semibold text-[var(--portal-ink)]">
-                        {column.type === "status" ? <StatusBadge value={formatCell(readValue(row, column.key), column.type)} /> : formatCell(readValue(row, column.key), column.type)}
+                        {column.type === "status" ? <StatusBadge value={formatCell(readValue(row, column.key), column.type)} /> : <AnimatedNumber value={formatCell(readValue(row, column.key), column.type)} />}
                       </td>
                     ))}
                   </tr>
@@ -236,7 +237,7 @@ export function AdminDataTable({ columns, description, emptyMessage, endpoint, e
         {serverPagination ? (
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--portal-border)] px-4 py-3">
             <p className="text-xs font-bold text-[var(--portal-muted)]">
-              Page {pagination.page} of {pagination.totalPages} • {pagination.total} total
+              Page <AnimatedNumber value={pagination.page} /> of <AnimatedNumber value={pagination.totalPages} /> • <AnimatedNumber value={pagination.total} /> total
             </p>
             <div className="flex gap-2">
               <button

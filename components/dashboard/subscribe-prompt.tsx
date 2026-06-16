@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
@@ -458,7 +459,7 @@ function SubscriptionPlanCard({ onSelect, plan, selected }: { onSelect: () => vo
           <span>{plan.icon}</span>
           <span>{plan.planName}</span>
         </div>
-        <p className="mt-4 text-[34px] font-black leading-none text-white">{formatPlanAmount(plan)}<span className="ml-1 text-caption font-bold text-white/76">{formatBillingCycle(plan.billingCycle)}</span></p>
+        <p className="mt-4 text-[34px] font-black leading-none text-white"><AnimatedNumber value={formatPlanAmount(plan)} /><span className="ml-1 text-caption font-bold text-white/76">{formatBillingCycle(plan.billingCycle)}</span></p>
       </div>
 
       <div className="space-y-3 px-7 py-6">

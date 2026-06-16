@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ProfilePanel, type UserProfile } from "@/app/dashboard/home-dashboard";
 import dashboardBg from "@/assets/dashboard-bg.jpg";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import {
   AppCard,
@@ -522,7 +523,7 @@ function RepaymentsView({
           <Bell className="size-6" strokeWidth={1.8} />
           {notificationUnreadCount > 0 ? (
             <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-caption font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
-              {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
+              <AnimatedNumber value={notificationUnreadCount > 99 ? "99+" : notificationUnreadCount} />
             </span>
           ) : null}
         </Link>
@@ -664,7 +665,7 @@ function RepaymentsView({
                 <p className="mt-1 text-caption text-[#9fb2c6]">Paid Date: {row.paidDate}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-black text-[#08DB69]">{row.amount}</p>
+                <p className="text-sm font-black text-[#08DB69]"><AnimatedNumber value={row.amount} /></p>
                 <StatusPill status={row.status} />
               </div>
             </div>
@@ -893,7 +894,7 @@ function LoanApplicationStatusCard({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-caption font-medium uppercase tracking-[0.14em] text-[#1F756B]">Your Application</p>
-          <h3 className="mt-1 text-base font-black tracking-tight text-[var(--portal-ink)]">{formatRupees(application.loanAmount)}</h3>
+          <h3 className="mt-1 text-base font-black tracking-tight text-[var(--portal-ink)]"><AnimatedNumber value={formatRupees(application.loanAmount)} /></h3>
           <p className="mt-1 text-caption font-normal text-[var(--portal-muted)]">{formatLoanTypeLabel(application.loanType)} application</p>
         </div>
         <span className="inline-flex w-fit items-center rounded-full border border-[#1F756B]/20 bg-[#1F756B]/10 px-3 py-1.5 text-tiny font-medium capitalize text-[#1F756B]">
@@ -922,7 +923,7 @@ function SummaryStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[22px] border border-[#0F5D43]/45 bg-[#102017]/70 p-3">
       <p className="text-tiny font-semibold text-[#9fb2c6]">{label}</p>
-      <p className="mt-2 text-base font-black text-[#08DB69]">{value}</p>
+      <p className="mt-2 text-base font-black text-[#08DB69]"><AnimatedNumber value={value} /></p>
     </div>
   );
 }
@@ -948,7 +949,7 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
 
       <div className="mt-4">
         <p className="text-tiny font-bold uppercase tracking-[0.12em] text-[#7FA6B8]">EMI Amount</p>
-        <p className="mt-1 text-2xl font-black text-white">{loan.emi}</p>
+        <p className="mt-1 text-2xl font-black text-white"><AnimatedNumber value={loan.emi} /></p>
         <p className="mt-1 text-xs text-[#AAB6C8]">Due date: {loan.nextEmi}</p>
       </div>
 
@@ -1009,7 +1010,7 @@ function LoanMetric({ title, value }: { title: string; value: string }) {
   return (
     <div className="rounded-[16px] border border-white/10 bg-white/[0.04] p-3">
       <p className="text-tiny font-bold uppercase tracking-[0.12em] text-[#7FA6B8]">{title}</p>
-      <p className="mt-1 text-sm font-black text-white">{value}</p>
+      <p className="mt-1 text-sm font-black text-white"><AnimatedNumber value={value} /></p>
     </div>
   );
 }
@@ -1018,7 +1019,7 @@ function MetaCell({ align, label, value }: { align?: "right"; label: string; val
   return (
     <span className={cn(align === "right" && "text-right")}>
       <strong className="block text-tiny font-bold uppercase tracking-[0.12em] text-[#7FA6B8]">{label}</strong>
-      <span className="mt-1 block font-bold text-white">{value}</span>
+      <span className="mt-1 block font-bold text-white"><AnimatedNumber value={value} /></span>
     </span>
   );
 }
@@ -1289,7 +1290,7 @@ function ApplyLoanDialog({
                 <CheckCircle2 className="size-6" />
               </span>
               <div>
-                <p className="text-xs font-semibold text-[#22F2C2]">CIBIL Score: {score ?? "--"}</p>
+                <p className="text-xs font-semibold text-[#22F2C2]">CIBIL Score: <AnimatedNumber value={score ?? "--"} /></p>
                 <p className="text-tiny text-[#AAB6C8]">{lastChecked ? `Verified on ${lastChecked}` : "Latest report data will be used when available"}</p>
               </div>
             </div>

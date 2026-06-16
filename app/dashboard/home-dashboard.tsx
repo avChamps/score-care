@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardHeaderHomeControl, PortalShell } from "@/components/dashboard/portal-ui";
 import { SupportDrawer } from "@/components/dashboard/topbar-actions";
 import { SubscribePromptOverlay, getSubscriptionPlans, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
@@ -413,7 +414,7 @@ export function HomeDashboard() {
                 <Bell className="size-6" strokeWidth={1.8} />
                 {notificationUnreadCount > 0 ? (
                   <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-caption font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
-                    {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
+                    <AnimatedNumber value={notificationUnreadCount > 99 ? "99+" : notificationUnreadCount} />
                   </span>
                 ) : null}
               </Link>
@@ -423,7 +424,7 @@ export function HomeDashboard() {
           <div className="mt-10 max-w-sm sm:mt-16">
             <div className="min-w-0">
               <p className="text-title font-medium italic leading-5 text-[#10206B] sm:text-heading sm:leading-6">Up to</p>
-              <h1 className="mt-1 text-[31px] font-bold italic leading-none text-[#10206B] sm:text-[35px]">800+</h1>
+              <h1 className="mt-1 text-[31px] font-bold italic leading-none text-[#10206B] sm:text-[35px]"><AnimatedNumber value="800+" /></h1>
               <p className="mt-1.5 text-heading font-medium leading-5 text-white sm:text-heading sm:leading-6">Credit Ready</p>
 
               <p className="mt-4 inline-flex items-center rounded-full bg-[#112C8F] px-4 py-2 text-white shadow-[0_12px_26px_rgba(17,44,143,0.22)] sm:mt-5">
@@ -502,7 +503,7 @@ export function HomeDashboard() {
 
                   <div className="relative -mt-5 text-center">
                     <p className="text-[34px] font-black leading-none tracking-[-0.04em] text-white sm:text-[40px]">
-                      {score}
+                      <AnimatedNumber value={score} />
                     </p>
 
                     <p className="mt-1 text-caption font-black tracking-[0.18em] text-[#08DB69] sm:text-caption">
@@ -1303,7 +1304,7 @@ function SummaryTile({
         {!target && positive ? (
           <ArrowUpRight className="size-4" strokeWidth={3} />
         ) : null}
-        {value}
+        <AnimatedNumber value={value} />
       </p>
 
       <p className="mt-2 truncate text-caption font-medium text-[#AAB6C8] sm:text-caption">
@@ -1435,7 +1436,7 @@ function QuickCardContent({ Icon, alert, meta, offer, title, value }: { Icon: Co
               : "text-[#08DB69]"
         )}
       >
-        {value} {meta}
+        <AnimatedNumber value={value} /> {meta}
       </p>
 
     </>
@@ -1446,7 +1447,7 @@ function JourneyStat({ label, onClick, value, gold = false }: { label: string; o
   return (
     <button className={cn("rounded-[20px] bg-white/[0.06] p-3 text-left", onClick && "cursor-pointer")} type="button" onClick={onClick}>
       <p className="text-caption font-normal text-[#AAB6C8]">{label}</p>
-      <p className={cn("mt-1 text-caption font-medium", gold ? "text-[#08DB69]" : "text-white")}>{value}</p>
+      <p className={cn("mt-1 text-caption font-medium", gold ? "text-[#08DB69]" : "text-white")}><AnimatedNumber value={value} /></p>
     </button>
   );
 }

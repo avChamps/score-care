@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import comingSoonImage from "@/assets/coming-soon.png";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { DashboardHeaderHomeControl, PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
 import { apiRequest } from "@/lib/api";
@@ -59,7 +60,7 @@ export function OffersExperience() {
                   <Bell className="size-6" strokeWidth={1.8} />
                   {notificationUnreadCount > 0 ? (
                     <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-caption font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
-                      {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
+                      <AnimatedNumber value={notificationUnreadCount > 99 ? "99+" : notificationUnreadCount} />
                     </span>
                   ) : null}
                 </Link>

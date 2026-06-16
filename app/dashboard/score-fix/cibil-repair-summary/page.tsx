@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
 import { apiRequest } from "@/lib/api";
@@ -290,7 +291,7 @@ export default function CibilRepairSummaryPage() {
           <section className={cn("rounded-[1.75rem] p-4", reportCardClass)}>
             <p className="text-caption font-semibold uppercase tracking-[0.16em] text-[#1F756B]">Selected Accounts</p>
             <h1 className="mt-1 text-heading font-black text-white">Repair summary</h1>
-            <p className="mt-2 text-caption leading-5 text-[#9fb2c6]">{selectedCount} account{selectedCount === 1 ? "" : "s"} selected · {issueCount} issue{issueCount === 1 ? "" : "s"}</p>
+            <p className="mt-2 text-caption leading-5 text-[#9fb2c6]"><AnimatedNumber value={selectedCount} /> account{selectedCount === 1 ? "" : "s"} selected · <AnimatedNumber value={issueCount} /> issue{issueCount === 1 ? "" : "s"}</p>
 
             <div className="mt-4 space-y-3">
               {accounts.length ? accounts.map((account) => (
@@ -302,7 +303,7 @@ export default function CibilRepairSummaryPage() {
                     </div>
                     {/* <span className="shrink-0 rounded-full bg-[#1F756B]/12 px-2.5 py-1 text-caption font-semibold text-[#22F2C2]">{account.accountStatus || "--"}</span> */}
                   </div>
-                  <p className="mt-3 text-sm font-black text-white">{formatINR(account.currentBalance)}</p>
+                  <p className="mt-3 text-sm font-black text-white"><AnimatedNumber value={formatINR(account.currentBalance)} /></p>
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {account.issueLabels.map((label) => (
                       <span key={label} className="rounded-full bg-[#22F2C2]/12 px-2 py-1 text-tiny font-bold text-[#22F2C2]">{label}</span>
@@ -327,7 +328,7 @@ export default function CibilRepairSummaryPage() {
               <SummaryRow label="Selected accounts" value={String(selectedCount)} />
               <div className="flex items-center justify-between border-t border-white/10 pt-3">
                 <span className="font-semibold text-[#9fb2c6]">Final payable</span>
-                <span className="text-heading font-black text-white">{formatINR(finalAmount)}</span>
+                <span className="text-heading font-black text-white"><AnimatedNumber value={formatINR(finalAmount)} /></span>
               </div>
             </div>
           </section>
@@ -337,7 +338,7 @@ export default function CibilRepairSummaryPage() {
             <div className="mt-4 space-y-3">
               {timelines.map((timeline) => (
                 <div key={timeline.id} className={cn("flex gap-3 rounded-2xl p-3", reportMiniCardClass)}>
-                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#22F2C2]/12 text-caption font-bold text-[#22F2C2]">{timeline.displayOrder}</span>
+                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#22F2C2]/12 text-caption font-bold text-[#22F2C2]"><AnimatedNumber value={timeline.displayOrder} /></span>
                   <div>
                     <p className="text-sm font-semibold text-white">{timeline.title}</p>
                     <p className="mt-1 text-caption leading-5 text-[#9fb2c6]">{timeline.description}</p>
@@ -360,7 +361,7 @@ export default function CibilRepairSummaryPage() {
               type="button"
               onClick={handlePayment}
             >
-              {paymentLoading ? "Processing..." : `Pay ${formatINR(finalAmount)}`}
+              {paymentLoading ? "Processing..." : <>Pay <AnimatedNumber value={formatINR(finalAmount)} /></>}
             </button>
           </div>
         </div>
@@ -379,7 +380,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="font-semibold text-[#9fb2c6]">{label}</span>
-      <span className="text-right font-bold text-white">{value}</span>
+      <span className="text-right font-bold text-white"><AnimatedNumber value={value} /></span>
     </div>
   );
 }
