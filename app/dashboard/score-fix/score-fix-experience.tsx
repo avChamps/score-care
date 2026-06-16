@@ -930,7 +930,7 @@ function CreditImprovementPlan({
               <p className="text-body font-bold uppercase tracking-[0.16em] text-[#1F756B]">Dispute Centre</p>
               <h2 className="mt-1 text-lg font-semibold">Case progress</h2>
             </div>
-            <span className="rounded-full bg-[#FF3B30]/14 px-3 py-1 text-body font-semibold text-[#ff8cab]">Live</span>
+            <span className="rounded-full bg-[#FF3B30] px-3 py-1 text-body font-semibold text-[#ffff]">Live</span>
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-2">
