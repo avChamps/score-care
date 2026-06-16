@@ -637,7 +637,7 @@ export function CreditScoreExperience() {
                 </p>
               </div>
               <button
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#EF4444] px-3 text-tiny font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)] disabled:opacity-55"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-[#FF3B30] px-3 text-tiny font-semibold text-white shadow-[0_14px_28px_rgba(255,77,125,0.26)] disabled:opacity-55"
                 type="button"
                 onClick={downloadReport}
                 disabled={downloading}

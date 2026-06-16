@@ -965,7 +965,7 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
       </div>
 
       {overdue ? (
-        <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/12 px-3 py-2 text-xs font-medium text-[#EF4444]">
+        <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[#FF3B30]/30 bg-[#FF3B30]/12 px-3 py-2 text-xs font-medium text-[#FF3B30]">
           <Info className="size-5" /> {loan.overdue}
         </div>
       ) : null}
@@ -1037,7 +1037,7 @@ function StatusPill({ status }: { status: "On Time" | "Due Soon" | "Overdue" }) 
         "inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-caption font-semibold",
         status === "On Time" && "border-[#08DB69]/30 bg-[#08DB69]/12 text-[#08DB69]",
         status === "Due Soon" && "border-[#FFD34D]/30 bg-[#FFD34D]/12 text-[#FFD34D]",
-        status === "Overdue" && "border-[#EF4444]/30 bg-[#EF4444]/12 text-[#EF4444]",
+        status === "Overdue" && "border-[#FF3B30]/30 bg-[#FF3B30]/12 text-[#FF3B30]",
       )}
     >
       {status}

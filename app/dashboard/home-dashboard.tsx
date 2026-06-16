@@ -490,7 +490,7 @@ export function HomeDashboard() {
                       cy="110"
                       r="86"
                       fill="none"
-                      stroke={score >= 700 ? "#08DB69" : "#EF4444"}
+                      stroke={score >= 700 ? "#08DB69" : "#FF3B30"}
                       strokeLinecap="round"
                       strokeWidth="14"
                       pathLength="100"
@@ -521,13 +521,13 @@ export function HomeDashboard() {
                     </p>
                   </div>
 
-                  <span className="absolute left-[5%] top-[74%] -translate-y-1/2 text-caption font-medium text-[#627286]">
-                    300
-                  </span>
+                <span className="absolute left-[1%] top-[80%] -translate-y-1/2 text-caption font-medium text-[#DCE6F2]">
+  300
+</span>
 
-                  <span className="absolute right-[5%] top-[74%] -translate-y-1/2 text-caption font-medium text-[#627286]">
-                    900
-                  </span>
+<span className="absolute right-[1%] top-[80%] -translate-y-1/2 text-caption font-medium text-[#DCE6F2]">
+  900
+</span>
                 </div>
 
                 <div className="absolute bottom-3 left-0 right-0 mx-3 grid h-[60px] grid-cols-3 overflow-hidden rounded-[13px] bg-[#172638] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
@@ -565,7 +565,7 @@ export function HomeDashboard() {
 
             <section {...premiumClickProps} className={cn("mt-5 overflow-hidden rounded-[28px] bg-[linear-gradient(145deg,#101B2B,#111827)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.2)]", isFreeTier && "cursor-pointer")}>
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-base font-medium tracking-normal">Score Journey</h2>
+                <h2 className="text-lg  font-bold tracking-normal">Credit Score History</h2>
                 <span className="rounded-full bg-[#22F2C2]/12 px-3 py-1 text-caption font-medium text-[#22F2C2]">{formatSignedValue(growth)} growth</span>
               </div>
               {hasJourneyMonths ? (
@@ -596,7 +596,7 @@ export function HomeDashboard() {
                     <circle key={`${visibleDashboard.trendMonths[index]}-${index}`} cx={point.x} cy={point.y} r="3.5" fill="#22F2C2" filter="url(#journeyGlow)" />
                   ))}
                   {visibleDashboard.trendMonths.map((month, index) => (
-                    <text key={`${month}-${index}`} x={18 + (index / Math.max(1, visibleDashboard.trendMonths.length - 1)) * 264} y="144" fill="#AAB6C8" fontSize="9" fontWeight="600" textAnchor="middle">{month}</text>
+                    <text key={`${month}-${index}`} x={18 + (index / Math.max(1, visibleDashboard.trendMonths.length - 1)) * 264} y="144" fill="#AAB6C8" fontSize="9" fontWeight="600" textAnchor="middle">{formatJourneyAxisMonth(month)}</text>
                   ))}
                 </svg>
               ) : (
@@ -627,12 +627,12 @@ export function HomeDashboard() {
                 {visibleDashboard.factors.map((factor) => (
                   <div key={factor.name}>
                     <div className="flex items-center justify-between gap-3 text-caption">
-                      <p className="font-normal text-body-sm text-white">{factor.name}</p>
-                      <p className={cn("font-normal", factor.tone === "good" && "text-[#1F756B]", factor.tone === "warn" && "text-[#FFD34D]", factor.tone === "alert" && "text-[#EF4444]")}>{factor.meta}</p>
+                      <p className="font-normal text-body text-white">{factor.name}</p>
+                      <p className={cn("font-normal", factor.tone === "good" && "text-[#16a34a]", factor.tone === "warn" && "text-[#FFD34D]", factor.tone === "alert" && "text-[#FF3B30]")}>{factor.meta}</p>
                     </div>
-                    <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-white/8">
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/8">
                       <div
-                        className={cn("h-full rounded-full", factor.tone === "good" && "bg-[#08DB69]", factor.tone === "warn" && "bg-[#FFD34D]", factor.tone === "alert" && "bg-[#EF4444]")}
+                        className={cn("h-full rounded-full", factor.tone === "good" && "bg-[#16A34A]", factor.tone === "warn" && "bg-[#FFD34D]", factor.tone === "alert" && "bg-[#FF3B30]")}
                         style={{ width: `${factor.value}%` }}
                       />
                     </div>
@@ -647,7 +647,7 @@ export function HomeDashboard() {
                   <Lightbulb className="size-7" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-caption font-bold text-[#22D3EE]">AI Credit Coach</p>
+                  <p className="text-body font-bold text-[#22D3EE]">AI Credit Coach</p>
                   <h2 className="mt-2 text-body-sm font-normal leading-5 tracking-normal">{visibleDashboard.coach}</h2>
                   <div className="mt-4 flex flex-wrap gap-2 text-caption font-medium">
                     <span className="rounded-full bg-[#1F756B]/18 px-3 py-1 text-[#22D3EE]">+{visibleDashboard.coachGain} points</span>
@@ -1108,7 +1108,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
                 type="button"
                 disabled={feedbackLoading}
                 onClick={() => submitHelpFeedback(false)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#EF4444]/12 p-2.5 text-caption font-semibold text-[#EF4444]"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-[16px] bg-[#FF3B30]/12 p-2.5 text-caption font-semibold text-[#FF3B30]"
               >
                 <ThumbsDown className="size-4" strokeWidth={1.8} /> No
               </button>
@@ -1424,15 +1424,15 @@ function QuickCard({ disabled = false, href, Icon, title, value, meta, alert = f
 function QuickCardContent({ Icon, alert, meta, offer, title, value }: { Icon: ComponentType<{ className?: string; strokeWidth?: number }>; alert?: boolean; meta: string; offer?: boolean; title: string; value: string }) {
   return (
     <>
-      <span className={cn("grid size-10 place-items-center rounded-[13px] border border-white/10 bg-[#173B66]/80 text-[#DFEBFF] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(21,101,192,0.3)]", alert && "bg-[#4B1E43]/70 text-[#FF8AAB]", offer && "bg-[#4A431C]/70 text-[#FFD34D]")}>
+      <span className={cn("grid size-10 place-items-center rounded-[13px] border border-white/10 bg-[#173B66]/80 text-[#DFEBFF] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_18px_rgba(21,101,192,0.3)]", alert && "bg-[#FF3B30]/70 text-white", offer && "bg-[#4A431C]/70 text-[#FFD34D]")}>
         <Icon className="size-5" strokeWidth={1.7} />
       </span>
-      <p className="mt-4 text-body-sm font-black leading-5 text-white">{title}</p>
+      <p className="mt-4 text-body font-black leading-5 text-white">{title}</p>
       <p
         className={cn(
           "mt-1 text-caption font-lighter tracking-normal",
           alert
-            ? "text-[#EF4444]"
+            ? "text-[#FF3B30]"
             : offer
               ? "text-[#FFD34D]"
               : "text-[#08DB69]"
@@ -1530,7 +1530,7 @@ function ActionPlanPopup({ dashboard, onClose }: { dashboard: DashboardData; onC
           {aiPlanLoading ? (
             <ActionPlanSkeleton />
           ) : null}
-          {aiPlanError ? <p className="rounded-2xl bg-[#EF4444]/10 px-4 py-3 text-body-sm font-medium leading-5 text-[#FF8AAB]">{aiPlanError}</p> : null}
+          {aiPlanError ? <p className="rounded-2xl bg-[#FF3B30]/10 px-4 py-3 text-body-sm font-medium leading-5 text-[#FF8AAB]">{aiPlanError}</p> : null}
           {(!aiPlanLoading && aiPoints.length ? aiPoints : !aiPlanLoading && !aiPlan ? points : []).map(({ Icon, text, title, tone }) => (
             <div key={text} className="flex gap-3 rounded-2xl bg-white/[0.06] px-4 py-3">
               <span className={cn("mt-0.5 grid size-8 shrink-0 place-items-center rounded-full", tone === "mint" ? "bg-[#5EF2C2]/14 text-[#5EF2C2]" : tone === "gold" ? "bg-[#FFD34D]/14 text-[#FFD34D]" : "bg-[#FF7A00]/14 text-[#FF9F45]")}>
@@ -2239,7 +2239,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
             ) : null}
 
             {ratingError ? (
-              <p className="mt-3 text-caption font-medium text-[#EF4444]">{ratingError}</p>
+              <p className="mt-3 text-caption font-medium text-[#FF3B30]">{ratingError}</p>
             ) : null}
 
             <button
@@ -2323,7 +2323,7 @@ function NotificationsScreen({ error, loading, markingAll, notifications, onBack
         {loading ? (
           <NotificationScreenSkeleton />
         ) : error ? (
-          <p className="px-5 py-5 text-caption font-normal text-[#EF4444]">{error}</p>
+          <p className="px-5 py-5 text-caption font-normal text-[#FF3B30]">{error}</p>
         ) : notifications.length ? (
           notifications.map((notification) => (
             <article key={notification.id} className={cn("border-b border-black/20 px-5 py-5", !notification.isRead && "bg-[#F2FFFA]")}>
@@ -2395,11 +2395,11 @@ function ProfileOption({
         <Icon
           className={cn(
             "size-5",
-            danger ? "text-[#EF4444]" : "text-[#AAB6C8]"
+            danger ? "text-[#FF3B30]" : "text-[#AAB6C8]"
           )}
         />
         {badgeCount ? (
-          <span className="absolute -right-2.5 -top-2.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#EF4444] px-1 text-caption font-bold leading-none text-white">
+          <span className="absolute -right-2.5 -top-2.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#FF3B30] px-1 text-caption font-bold leading-none text-white">
             {badgeCount > 99 ? "99+" : badgeCount}
           </span>
         ) : null}
@@ -2409,7 +2409,7 @@ function ProfileOption({
         <p
           className={cn(
             "text-body font-medium",
-            danger ? "text-[#EF4444]" : "text-white"
+            danger ? "text-[#FF3B30]" : "text-white"
           )}
         >
           {title}
@@ -2924,7 +2924,7 @@ function readScoreHistory(result: unknown) {
       const score = readNumber(record.credit_score ?? record.score ?? record.BureauScore ?? record.bureau_score);
       const recordedAt = parseRecordDate(record.recorded_at ?? record.recordedAt ?? record.created_at ?? record.date);
 
-      return score > 0 && recordedAt ? { score, recordedAt, month: new Intl.DateTimeFormat("en-IN", { month: "short" }).format(recordedAt) } : null;
+      return score > 0 && recordedAt ? { score, recordedAt, month: formatJourneyMonthYear(recordedAt) } : null;
     })
     .filter((record): record is { score: number; recordedAt: Date; month: string } => Boolean(record))
     .sort((a, b) => a.recordedAt.getTime() - b.recordedAt.getTime());
@@ -2963,7 +2963,15 @@ function formatReportMonth(key: string) {
   const [year, month] = key.split("-").map(Number);
   const date = new Date(year, month - 1, 1);
 
-  return Number.isNaN(date.getTime()) ? "--" : new Intl.DateTimeFormat("en-IN", { month: "short" }).format(date);
+  return Number.isNaN(date.getTime()) ? "--" : formatJourneyMonthYear(date);
+}
+
+function formatJourneyMonthYear(date: Date) {
+  return new Intl.DateTimeFormat("en-IN", { month: "short", year: "2-digit" }).format(date);
+}
+
+function formatJourneyAxisMonth(value: string) {
+  return value.split(" ")[0] || value;
 }
 
 function readDisplayName(result: unknown) {
@@ -3303,7 +3311,7 @@ function getTargetMonth() {
   const date = new Date();
   date.setMonth(date.getMonth() + 3);
 
-  return new Intl.DateTimeFormat("en-IN", { month: "short" }).format(date);
+  return formatJourneyMonthYear(date);
 }
 
 function formatCurrency(value: number) {

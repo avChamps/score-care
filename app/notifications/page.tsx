@@ -118,7 +118,7 @@ export default function NotificationsPage() {
         {loading ? (
           <NotificationSkeleton />
         ) : error ? (
-          <p className="px-5 py-5 text-caption font-normal text-[#EF4444]">{error}</p>
+          <p className="px-5 py-5 text-caption font-normal text-[#FF3B30]">{error}</p>
         ) : notifications.length ? (
           notifications.map((notification) => (
             <article key={notification.id} className={cn("border-b border-black/20 px-5 py-5", !notification.isRead && "bg-[#F2FFFA]")}>

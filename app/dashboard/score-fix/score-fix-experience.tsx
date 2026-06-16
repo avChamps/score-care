@@ -543,12 +543,12 @@ export function ScoreFixExperience() {
             </div>
             <div className="mt-5 flex items-end justify-between gap-4">
               <div>
-                <p className={cn("text-3xl font-black", difference > 0 && "text-[#22F2C2]", difference < 0 && "text-[#EF4444]", difference === 0 && "text-slate-300")}>
+                <p className={cn("text-3xl font-black", difference > 0 && "text-[#22F2C2]", difference < 0 && "text-[#FF3B30]", difference === 0 && "text-slate-300")}>
                   {formatSigned(difference)} pts
                 </p>
                 <p className="mt-1 text-xs font-semibold text-slate-400">{scoreStatusLabel}</p>
               </div>
-              <div className={cn("grid size-12 place-items-center rounded-2xl border", difference >= 0 ? "border-[#22F2C2]/25 bg-[#22F2C2]/10 text-[#22F2C2]" : "border-rose-400/25 bg-rose-400/10 text-[#EF4444]")}>
+              <div className={cn("grid size-12 place-items-center rounded-2xl border", difference >= 0 ? "border-[#22F2C2]/25 bg-[#22F2C2]/10 text-[#22F2C2]" : "border-rose-400/25 bg-rose-400/10 text-[#FF3B30]")}>
                 {difference >= 0 ? <TrendingUp className="size-6" /> : <TrendingDown className="size-6" />}
               </div>
             </div>
@@ -1012,7 +1012,7 @@ function getScoreStatus(score: number) {
   if (score >= 700) return { label: "Good", tone: "text-emerald-300" };
   if (score >= 650) return { label: "Fair", tone: "text-amber-300" };
 
-  return { label: "Poor", tone: "text-[#EF4444]" };
+  return { label: "Poor", tone: "text-[#FF3B30]" };
 }
 
 function formatSigned(value: number) {
