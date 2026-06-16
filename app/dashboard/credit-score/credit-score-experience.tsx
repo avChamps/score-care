@@ -44,6 +44,11 @@ type Tab = "accounts" | "enquiries";
 type AccountFilter = "accounts" | "loans" | "cards";
 
 type CreditAccount = {
+  "LOAN-DETAILS"?: {
+    "ACCOUNT-STATUS"?: string | number | null;
+    "ACCT-TYPE"?: string | number | null;
+  } | null;
+  Account_Status?: string | number | null;
   Account_Type?: string | number | null;
   Portfolio_Type?: string | null;
   account_status?: string | number | null;
@@ -106,6 +111,10 @@ type DisplayDataResponse = {
     };
   };
 };
+
+const CRIF_CREDIT_CARD_TYPE = "Credit Card";
+const CRIF_ACTIVE_STATUS = "Active";
+const CRIF_CLOSED_STATUS = "Closed";
 
 type BehaviourItem = {
   title: string;
@@ -293,12 +302,6 @@ const fallbackReportAccounts: ReportAccountItem[] = [
     status: "Closed",
     statusTone: "bg-[#7895ff]/14 text-[#aebcff]",
   },
-];
-
-const fallbackReportEnquiries: ReportEnquiryItem[] = [
-  { amount: "Rs. 50,000", date: "13 Jun 2026", id: "fallback-enquiry-hdfc", kind: "Hard", lender: "HDFC Bank", loanType: "Personal Loan", message: "May impact approval chances", sortTime: 0 },
-  { date: "28 May 2026", id: "fallback-enquiry-sbi", kind: "Soft", lender: "SBI", loanType: "Home Loan", message: "Does not affect credit score", sortTime: 0 },
-  { amount: "Rs. 1,00,000", date: "09 Apr 2026", id: "fallback-enquiry-axis", kind: "Hard", lender: "Axis Bank", loanType: "Credit Card", message: "May impact approval chances", sortTime: 0 },
 ];
 
 const notificationsPageSize = 10;
@@ -854,7 +857,7 @@ function TabButton({
 
 function ReportAccountsTab({ accounts, activeFilter, loading }: { accounts: CreditAccount[]; activeFilter: AccountFilter; loading: boolean }) {
   const filteredAccounts = filterAccountsByType(accounts, activeFilter);
-  const openAccounts = filteredAccounts.filter((account) => !isClosedAccount(account));
+  const openAccounts = filteredAccounts.filter(isActiveAccount);
   const closedAccounts = filteredAccounts.filter(isClosedAccount);
   const openItems = buildReportAccounts(openAccounts, false);
   const closedItems = buildReportAccounts(closedAccounts, false);
@@ -908,8 +911,7 @@ function ReportEnquiriesTab({ enquiries, loading }: { enquiries: CreditEnquiry[]
         </>
       ) : (
         <div className={cn("rounded-[1.65rem] p-4 text-white", reportCardClass)}>
-          <p className="text-sm font-semibold">No recent enquiries found</p>
-          <p className="mt-2 text-caption leading-5 text-[#9fb2c6]">Your recent credit report does not contain any enquiry records.</p>
+          <p className="text-sm font-semibold">No enquiries found</p>
         </div>
       )}
     </div>
@@ -1664,7 +1666,7 @@ function buildBehaviourItems(result: DisplayDataResponse | null): BehaviourItem[
 function buildReportAccounts(accounts: CreditAccount[], useFallback = true): ReportAccountItem[] {
   const mappedAccounts = accounts.map((account, index) => {
     const overdue = readNumericValue(account.amount_overdue);
-    const closed = Boolean(account.account_closed);
+    const closed = isClosedAccount(account);
     const status: ReportAccountItem["status"] = closed ? "Closed" : overdue > 0 ? "Overdue" : "On Time";
     const highImpact = readNumericValue(account.high_credit_amount) >= 100000 || overdue > 0;
     const impact: ReportAccountItem["impact"] = highImpact ? "High impact" : "Medium impact";
@@ -1712,19 +1714,19 @@ function filterAccountsByType(accounts: CreditAccount[], filter: AccountFilter) 
 }
 
 function isLoanAccount(account: CreditAccount) {
-  const portfolioType = readPortfolioType(account);
-
-  return portfolioType === "I" || (!portfolioType && !isCreditCardAccountType(account));
+  return !isCardAccount(account);
 }
 
 function isCardAccount(account: CreditAccount) {
-  return readPortfolioType(account) === "R" || isCreditCardAccountType(account);
+  return readAccountType(account) === CRIF_CREDIT_CARD_TYPE;
+}
+
+function isActiveAccount(account: CreditAccount) {
+  return readAccountStatus(account) === CRIF_ACTIVE_STATUS;
 }
 
 function isClosedAccount(account: CreditAccount) {
-  const status = String(account.account_status ?? "").trim().toLowerCase();
-
-  return Boolean(account.account_closed) || status.includes("closed") || status.includes("settled") || status.includes("written off");
+  return readAccountStatus(account) === CRIF_CLOSED_STATUS;
 }
 
 function getAccountTypeLabel(account: CreditAccount) {
@@ -1747,11 +1749,11 @@ function readPortfolioType(account: CreditAccount) {
 }
 
 function readAccountType(account: CreditAccount) {
-  return String(account.type ?? account.Account_Type ?? "").trim();
+  return String(account["LOAN-DETAILS"]?.["ACCT-TYPE"] ?? account.type ?? account.Account_Type ?? "").trim();
 }
 
-function isCreditCardAccountType(account: CreditAccount) {
-  return ["10", "31", "35", "36"].includes(readAccountType(account));
+function readAccountStatus(account: CreditAccount) {
+  return String(account["LOAN-DETAILS"]?.["ACCOUNT-STATUS"] ?? account.account_status ?? account.Account_Status ?? "").trim();
 }
 
 function buildReportEnquiries(enquiries: CreditEnquiry[]): ReportEnquiryItem[] {

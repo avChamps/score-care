@@ -2993,6 +2993,12 @@ function calculateUtilization(accounts: Array<Record<string, unknown>>) {
 }
 
 function isActiveAccount(account: Record<string, unknown>) {
+  const accountStatus = String(account.account_status ?? account.Account_Status ?? "").trim().toLowerCase();
+
+  if (accountStatus === "closed") {
+    return false;
+  }
+
   const closedValue = account.account_closed ?? account.Date_Closed;
 
   if (closedValue === null || closedValue === undefined || closedValue === "") {

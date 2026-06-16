@@ -45,10 +45,10 @@ const LOAN_ACCOUNT_TYPES = new Set([
   "55","56","57","58","59","61"
 ]);
 const CREDIT_CARD_ACCOUNT_TYPES = new Set([
-  "10","31","35","36"
+  "10","31","35","36","Credit Card"
 ]);
 const ACTIVE_ACCOUNT_STATUSES = new Set([
-  "11","21","78"
+  "11","21","78","Active","active","ACTIVE"
 ]);
 type DisplayDataResponse = {
   fetchedAt?: string | null;
@@ -1686,13 +1686,18 @@ function isActiveLoanPageAccount(account: CreditAccount) {
     ACTIVE_ACCOUNT_STATUSES.has(accountStatus) &&
     (
       LOAN_ACCOUNT_TYPES.has(accountType) ||
-      CREDIT_CARD_ACCOUNT_TYPES.has(accountType)
+      CREDIT_CARD_ACCOUNT_TYPES.has(accountType) ||
+      isCrifLoanAccountType(accountType)
     )
   );
 }
 
 function readAccountType(account: CreditAccount) {
   return normalizeAccountCode(account.type ?? account.Account_Type);
+}
+
+function isCrifLoanAccountType(accountType: string) {
+  return Boolean(accountType && !/^\d+$/.test(accountType) && accountType.toLowerCase() !== "credit card");
 }
 
 function normalizeAccountCode(value: unknown) {

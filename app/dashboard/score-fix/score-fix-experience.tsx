@@ -763,7 +763,7 @@ function CreditImprovementPlan({
         </div>
 
         <RepairRequestsTable loading={repairRequestsLoading} requests={repairRequests} status={repairStatus} />
-        <RepairDisputeCards loading={repairRequestsLoading} requests={repairRequests} />
+        <RepairDisputeCards loading={repairRequestsLoading} requests={repairRequests} status={repairStatus} />
       </section>
 
       <div className="sticky bottom-24 z-20 rounded-2xl border border-[#0D5A3F]/70 bg-[#071812]/95 p-4 shadow-[0_18px_36px_rgba(0,0,0,0.42)] backdrop-blur">
@@ -861,14 +861,14 @@ function readString(value: unknown) {
   return typeof value === "string" ? value.trim() : value === null || value === undefined ? "" : String(value).trim();
 }
 
-function RepairDisputeCards({ loading, requests }: { loading: boolean; requests: CibilRepairRequest[] }) {
+function RepairDisputeCards({ loading, requests, status }: { loading: boolean; requests: CibilRepairRequest[]; status: CibilRepairStatus | null }) {
   const disputes = requests.filter(hasDisputeData);
 
   if (loading) {
     return <div className={cn("mt-4 h-20 animate-pulse rounded-2xl", reportMiniCardClass)} />;
   }
 
-  if (!disputes.length) {
+  if (!disputes.length && !status?.activeDisputes) {
     return (
       <div className={cn("mt-4 rounded-2xl p-3", reportMiniCardClass)}>
         <p className="text-xs font-semibold">No active disputes found</p>
@@ -876,6 +876,8 @@ function RepairDisputeCards({ loading, requests }: { loading: boolean; requests:
       </div>
     );
   }
+
+  if (!disputes.length) return null;
 
   return (
     <div className="mt-4 space-y-3">

@@ -120,7 +120,7 @@ function readCachedCibilScoreCheckData(token: string, payloadKey: string) {
 
     const cachedValue = localStorage.getItem(cibilScoreCheckCacheKey);
 
-    return cachedValue ? JSON.parse(cachedValue) : null;
+    return cachedValue ? normalizeCibilDisplayData(JSON.parse(cachedValue)) : null;
   } catch {
     localStorage.removeItem(cibilScoreCheckCacheKey);
     localStorage.removeItem(cibilScoreCheckCacheTokenKey);
@@ -228,10 +228,20 @@ function normalizeCibilDisplayData(result: unknown) {
       credit_score?: unknown;
       credit_report?: {
         SCORE?: {
+          BureauScore?: unknown;
           FCIREXScore?: unknown;
+        };
+        SCORES?: {
+          SCORE?: CrifScore | CrifScore[];
         };
         CAIS_Account?: {
           CAIS_Account_DETAILS?: ExperianAccount[];
+        };
+        RESPONSES?: {
+          RESPONSE?: CrifResponse | CrifResponse[];
+        };
+        "INQUIRY-HISTORY"?: {
+          HISTORY?: CrifEnquiry | CrifEnquiry[];
         };
         CAPS?: {
           CAPS_Application_Details?: ExperianEnquiry[];
@@ -253,11 +263,34 @@ function normalizeCibilDisplayData(result: unknown) {
     return result;
   }
 
-  const score = response.data.credit_score ?? report.SCORE?.FCIREXScore;
+  const crifAccounts = mapCrifAccounts(report.RESPONSES?.RESPONSE);
+
+  if (crifAccounts.length) {
+    report.CAIS_Account = {
+      ...report.CAIS_Account,
+      CAIS_Account_DETAILS: crifAccounts,
+    };
+  }
+
+  const crifScore = readCrifScore(report.SCORES?.SCORE);
+
+  if (crifScore !== null) {
+    report.SCORE = {
+      ...report.SCORE,
+      BureauScore: report.SCORE?.BureauScore ?? crifScore,
+      FCIREXScore: report.SCORE?.FCIREXScore ?? crifScore,
+    };
+    response.data.credit_score = response.data.credit_score ?? crifScore;
+  }
+
+  const score = response.data.credit_score ?? report.SCORE?.BureauScore ?? report.SCORE?.FCIREXScore;
   const accounts = Array.isArray(report.CAIS_Account?.CAIS_Account_DETAILS)
     ? report.CAIS_Account.CAIS_Account_DETAILS.map(normalizeExperianAccount)
     : [];
-  const enquiries = Array.isArray(report.CAPS?.CAPS_Application_Details)
+  const crifEnquiries = mapCrifEnquiries(report["INQUIRY-HISTORY"]?.HISTORY);
+  const enquiries = report["INQUIRY-HISTORY"]
+    ? crifEnquiries
+    : Array.isArray(report.CAPS?.CAPS_Application_Details)
     ? report.CAPS.CAPS_Application_Details.map(normalizeExperianEnquiry)
     : [];
 
@@ -285,6 +318,7 @@ function normalizeCibilDisplayData(result: unknown) {
 }
 
 type ExperianAccount = {
+  Account_Number?: unknown;
   Account_Status?: unknown;
   Account_Type?: unknown;
   Amount_Past_Due?: unknown;
@@ -306,6 +340,34 @@ type ExperianAccount = {
   CAIS_Account_History?: unknown;
 };
 
+type CrifScore = {
+  "SCORE-VALUE"?: unknown;
+};
+
+type CrifLoanDetails = {
+  "ACCOUNT-STATUS"?: unknown;
+  "ACCT-NUMBER"?: unknown;
+  "ACCT-TYPE"?: unknown;
+  "CLOSED-DATE"?: unknown;
+  "COMBINED-PAYMENT-HISTORY"?: unknown;
+  "CREDIT-GUARANTOR"?: unknown;
+  "CREDIT-LIMIT"?: unknown;
+  "CURRENT-BAL"?: unknown;
+  "DISBURSED-AMT"?: unknown;
+  "DISBURSED-DT"?: unknown;
+  "INSTALLMENT-AMT"?: unknown;
+  "LAST-PAYMENT-DATE"?: unknown;
+  "OBLIGATION"?: unknown;
+  "OVERDUE-AMT"?: unknown;
+  "REPAYMENT-TENURE"?: unknown;
+};
+
+type CrifResponse = {
+  "LOAN-DETAILS"?: CrifLoanDetails | CrifLoanDetails[];
+};
+
+type CrifEnquiry = Record<string, unknown>;
+
 type ExperianEnquiry = {
   Amount_Financed?: unknown;
   Date_of_Request?: unknown;
@@ -316,14 +378,15 @@ type ExperianEnquiry = {
 
 function normalizeExperianAccount(account: ExperianAccount) {
   const closedDate = normalizeExperianDate(account.Date_Closed);
+  const accountStatus = account.Account_Status ?? null;
 
   return {
-    account_closed: closedDate,
-    account_status: account.Account_Status ?? null,
-    amount_overdue: account.Amount_Past_Due ?? 0,
-    current_balance: account.Current_Balance ?? 0,
-    emi: account.Scheduled_Monthly_Payment_Amount || "",
-    high_credit_amount: account.Credit_Limit_Amount || account.Highest_Credit_or_Original_Loan_Amount || 0,
+    account_closed: closedDate ?? (isClosedAccountStatus(accountStatus) ? "Closed" : null),
+    account_status: accountStatus,
+    amount_overdue: normalizeAmount(account.Amount_Past_Due),
+    current_balance: normalizeAmount(account.Current_Balance),
+    emi: normalizeAmount(account.Scheduled_Monthly_Payment_Amount) || "",
+    high_credit_amount: normalizeAmount(account.Credit_Limit_Amount) || normalizeAmount(account.Highest_Credit_or_Original_Loan_Amount),
     last_payment: normalizeExperianDate(account.Date_of_Last_Payment) ?? normalizeExperianDate(account.Date_Reported),
     member_name: typeof account.Subscriber_Name === "string" ? account.Subscriber_Name : null,
     opened: normalizeExperianDate(account.Open_Date),
@@ -336,6 +399,151 @@ function normalizeExperianAccount(account: ExperianAccount) {
     reported_and_certified: normalizeExperianDate(account.Date_Reported),
     type: stringifyValue(account.Account_Type),
   };
+}
+
+function readCrifScore(score: CrifScore | CrifScore[] | undefined) {
+  const scoreRecord = Array.isArray(score) ? score[0] : score;
+  const value = normalizeAmount(scoreRecord?.["SCORE-VALUE"]);
+
+  return value > 0 ? value : null;
+}
+
+function mapCrifAccounts(response: CrifResponse | CrifResponse[] | undefined): ExperianAccount[] {
+  return asArray(response)
+    .flatMap((item) => asArray(item?.["LOAN-DETAILS"]))
+    .map(mapCrifAccount);
+}
+
+function mapCrifAccount(account: CrifLoanDetails): ExperianAccount {
+  const accountType = stringifyValue(account["ACCT-TYPE"]).trim();
+  const status = stringifyValue(account["ACCOUNT-STATUS"]).trim();
+  const emi = account["INSTALLMENT-AMT"] ?? account.OBLIGATION;
+
+  return {
+    Account_Number: account["ACCT-NUMBER"],
+    Account_Status: status,
+    Account_Type: accountType,
+    Amount_Past_Due: normalizeAmount(account["OVERDUE-AMT"]),
+    Credit_Limit_Amount: normalizeAmount(account["CREDIT-LIMIT"]),
+    Current_Balance: normalizeAmount(account["CURRENT-BAL"]),
+    Date_Closed: normalizeCrifDate(account["CLOSED-DATE"]),
+    Date_of_Last_Payment: normalizeCrifDate(account["LAST-PAYMENT-DATE"]),
+    Highest_Credit_or_Original_Loan_Amount: normalizeAmount(account["DISBURSED-AMT"]),
+    Open_Date: normalizeCrifDate(account["DISBURSED-DT"]),
+    Portfolio_Type: accountType === "Credit Card" ? "R" : "I",
+    Repayment_Tenure: account["REPAYMENT-TENURE"],
+    Scheduled_Monthly_Payment_Amount: normalizeAmount(emi),
+    Subscriber_Name: stringifyValue(account["CREDIT-GUARANTOR"]).trim() || null,
+    CAIS_Account_History: parseCrifPaymentHistory(account["COMBINED-PAYMENT-HISTORY"]),
+  };
+}
+
+function parseCrifPaymentHistory(value: unknown) {
+  const history = stringifyValue(value);
+
+  if (!history) {
+    return [];
+  }
+
+  return history.split("|").map((entry) => {
+    const [period = "", status = ""] = entry.split(",");
+    const [monthName = "", yearValue = ""] = period.split(":");
+    const [dpdValue = "", classification = ""] = status.split("/");
+    const dpd = Number(dpdValue);
+
+    return {
+      Year: Number(yearValue) || 0,
+      Month: readMonthNumber(monthName),
+      Days_Past_Due: Number.isFinite(dpd) ? dpd : 0,
+      Asset_Classification: classification || "",
+    };
+  }).filter((item) => item.Year && item.Month);
+}
+
+function isClosedAccountStatus(value: unknown) {
+  return stringifyValue(value).trim().toLowerCase() === "closed";
+}
+
+function normalizeAmount(value: unknown) {
+  if (value === null || value === undefined || value === "") {
+    return 0;
+  }
+
+  const amount = typeof value === "number" ? value : Number(String(value).replace(/[^\d.-]/g, ""));
+
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function normalizeCrifDate(value: unknown) {
+  const dateValue = stringifyValue(value).trim();
+  const match = /^(\d{2})-(\d{2})-(\d{4})$/.exec(dateValue);
+
+  if (!match) {
+    return normalizeExperianDate(value);
+  }
+
+  return `${match[3]}${match[2]}${match[1]}`;
+}
+
+function readMonthNumber(value: string) {
+  const months: Record<string, number> = {
+    jan: 1,
+    january: 1,
+    feb: 2,
+    february: 2,
+    mar: 3,
+    march: 3,
+    apr: 4,
+    april: 4,
+    may: 5,
+    jun: 6,
+    june: 6,
+    jul: 7,
+    july: 7,
+    aug: 8,
+    august: 8,
+    sep: 9,
+    sept: 9,
+    september: 9,
+    oct: 10,
+    october: 10,
+    nov: 11,
+    november: 11,
+    dec: 12,
+    december: 12,
+  };
+
+  return months[value.trim().toLowerCase()] ?? 0;
+}
+
+function asArray<T>(value: T | T[] | undefined) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  return value ? [value] : [];
+}
+
+function mapCrifEnquiries(history: CrifEnquiry | CrifEnquiry[] | undefined): ReturnType<typeof normalizeExperianEnquiry>[] {
+  return asArray(history)
+    .filter((enquiry) => enquiry && Object.keys(enquiry).length > 0)
+    .map((enquiry) => ({
+      enquiry_amount: normalizeAmount(readFirstValue(enquiry, ["AMOUNT", "INQUIRY-AMOUNT", "ENQUIRY-AMOUNT"])),
+      enquiry_date: normalizeCrifDate(readFirstValue(enquiry, ["INQUIRY-DATE", "ENQUIRY-DATE", "DATE"])),
+      enquiry_kind: stringifyValue(readFirstValue(enquiry, ["INQUIRY-TYPE", "ENQUIRY-TYPE", "TYPE"])) || "Hard",
+      enquiry_purpose: stringifyValue(readFirstValue(enquiry, ["PURPOSE", "INQUIRY-PURPOSE", "ENQUIRY-PURPOSE", "LOAN-TYPE"])),
+      member: stringifyValue(readFirstValue(enquiry, ["MEMBER-NAME", "SUBSCRIBER-NAME", "LENDER-NAME", "CREDIT-GRANTOR"])).trim() || null,
+    }));
+}
+
+function readFirstValue(record: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    if (record[key] !== null && record[key] !== undefined && record[key] !== "") {
+      return record[key];
+    }
+  }
+
+  return null;
 }
 
 function normalizeExperianEnquiry(enquiry: ExperianEnquiry) {
@@ -353,6 +561,10 @@ function normalizeExperianDate(value: unknown) {
 
   if (!/^\d{8}$/.test(dateValue) || dateValue === "00000000" || dateValue === "11111111") {
     return null;
+  }
+
+  if (Number(dateValue.slice(0, 4)) >= 1900) {
+    return dateValue;
   }
 
   return `${dateValue.slice(6)}${dateValue.slice(4, 6)}${dateValue.slice(0, 4)}`;

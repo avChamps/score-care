@@ -110,9 +110,11 @@ export function DisputeCentreExperience() {
     void loadDisputes();
   }, []);
 
+  const activeDisputes = requests.filter(isActiveDispute);
+  const resolvedDisputes = requests.filter((request) => normalizeStatus(request) === "Resolved");
   const stats = [
-    { label: "Active disputes", value: status?.activeDisputes ?? activeCount(requests) },
-    { label: "Resolved disputes", value: status?.resolvedDisputes ?? requests.filter((request) => normalizeStatus(request) === "Resolved").length },
+    { label: "Active disputes", value: activeDisputes.length },
+    { label: "Resolved disputes", value: status?.resolvedDisputes ?? resolvedDisputes.length },
     { label: "Points gained", value: status?.pointsGainedTotal ?? status?.pointsGained ?? sumPoints(requests) },
   ];
 
@@ -169,26 +171,26 @@ export function DisputeCentreExperience() {
             <section className={cn("rounded-[1.65rem] p-4", reportCardClass)}>
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-sm font-bold">Existing Dispute Cases</h2>
-                {requests.length ? <Link className="rounded-full bg-[#22F2C2] px-4 py-2 text-xs font-black text-[#04120e]" data-dashboard-dispute="true" href="/dashboard/dispute-centre/new">File New</Link> : null}
+                {activeDisputes.length ? <Link className="rounded-full bg-[#22F2C2] px-4 py-2 text-xs font-black text-[#04120e]" data-dashboard-dispute="true" href="/dashboard/dispute-centre/new">File New</Link> : null}
               </div>
               <div className="mt-4 space-y-3">
                 {loading ? <div className={cn("h-24 animate-pulse rounded-2xl", reportMiniCardClass)} /> : null}
-                {!loading && !requests.length ? (
+                {!loading && !activeDisputes.length ? (
                   <div className={cn("rounded-2xl p-4 text-center", reportMiniCardClass)}>
-                    <p className="text-sm font-semibold">No disputes filed yet</p>
+                    <p className="text-sm font-semibold">No active disputes found</p>
                     <p className="mx-auto mt-1 max-w-xs text-caption leading-5 text-[#9fb2c6]">Review your credit accounts and raise a dispute if you find incorrect information.</p>
                     <Link className="mt-4 flex h-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#22F2C2,#13B98F)] px-4 text-center text-sm font-black text-[#04120e] shadow-[0_14px_28px_rgba(34,242,194,0.22)]" data-dashboard-dispute="true" href="/dashboard/dispute-centre/new">
                       File New Dispute
                     </Link>
                   </div>
                 ) : null}
-                {requests.map((request) => (
+                {!loading && activeDisputes.map((request) => (
                   <DisputeCard key={request.disputeId || request.publicId || request.id} request={request} />
                 ))}
               </div>
             </section>
 
-            {requests.length ? (
+            {activeDisputes.length ? (
          <Link
   href="/dashboard/dispute-centre/new"
   className="flex items-center justify-between rounded-[20px] border border-[#0F6A52]/50 bg-[linear-gradient(135deg,#08241C,#0D3328)] px-5 py-4 shadow-[0_14px_32px_rgba(0,0,0,0.28)]"
@@ -253,8 +255,8 @@ function normalizeStatus(request: DisputeRequest) {
   return "Submitted";
 }
 
-function activeCount(requests: DisputeRequest[]) {
-  return requests.filter((request) => normalizeStatus(request) !== "Resolved").length;
+function isActiveDispute(request: DisputeRequest) {
+  return normalizeStatus(request) !== "Resolved";
 }
 
 function sumPoints(requests: DisputeRequest[]) {
