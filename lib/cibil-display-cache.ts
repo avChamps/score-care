@@ -345,6 +345,18 @@ type ExperianAccount = {
   Terms_Frequency?: unknown;
   Terms_Duration?: unknown;
   CAIS_Account_History?: unknown;
+  "ACCOUNT-STATUS"?: unknown;
+  "ACCT-NUMBER"?: unknown;
+  "COMBINED-PAYMENT-HISTORY"?: unknown;
+  "CREDIT-GUARANTOR"?: unknown;
+  "CURRENT-BAL"?: unknown;
+  "OVERDUE-AMT"?: unknown;
+  "PRINCIPAL-WRITE-OFF-AMT"?: unknown;
+  "SETTLEMENT-AMT"?: unknown;
+  "SUIT-FILED-DT"?: unknown;
+  "SUIT-FILED-WILFUL-DEFAULT-STATUS"?: unknown;
+  "WRITE-OFF-AMT"?: unknown;
+  "WRITTEN-OFF-SETTLED-STATUS"?: unknown;
 };
 
 type CrifScore = {
@@ -367,7 +379,13 @@ type CrifLoanDetails = {
   "LAST-PAYMENT-DATE"?: unknown;
   "OBLIGATION"?: unknown;
   "OVERDUE-AMT"?: unknown;
+  "PRINCIPAL-WRITE-OFF-AMT"?: unknown;
   "REPAYMENT-TENURE"?: unknown;
+  "SETTLEMENT-AMT"?: unknown;
+  "SUIT-FILED-DT"?: unknown;
+  "SUIT-FILED-WILFUL-DEFAULT-STATUS"?: unknown;
+  "WRITE-OFF-AMT"?: unknown;
+  "WRITTEN-OFF-SETTLED-STATUS"?: unknown;
 };
 
 type CrifResponse = {
@@ -443,6 +461,18 @@ function mapCrifAccount(account: CrifLoanDetails): ExperianAccount {
     Scheduled_Monthly_Payment_Amount: normalizeCrifEmiAmount(emi),
     Subscriber_Name: stringifyValue(account["CREDIT-GUARANTOR"]).trim() || null,
     CAIS_Account_History: parseCrifPaymentHistory(account["COMBINED-PAYMENT-HISTORY"]),
+    "ACCOUNT-STATUS": account["ACCOUNT-STATUS"],
+    "ACCT-NUMBER": account["ACCT-NUMBER"],
+    "COMBINED-PAYMENT-HISTORY": account["COMBINED-PAYMENT-HISTORY"],
+    "CREDIT-GUARANTOR": account["CREDIT-GUARANTOR"],
+    "CURRENT-BAL": account["CURRENT-BAL"],
+    "OVERDUE-AMT": account["OVERDUE-AMT"],
+    "PRINCIPAL-WRITE-OFF-AMT": account["PRINCIPAL-WRITE-OFF-AMT"],
+    "SETTLEMENT-AMT": account["SETTLEMENT-AMT"],
+    "SUIT-FILED-DT": account["SUIT-FILED-DT"],
+    "SUIT-FILED-WILFUL-DEFAULT-STATUS": account["SUIT-FILED-WILFUL-DEFAULT-STATUS"],
+    "WRITE-OFF-AMT": account["WRITE-OFF-AMT"],
+    "WRITTEN-OFF-SETTLED-STATUS": account["WRITTEN-OFF-SETTLED-STATUS"],
   };
 }
 

@@ -145,9 +145,21 @@ function toNumber(value: unknown) {
 function getAccountsFromDisplayData(displayData: DisplayDataResponse | null) {
   const data = displayData?.data as
     | {
-        credit_report?: { CAIS_Account?: { CAIS_Account_DETAILS?: Record<string, unknown>[] } };
+        credit_report?: {
+          CAIS_Account?: { CAIS_Account_DETAILS?: Record<string, unknown>[] };
+          RESPONSES?: { RESPONSE?: Record<string, unknown> | Record<string, unknown>[] };
+        };
       }
     | undefined;
+  const responses = data?.credit_report?.RESPONSES?.RESPONSE;
+  const responseList = Array.isArray(responses) ? responses : responses ? [responses] : [];
+  const crifLoanAccounts = responseList.flatMap((response) => {
+    const loanDetails = response["LOAN-DETAILS"];
+
+    return Array.isArray(loanDetails) ? loanDetails : loanDetails ? [loanDetails as Record<string, unknown>] : [];
+  });
+
+  if (crifLoanAccounts.length) return crifLoanAccounts;
 
   return Array.isArray(data?.credit_report?.CAIS_Account?.CAIS_Account_DETAILS)
     ? data.credit_report.CAIS_Account.CAIS_Account_DETAILS
@@ -160,63 +172,102 @@ function readAccountHistory(account: Record<string, unknown>) {
   return [];
 }
 
-function hasHistoryDpd(account: Record<string, unknown>) {
-  return readAccountHistory(account).some((history) => toNumber(history.Days_Past_Due ?? history.days_past_due) > 0);
+function readCrifDpdValues(account: Record<string, unknown>) {
+  const combinedHistory = readString(account["COMBINED-PAYMENT-HISTORY"]);
+
+  if (combinedHistory) {
+    return combinedHistory
+      .split("|")
+      .map((entry) => {
+        const status = entry.split(",")[1] ?? "";
+        const dpdValue = status.split("/")[0]?.trim() ?? "";
+
+        return /^\d+$/.test(dpdValue) ? Number(dpdValue) : 0;
+      });
+  }
+
+  return readAccountHistory(account).map((history) => toNumber(history.Days_Past_Due ?? history.days_past_due));
+}
+
+function readMaxDpd(account: Record<string, unknown>) {
+  return Math.max(0, ...readCrifDpdValues(account));
 }
 
 function hasOverdue(account: Record<string, unknown>) {
-  return toNumber(account.Amount_Past_Due ?? account.amount_overdue) > 0 || hasHistoryDpd(account);
+  return toNumber(account["OVERDUE-AMT"]) > 0;
 }
 
 function hasSettled(account: Record<string, unknown>) {
-  const writtenStatus = readString(account.Written_off_Settled_Status);
+  const writtenStatus = readString(account["WRITTEN-OFF-SETTLED-STATUS"]).toLowerCase();
 
   return (
-    toNumber(account.Settlement_Amount) > 0 ||
-    Boolean(writtenStatus)
+    writtenStatus.includes("settled") ||
+    toNumber(account["SETTLEMENT-AMT"]) > 0
   );
 }
 
-function hasNegativeAccountStatus(account: Record<string, unknown>) {
-  return ["78", "79", "80", "81", "82", "83", "84", "85"].includes(readString(account.Account_Status ?? account.account_status));
+function hasWrittenOff(account: Record<string, unknown>) {
+  const writtenStatus = readString(account["WRITTEN-OFF-SETTLED-STATUS"]).toLowerCase();
+
+  return (
+    toNumber(account["WRITE-OFF-AMT"]) > 0 ||
+    toNumber(account["PRINCIPAL-WRITE-OFF-AMT"]) > 0 ||
+    writtenStatus.includes("written off") ||
+    writtenStatus.includes("write off")
+  );
 }
 
-function hasReturnedPayment(account: Record<string, unknown>) {
-  const historyProfile = String(account.Payment_History_Profile ?? account.payment_history ?? "");
+function hasSuitFiled(account: Record<string, unknown>) {
+  const suitStatus = readString(account["SUIT-FILED-WILFUL-DEFAULT-STATUS"]);
 
-  return /[1-9]/.test(historyProfile);
+  return (
+    (Boolean(suitStatus) && !suitStatus.toLowerCase().includes("no suit filed")) ||
+    Boolean(readString(account["SUIT-FILED-DT"]))
+  );
 }
 
-function hasNegativeAssetClassification(account: Record<string, unknown>) {
-  return ["D", "L", "W", "S"].includes(readString(account.Asset_Classification).toUpperCase());
+function buildIssueLabels(account: Record<string, unknown>) {
+  const maxDpd = readMaxDpd(account);
+
+  return [
+    hasWrittenOff(account) ? "Written Off" : null,
+    hasSettled(account) ? "Settled" : null,
+    hasSuitFiled(account) ? "Suit Filed" : null,
+    hasOverdue(account) ? "Overdue" : null,
+    maxDpd > 0 ? "Late Payment" : null,
+  ].filter(Boolean) as string[];
 }
 
-function hasConsumerComments(account: Record<string, unknown>) {
-  return Boolean(readString(account.Consumer_comments));
+function readRepairAccountNumber(account: Record<string, unknown>) {
+  return readString(account["ACCT-NUMBER"] ?? account.Account_Number ?? account.account_number ?? account.AccountNumber);
 }
 
-function hasSuitFiledOrWilfulDefault(account: Record<string, unknown>) {
-  return Boolean(readString(account.SuitFiled_WilfulDefault));
+function readRepairSubscriberName(account: Record<string, unknown>) {
+  return readString(account["CREDIT-GUARANTOR"] ?? account.Subscriber_Name ?? account.subscriberName ?? account.member_name);
+}
+
+function readRepairCurrentBalance(account: Record<string, unknown>) {
+  return toNumber(account["CURRENT-BAL"] ?? account.Current_Balance ?? account.current_balance);
+}
+
+function readRepairOverdueAmount(account: Record<string, unknown>) {
+  return toNumber(account["OVERDUE-AMT"]);
+}
+
+function readRepairAccountStatus(account: Record<string, unknown>) {
+  return readString(account["ACCOUNT-STATUS"] ?? account.Account_Status ?? account.account_status) || "--";
 }
 
 function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairIssueCard[] {
   const cards = new Map<string, RepairIssueCard>();
 
   getAccountsFromDisplayData(displayData).forEach((account, index) => {
-    const issueLabels = [
-      hasOverdue(account) ? "Overdue" : null,
-      hasSettled(account) ? "Settled" : null,
-      hasNegativeAccountStatus(account) ? "Negative Status" : null,
-      hasReturnedPayment(account) ? "Returned Payment" : null,
-      hasNegativeAssetClassification(account) ? "Negative Classification" : null,
-      hasConsumerComments(account) ? "Consumer Comments" : null,
-      hasSuitFiledOrWilfulDefault(account) ? "Suit Filed/Wilful Default" : null,
-    ].filter(Boolean) as string[];
+    const issueLabels = buildIssueLabels(account);
 
     if (!issueLabels.length) return;
 
-    const accountNumber = String(account.Account_Number ?? account.account_number ?? account.AccountNumber ?? "");
-    const subscriberName = readString(account.Subscriber_Name ?? account.subscriberName ?? account.member_name);
+    const accountNumber = readRepairAccountNumber(account);
+    const subscriberName = readRepairSubscriberName(account);
 
     if (!accountNumber || !subscriberName) return;
 
@@ -229,8 +280,8 @@ function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairI
         existingCard.issueLabels = Array.from(new Set([...existingCard.issueLabels, ...issueLabels]));
         existingCard.issueType = existingCard.issueLabels.join(", ");
         existingCard.issueLabel = existingCard.issueLabels[0] ?? "";
-        existingCard.currentBalance = Math.max(existingCard.currentBalance, toNumber(account.Current_Balance ?? account.current_balance));
-        existingCard.overdueAmount = Math.max(existingCard.overdueAmount, toNumber(account.Amount_Past_Due ?? account.amount_overdue));
+        existingCard.currentBalance = Math.max(existingCard.currentBalance, readRepairCurrentBalance(account));
+        existingCard.overdueAmount = Math.max(existingCard.overdueAmount, readRepairOverdueAmount(account));
       }
 
       return;
@@ -243,9 +294,9 @@ function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairI
       issueType: issueLabels.join(", "),
       issueLabel: issueLabels[0],
       issueLabels,
-      currentBalance: toNumber(account.Current_Balance ?? account.current_balance),
-      overdueAmount: toNumber(account.Amount_Past_Due ?? account.amount_overdue),
-      accountStatus: String(account.Account_Status ?? account.account_status ?? "--"),
+      currentBalance: readRepairCurrentBalance(account),
+      overdueAmount: readRepairOverdueAmount(account),
+      accountStatus: readRepairAccountStatus(account),
       rawAccount: account,
     });
   });

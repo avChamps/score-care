@@ -72,6 +72,27 @@ type CreditAccount = {
   reported_and_certified?: string | null;
 };
 
+type CrifLoanDetails = Record<string, unknown> & {
+  "ACCOUNT-STATUS"?: string | number | null;
+  "ACCT-TYPE"?: string | number | null;
+  "ACTUAL-PAYMENT"?: string | number | null;
+  "CLOSED-DATE"?: string | null;
+  "CREDIT-GUARANTOR"?: string | null;
+  "CREDIT-LIMIT"?: string | number | null;
+  "CURRENT-BAL"?: string | number | null;
+  "DISBURSED-AMT"?: string | number | null;
+  "DISBURSED-DT"?: string | null;
+  "INSTALLMENT-AMT"?: string | number | null;
+  "LAST-PAYMENT-DATE"?: string | null;
+  "OBLIGATION"?: string | number | null;
+  "OVERDUE-AMT"?: string | number | null;
+  "REPAYMENT-TENURE"?: string | number | null;
+};
+
+type CrifResponse = {
+  "LOAN-DETAILS"?: CrifLoanDetails | CrifLoanDetails[] | null;
+};
+
 type PaymentHistoryItem = {
   Asset_Classification?: string | number | null;
   Days_Past_Due?: string | number | null;
@@ -110,11 +131,14 @@ type DisplayDataResponse = {
       accounts?: CreditAccount[] | null;
       enquiries?: CreditEnquiry[] | null;
     };
+    credit_report?: {
+      RESPONSES?: {
+        RESPONSE?: CrifResponse | CrifResponse[] | null;
+      };
+    };
   };
 };
 
-const CRIF_CREDIT_CARD_TYPE = "Credit Card";
-const CRIF_ACTIVE_STATUS = "Active";
 const CRIF_CLOSED_STATUS = "Closed";
 
 type BehaviourItem = {
@@ -336,7 +360,7 @@ export function CreditScoreExperience() {
 
   const score = readScore(displayData);
   const lastChecked = readLastChecked(displayData);
-  const accounts = displayData?.data?.display?.accounts ?? [];
+  const accounts = useMemo(() => readReportAccounts(displayData), [displayData]);
   const enquiries = displayData?.data?.display?.enquiries ?? [];
   const accountSummary = useMemo(() => buildAccountSummary(accounts), [accounts]);
   const storedProfileName = typeof window !== "undefined" ? localStorage.getItem("scorecare_full_name")?.trim() : "";
@@ -851,7 +875,7 @@ function TabButton({
 
 function ReportAccountsTab({ accounts, activeFilter, loading }: { accounts: CreditAccount[]; activeFilter: AccountFilter; loading: boolean }) {
   const filteredAccounts = filterAccountsByType(accounts, activeFilter);
-  const openAccounts = filteredAccounts.filter(isActiveAccount);
+  const openAccounts = filteredAccounts.filter((account) => !isClosedAccount(account));
   const closedAccounts = filteredAccounts.filter(isClosedAccount);
   const openItems = buildReportAccounts(openAccounts, false);
   const closedItems = buildReportAccounts(closedAccounts, false);
@@ -1685,11 +1709,47 @@ function buildReportAccounts(accounts: CreditAccount[], useFallback = true): Rep
   return mappedAccounts.length || !useFallback ? mappedAccounts : fallbackReportAccounts;
 }
 
+function readReportAccounts(result: DisplayDataResponse | null): CreditAccount[] {
+  const response = result?.data?.credit_report?.RESPONSES?.RESPONSE;
+  const crifAccounts = toArray(response)
+    .flatMap((item) => toArray(item["LOAN-DETAILS"]))
+    .map(mapCrifReportAccount);
+
+  return crifAccounts.length ? crifAccounts : result?.data?.display?.accounts ?? [];
+}
+
+function mapCrifReportAccount(account: CrifLoanDetails): CreditAccount {
+  return {
+    "LOAN-DETAILS": {
+      "ACCOUNT-STATUS": account["ACCOUNT-STATUS"],
+      "ACCT-TYPE": account["ACCT-TYPE"],
+    },
+    account_closed: String(account["ACCOUNT-STATUS"] ?? "").trim().toLowerCase() === "closed" ? "Closed" : null,
+    account_status: account["ACCOUNT-STATUS"],
+    amount_overdue: account["OVERDUE-AMT"],
+    current_balance: account["CURRENT-BAL"],
+    emi: account.OBLIGATION ?? account["INSTALLMENT-AMT"] ?? account["ACTUAL-PAYMENT"],
+    high_credit_amount: account["CREDIT-LIMIT"] ?? account["DISBURSED-AMT"],
+    last_payment: account["LAST-PAYMENT-DATE"],
+    member_name: account["CREDIT-GUARANTOR"] ?? null,
+    opened: account["DISBURSED-DT"],
+    repayment_tenure: account["REPAYMENT-TENURE"],
+    type: String(account["ACCT-TYPE"] ?? "").trim(),
+  };
+}
+
+function toArray<T>(value: T | T[] | null | undefined): T[] {
+  return Array.isArray(value) ? value : value ? [value] : [];
+}
+
 function buildAccountSummary(accounts: CreditAccount[]) {
+  const cards = accounts.filter(isCardAccount);
+  const loans = accounts.filter((account) => !isCardAccount(account));
+
   return [
     { filter: "accounts" as const, label: "Accounts", value: String(accounts.length) },
-    { filter: "loans" as const, label: "Loans", value: String(accounts.filter(isLoanAccount).length) },
-    { filter: "cards" as const, label: "Cards", value: String(accounts.filter(isCardAccount).length) },
+    { filter: "loans" as const, label: "Loans", value: String(loans.length) },
+    { filter: "cards" as const, label: "Cards", value: String(cards.length) },
   ];
 }
 
@@ -1710,11 +1770,11 @@ function isLoanAccount(account: CreditAccount) {
 }
 
 function isCardAccount(account: CreditAccount) {
-  return readAccountType(account) === CRIF_CREDIT_CARD_TYPE;
+  return isCreditCard(readAccountType(account));
 }
 
-function isActiveAccount(account: CreditAccount) {
-  return readAccountStatus(account) === CRIF_ACTIVE_STATUS;
+function isCreditCard(type = "") {
+  return type.toLowerCase().includes("credit card");
 }
 
 function isClosedAccount(account: CreditAccount) {
