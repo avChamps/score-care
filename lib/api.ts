@@ -1,7 +1,7 @@
 import { Capacitor, CapacitorHttp, type HttpOptions } from "@capacitor/core";
 
-export const API_BASE_URL = 'http://192.168.1.7:5000';
-// export const API_BASE_URL = "https://scorecareapp.com/api";
+// export const API_BASE_URL = 'http://192.168.1.7:5000';
+export const API_BASE_URL = "https://scorecareapp.com/api";
 
 export function apiUrl(path: string) {
   return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
@@ -16,7 +16,14 @@ type ApiRequestOptions = {
 export async function apiRequest(path: string, options: ApiRequestOptions = {}) {
   const method = options.method ?? "GET";
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
-  const requestBody: BodyInit | undefined = options.body ? (isFormData ? options.body : JSON.stringify(options.body)) : undefined;
+  let requestBody: BodyInit | undefined;
+
+  if (typeof FormData !== "undefined" && options.body instanceof FormData) {
+    requestBody = options.body;
+  } else if (options.body !== undefined) {
+    requestBody = JSON.stringify(options.body);
+  }
+
   const headers = {
     ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...options.headers,

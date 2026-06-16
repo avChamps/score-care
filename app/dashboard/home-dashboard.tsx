@@ -375,10 +375,12 @@ export function HomeDashboard() {
     }
 
     // Push notifications are initialized only after authenticated dashboard data is available.
-    void initializePushNotifications(token, (state) => {
-      if (isMounted) {
-        setPushNotificationState(state);
-      }
+    void initializePushNotifications(token, {
+      onStateChange: (state) => {
+        if (isMounted) {
+          setPushNotificationState(state);
+        }
+      },
     }).then((removeListeners) => {
       cleanup = removeListeners;
       if (shouldRemoveAfterInit) {
