@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, Crown, TrendingDown, TrendingUp } from "lucide-react";
+import { Bell, Crown, LoaderCircle, TrendingDown, TrendingUp, Upload, X } from "lucide-react";
 import Link from "next/link";
+import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProfilePanel, type UserProfile } from "@/app/dashboard/home-dashboard";
@@ -12,7 +13,7 @@ import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboa
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
-import { writeSelectedCibilRepairAccounts } from "@/lib/cibil-repair-selection";
+import { readSelectedCibilRepairAccounts, writeSelectedCibilRepairAccounts, type SelectedCibilRepairAccount } from "@/lib/cibil-repair-selection";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
 import { cn } from "@/lib/utils";
 
@@ -63,9 +64,13 @@ type CibilRepairContent = {
 };
 
 type CibilRepairRequest = {
+  accountNumber?: string | null;
+  accountType?: string | null;
+  bankName?: string | null;
   createdDate?: string | null;
   disputeId?: string | null;
   id?: string;
+  issueType?: string | null;
   lenderName?: string | null;
   publicId?: string;
   paymentStatus?: string | null;
@@ -77,6 +82,15 @@ type CibilRepairRequest = {
   updatedAt?: string | null;
 };
 
+type RepairDocumentForm = {
+  closingDate: string;
+  error: string;
+  file: File | null;
+  remarks: string;
+  uploaded: boolean;
+  uploading: boolean;
+};
+
 type CibilRepairStatus = {
   activeDisputes?: number;
   resolvedDisputes?: number;
@@ -86,6 +100,7 @@ type CibilRepairStatus = {
 type RepairIssueCard = {
   id: string;
   accountNumber: string;
+  accountType: string;
   subscriberName: string;
   issueType: string;
   issueLabel: string;
@@ -246,6 +261,10 @@ function readRepairSubscriberName(account: Record<string, unknown>) {
   return readString(account["CREDIT-GUARANTOR"] ?? account.Subscriber_Name ?? account.subscriberName ?? account.member_name);
 }
 
+function readRepairAccountType(account: Record<string, unknown>) {
+  return readString(account["ACCT-TYPE"] ?? account.Account_Type ?? account.account_type ?? account.AccountType) || "Loan";
+}
+
 function readRepairCurrentBalance(account: Record<string, unknown>) {
   return toNumber(account["CURRENT-BAL"] ?? account.Current_Balance ?? account.current_balance);
 }
@@ -290,6 +309,7 @@ function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairI
     cards.set(id, {
       id,
       accountNumber,
+      accountType: readRepairAccountType(account),
       subscriberName,
       issueType: issueLabels.join(", "),
       issueLabel: issueLabels[0],
@@ -658,6 +678,7 @@ export function ScoreFixExperience() {
           {activeTab === "Credit Improvement Plan" ? (
             <CreditImprovementPlan
               displayData={displayData}
+              onRepairDocumentsUploaded={loadRepairRequests}
               repairContent={repairContent}
               repairRequests={repairRequests}
               repairRequestsLoading={repairRequestsLoading}
@@ -707,12 +728,14 @@ function ActionRow({ action, checked, onChange }: { action: SimulatorAction; che
 
 function CreditImprovementPlan({
   displayData,
+  onRepairDocumentsUploaded,
   repairContent,
   repairRequests,
   repairRequestsLoading,
   repairStatus,
 }: {
   displayData: DisplayDataResponse | null;
+  onRepairDocumentsUploaded: () => void;
   repairContent: CibilRepairContent;
   repairRequests: CibilRepairRequest[];
   repairRequestsLoading: boolean;
@@ -720,6 +743,9 @@ function CreditImprovementPlan({
 }) {
   const router = useRouter();
   const [selectedIssueIds, setSelectedIssueIds] = useState<string[]>([]);
+  const [documentForms, setDocumentForms] = useState<Record<string, RepairDocumentForm>>({});
+  const [uploadAccounts, setUploadAccounts] = useState<SelectedCibilRepairAccount[]>([]);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const disputeStats = buildDisputeStats(repairStatus);
   const showDisputeCentre = hasRepairCounts(repairStatus);
   const plan = repairContent.plans.find((repairPlan) => repairPlan.isActive) ?? repairContent.plans[0] ?? null;
@@ -732,15 +758,122 @@ function CreditImprovementPlan({
     setSelectedIssueIds((currentIds) => (currentIds.includes(issueId) ? currentIds.filter((id) => id !== issueId) : [...currentIds, issueId]));
   }
 
-  function continueToRepairSummary() {
+  function updateDocumentForm(accountId: string, values: Partial<RepairDocumentForm>) {
+    setDocumentForms((currentForms) => {
+      const existingForm = currentForms[accountId] ?? {
+        closingDate: "",
+        error: "",
+        file: null,
+        remarks: "",
+        uploaded: false,
+        uploading: false,
+      };
+
+      return {
+        ...currentForms,
+        [accountId]: {
+          ...existingForm,
+          ...values,
+        },
+      };
+    });
+  }
+
+  function openRepairDocumentUpload(request?: CibilRepairRequest) {
+    const storedAccounts = readSelectedCibilRepairAccounts();
+    const requestAccount = request ? readRepairRequestAccount(request) : null;
+    const nextAccounts = storedAccounts.length ? storedAccounts : requestAccount ? [requestAccount] : [];
+
+    setUploadAccounts(nextAccounts);
+    setUploadDialogOpen(true);
+  }
+
+  async function uploadRepairDocuments() {
+    const token = localStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return false;
+    }
+
+    for (const account of uploadAccounts) {
+      const form = documentForms[account.id];
+
+      if (!form?.file) {
+        updateDocumentForm(account.id, { error: "Document upload is required." });
+        return false;
+      }
+
+      if (!form.closingDate) {
+        updateDocumentForm(account.id, { error: "Closing date is required." });
+        return false;
+      }
+
+      const validationError = validateRepairDocumentFile(form.file);
+
+      if (validationError) {
+        updateDocumentForm(account.id, { error: validationError });
+        return false;
+      }
+    }
+
+    for (const account of uploadAccounts) {
+      const form = documentForms[account.id];
+
+      if (!form || form.uploaded || !form.file) continue;
+
+      updateDocumentForm(account.id, { error: "", uploading: true });
+
+      const formData = new FormData();
+      formData.append("accountType", account.accountType);
+      formData.append(isCreditCardAccount(account.accountType) ? "creditCardNumber" : "loanNumber", account.accountNumber);
+      formData.append("closingDate", form.closingDate);
+      formData.append("remarks", form.remarks);
+      formData.append("file", form.file);
+
+      try {
+        const response = await apiRequest("/api/credit-repair/documents", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        const result = await response.json().catch(() => null);
+
+        if (response.status === 401 || response.status === 403) {
+          clearScorecareSession();
+          router.replace("/login");
+          return false;
+        }
+
+        if (!response.ok || result?.status !== "success") {
+          updateDocumentForm(account.id, { error: result?.message || "Document upload failed.", uploading: false });
+          return false;
+        }
+
+        updateDocumentForm(account.id, { uploaded: true, uploading: false });
+      } catch {
+        updateDocumentForm(account.id, { error: "Document upload failed.", uploading: false });
+        return false;
+      }
+    }
+
+    setUploadDialogOpen(false);
+    onRepairDocumentsUploaded();
+    return true;
+  }
+
+  async function continueToRepairSummary() {
     if (!selectedAccounts.length) return;
 
     writeSelectedCibilRepairAccounts(
       selectedAccounts.map((account) => ({
         id: account.id,
         accountNumber: account.accountNumber,
+        accountType: account.accountType,
         accountStatus: account.accountStatus,
         currentBalance: account.currentBalance,
+        issueType: account.issueType,
         issueLabels: account.issueLabels,
         rawAccount: account.rawAccount,
         subscriberName: account.subscriberName,
@@ -809,7 +942,7 @@ function CreditImprovementPlan({
             ))}
           </div>
 
-          <RepairRequestsTable loading={repairRequestsLoading} requests={repairRequests} status={repairStatus} />
+          <RepairRequestsTable loading={repairRequestsLoading} requests={repairRequests} status={repairStatus} onUploadDocuments={openRepairDocumentUpload} />
           <RepairDisputeCards loading={repairRequestsLoading} requests={repairRequests} status={repairStatus} />
         </section>
       ) : null}
@@ -824,9 +957,19 @@ function CreditImprovementPlan({
           type="button"
           onClick={continueToRepairSummary}
         >
-          {selectedCount ? "Continue" : "Continue"}
+          Continue
         </button>
       </div>
+      {uploadDialogOpen ? (
+        <RepairDocumentUploadDialog
+          accounts={uploadAccounts}
+          forms={documentForms}
+          submitting={uploadAccounts.some((account) => documentForms[account.id]?.uploading)}
+          onChange={updateDocumentForm}
+          onClose={() => setUploadDialogOpen(false)}
+          onSubmit={uploadRepairDocuments}
+        />
+      ) : null}
     </div>
   );
 }
@@ -948,7 +1091,17 @@ function RepairDisputeCards({ loading, requests, status }: { loading: boolean; r
   );
 }
 
-function RepairRequestsTable({ loading, requests, status }: { loading: boolean; requests: CibilRepairRequest[]; status: CibilRepairStatus | null }) {
+function RepairRequestsTable({
+  loading,
+  onUploadDocuments,
+  requests,
+  status,
+}: {
+  loading: boolean;
+  onUploadDocuments: (request: CibilRepairRequest) => void;
+  requests: CibilRepairRequest[];
+  status: CibilRepairStatus | null;
+}) {
   const hasRecords = hasRepairCounts(status);
 
   return (
@@ -964,17 +1117,138 @@ function RepairRequestsTable({ loading, requests, status }: { loading: boolean; 
           <div className="h-3 w-10/12 animate-pulse rounded-full bg-white/10" />
         </div>
       ) : hasRecords && requests.length ? (
-        requests.map((request) => (
-          <div key={request.publicId ?? request.id} className="grid grid-cols-[1.1fr_0.8fr_1fr] gap-2 border-b border-white/8 px-3 py-2 text-caption text-white last:border-b-0">
-            <span className="text-[#c8d3e2]">{formatRepairRequestDate(request)}</span>
-            <span className="font-semibold capitalize text-[#1F756B]">{request.repairStatus || request.paymentStatus || "--"}</span>
-            <span className="text-[#9fb2c6]">{request.remarks || "--"}</span>
-          </div>
-        ))
+        requests.map((request) => {
+          const statusLabel = request.repairStatus || request.paymentStatus || "--";
+
+          return (
+            <div key={request.publicId ?? request.id} className="grid grid-cols-[1.1fr_0.8fr_1fr] gap-2 border-b border-white/8 px-3 py-2 text-caption text-white last:border-b-0">
+              <span className="text-[#c8d3e2]">{formatRepairRequestDate(request)}</span>
+              {isUploadDocumentStatus(statusLabel) ? (
+                <button className="inline-flex w-fit items-center gap-1 rounded-full bg-[#22F2C2]/12 px-2 py-1 font-semibold text-[#22F2C2]" type="button" onClick={() => onUploadDocuments(request)}>
+                  <Upload className="size-3" />
+                  Upload
+                </button>
+              ) : (
+                <span className="font-semibold capitalize text-[#1F756B]">{statusLabel}</span>
+              )}
+              <span className="text-[#9fb2c6]">{request.remarks || "--"}</span>
+            </div>
+          );
+        })
       ) : (
         <p className="px-3 py-3 text-caption text-[#9fb2c6]">No records found.</p>
       )}
     </div>
+  );
+}
+
+function RepairDocumentUploadDialog({
+  accounts,
+  forms,
+  onChange,
+  onClose,
+  onSubmit,
+  submitting,
+}: {
+  accounts: SelectedCibilRepairAccount[];
+  forms: Record<string, RepairDocumentForm>;
+  onChange: (accountId: string, values: Partial<RepairDocumentForm>) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+  submitting: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-[140] overflow-y-auto overflow-x-hidden bg-[#050912] text-white backdrop-blur-md">
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-28 pt-5">
+        <div className="rounded-[28px] border border-[#00CFA4]/25 bg-[radial-gradient(circle_at_100%_0%,rgba(34,242,194,0.12),transparent_34%),linear-gradient(145deg,#061A13,#082519)] p-5">
+          <div className="flex items-start gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.07] text-[#22F2C2]">
+              <Upload className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-caption font-black uppercase tracking-[0.22em] text-[#22F2C2]">Upload Documents</p>
+              <h2 className="mt-2 text-lg font-black tracking-tight text-white">Repair documents</h2>
+              <p className="mt-1 text-caption text-[#AAB6C8]">Upload documents for the selected accounts.</p>
+            </div>
+            <button aria-label="Close upload documents" className="grid size-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.07] text-white" type="button" onClick={onClose}>
+              <X className="size-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-4">
+          {accounts.length ? accounts.map((account) => {
+            const form = forms[account.id];
+            const numberLabel = isCreditCardAccount(account.accountType) ? "Credit card number" : "Loan number";
+
+            return (
+              <section key={account.id} className="rounded-[24px] border border-[#1F756B]/25 bg-[linear-gradient(145deg,#09131F,#0D1827)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.24)]">
+                <p className="text-sm font-black text-white">{account.subscriberName}</p>
+                <div className="mt-4 space-y-4">
+                  <RepairDocumentField label={numberLabel}>
+                    <input className="h-12 w-full rounded-[18px] border border-white/10 bg-[#101B2B] px-4 text-body font-medium text-white outline-none" readOnly value={account.accountNumber} />
+                  </RepairDocumentField>
+                  <RepairDocumentField label="Document" required>
+                    <label className="grid min-h-28 cursor-pointer place-items-center rounded-[20px] border border-dashed border-[#22F2C2]/30 bg-[#0A1725] px-4 text-center text-[#AAB6C8]">
+                      <input
+                        accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                        className="sr-only"
+                        required
+                        type="file"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0] ?? null;
+                          onChange(account.id, { error: file ? validateRepairDocumentFile(file) : "", file, uploaded: false });
+                        }}
+                      />
+                      <span className="w-full min-w-0">
+                        <Upload className="mx-auto size-8 text-[#22F2C2]" />
+                        <span className="mt-3 block truncate text-xs font-bold text-white">{form?.file?.name || "Choose document"}</span>
+                        <span className="mt-2 block text-caption text-[#AAB6C8]">PDF, JPG, JPEG, or PNG. Max 5MB.</span>
+                      </span>
+                    </label>
+                  </RepairDocumentField>
+                  <RepairDocumentField label="Closing date" required>
+                    <input className="h-12 w-full rounded-[18px] border border-white/10 bg-[#101B2B] px-4 text-body font-medium text-white outline-none" required type="date" value={form?.closingDate ?? ""} onChange={(event) => onChange(account.id, { closingDate: event.target.value, uploaded: false })} />
+                  </RepairDocumentField>
+                  <RepairDocumentField label="Remarks">
+                    <textarea className="min-h-24 w-full resize-none rounded-[18px] border border-white/10 bg-[#101B2B] px-4 py-3 text-body font-medium text-white outline-none" value={form?.remarks ?? ""} onChange={(event) => onChange(account.id, { remarks: event.target.value, uploaded: false })} />
+                  </RepairDocumentField>
+                  {form?.error ? <p className="rounded-2xl border border-[#FF5C8A]/25 bg-[#FF5C8A]/10 px-4 py-3 text-sm font-medium text-[#FF8AAB]">{form.error}</p> : null}
+                </div>
+              </section>
+            );
+          }) : (
+            <section className="rounded-[24px] border border-[#1F756B]/25 bg-[linear-gradient(145deg,#09131F,#0D1827)] p-5">
+              <p className="text-sm font-semibold text-white">No selected accounts found.</p>
+            </section>
+          )}
+        </div>
+
+        <div className="mt-5 grid gap-3 border-t border-white/10 pt-4">
+          <button className="h-12 rounded-[18px] bg-[linear-gradient(135deg,#08DB69,#22F2C2)] text-sm font-black text-[#031812] shadow-[0_12px_28px_rgba(8,219,105,0.28)] disabled:opacity-60" disabled={submitting || !accounts.length} type="button" onClick={onSubmit}>
+            {submitting ? (
+              <span className="inline-flex items-center gap-2"><LoaderCircle className="size-4 animate-spin" /> Uploading...</span>
+            ) : (
+              "Submit documents"
+            )}
+          </button>
+          <button className="h-12 rounded-[18px] border border-white/10 bg-white/[0.05] text-sm font-bold text-[#AAB6C8]" type="button" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RepairDocumentField({ children, label, required }: { children: React.ReactNode; label: string; required?: boolean }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-caption font-semibold text-[#DDE7F4]">
+        {label} {required ? <span className="text-[#FF5C8A]">*</span> : null}
+      </span>
+      {children}
+    </label>
   );
 }
 
@@ -992,6 +1266,55 @@ function readRepairStatus(data: unknown): CibilRepairStatus | null {
 
 function hasRepairCounts(status: CibilRepairStatus | null) {
   return Boolean((status?.activeDisputes ?? 0) || (status?.resolvedDisputes ?? 0) || (status?.pointsGained ?? 0));
+}
+
+function isUploadDocumentStatus(status: string) {
+  return status.toLowerCase().replace(/[\s-]+/g, "_") === "upload_document";
+}
+
+function readRepairRequestAccount(request: CibilRepairRequest): SelectedCibilRepairAccount | null {
+  const accountNumber = readString(request.accountNumber);
+  const accountType = readString(request.accountType) || "Loan";
+  const subscriberName = readString(request.bankName ?? request.lenderName);
+
+  if (!accountNumber || !subscriberName) return null;
+
+  return {
+    id: request.publicId || request.id || `${subscriberName.toLowerCase()}-${accountNumber}`,
+    accountNumber,
+    accountType,
+    accountStatus: readString(request.repairStatus ?? request.paymentStatus) || "--",
+    currentBalance: 0,
+    issueType: readString(request.issueType),
+    issueLabels: request.issueType ? [String(request.issueType)] : [],
+    rawAccount: {},
+    subscriberName,
+  };
+}
+
+function isCreditCardAccount(accountType: string) {
+  return accountType.toLowerCase().includes("credit card") || accountType === "10" || accountType === "31" || accountType === "35" || accountType === "36";
+}
+
+function getRepairDocumentType(accountType: string) {
+  return isCreditCardAccount(accountType) ? "Credit card closure proof" : "Loan closure proof";
+}
+
+function validateRepairDocumentFile(file: File) {
+  const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+  const allowedExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
+  const hasAllowedType = allowedTypes.includes(file.type);
+  const hasAllowedExtension = allowedExtensions.some((extension) => file.name.toLowerCase().endsWith(extension));
+
+  if (!hasAllowedType && !hasAllowedExtension) {
+    return "Only PDF, JPG, JPEG, or PNG files are allowed.";
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    return "File size must be 5MB or less.";
+  }
+
+  return "";
 }
 
 function clampScore(score: number) {
@@ -1056,6 +1379,7 @@ function readScore(result: DisplayDataResponse | null) {
 
   return Number.isFinite(numericScore) && numericScore > 0 ? numericScore : null;
 }
+
 
 function getScoreStatus(score: number) {
   if (score >= 750) return { label: "Excellent", tone: "text-[#22F2C2]" };

@@ -3,8 +3,10 @@ export const CIBIL_REPAIR_SELECTION_STORAGE_KEY = "scorecare_cibil_repair_select
 export type SelectedCibilRepairAccount = {
   id: string;
   accountNumber: string;
+  accountType: string;
   accountStatus: string;
   currentBalance: number;
+  issueType: string;
   issueLabels: string[];
   rawAccount: Record<string, unknown>;
   subscriberName: string;
@@ -33,8 +35,10 @@ function isSelectedCibilRepairAccount(value: unknown): value is SelectedCibilRep
     Boolean(account) &&
     typeof account.id === "string" &&
     typeof account.accountNumber === "string" &&
+    typeof account.accountType === "string" &&
     typeof account.accountStatus === "string" &&
     typeof account.currentBalance === "number" &&
+    typeof account.issueType === "string" &&
     Array.isArray(account.issueLabels) &&
     Boolean(account.rawAccount) &&
     typeof account.rawAccount === "object" &&

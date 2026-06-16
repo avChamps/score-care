@@ -30,8 +30,6 @@ type DisputeAccount = {
   status: string;
 };
 
-type EvidenceKey = "closureCertificate" | "paymentReceipt" | "bankStatement" | "identityProof";
-
 const errorTypes = [
   "Account showing active after closure",
   "Wrong payment status (late/default)",
@@ -41,12 +39,6 @@ const errorTypes = [
   "Settled loan still showing balance",
   "Identity theft - fraudulent account",
   "Other",
-];
-const evidenceRows: Array<{ key: EvidenceKey; label: string }> = [
-  { key: "closureCertificate", label: "Closure Certificate / NOC" },
-  { key: "paymentReceipt", label: "Payment Receipt" },
-  { key: "bankStatement", label: "Bank Statement" },
-  { key: "identityProof", label: "Identity Proof" },
 ];
 const bureauOptions = ["CIBIL", "Equifax", "Experian", "CRIF"];
 const reportCardClass =
@@ -63,12 +55,6 @@ export function NewDisputeExperience() {
   const [availableBureaus, setAvailableBureaus] = useState<string[]>([]);
   const [selectedBureaus, setSelectedBureaus] = useState<string[]>([]);
   const [details, setDetails] = useState("");
-  const [files, setFiles] = useState<Record<EvidenceKey, File | null>>({
-    bankStatement: null,
-    closureCertificate: null,
-    identityProof: null,
-    paymentReceipt: null,
-  });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -108,12 +94,11 @@ export function NewDisputeExperience() {
   const disputeEligibleAccounts = useMemo(() => accounts.filter(isDisputeEligibleAccount), [accounts]);
   const visibleAccounts = showAllAccounts ? accounts : disputeEligibleAccounts;
   const selectedAccount = useMemo(() => visibleAccounts.find((account) => account.id === selectedAccountId) ?? null, [selectedAccountId, visibleAccounts]);
-  const requiresClosureCertificate = errorType === "Account showing active after closure";
   const canContinue =
     (step === 1 && Boolean(selectedAccount)) ||
     (step === 2 && Boolean(errorType)) ||
     (step === 3 && selectedBureaus.length > 0) ||
-    (step === 4 && (!requiresClosureCertificate || Boolean(files.closureCertificate)));
+    step === 4;
 
   async function submitDispute() {
     if (!selectedAccount || !canContinue || submitting) return;
@@ -137,11 +122,6 @@ export function NewDisputeExperience() {
     if (details.trim()) {
       payload.append("additionalDetails", details.trim());
     }
-
-    evidenceRows.forEach((row) => {
-      const file = files[row.key];
-      if (file) payload.append(row.key, file);
-    });
 
     setSubmitting(true);
 
@@ -189,7 +169,7 @@ export function NewDisputeExperience() {
           {step === 1 ? <AccountStep accounts={visibleAccounts} hasDisputeEligibleAccounts={disputeEligibleAccounts.length > 0} selectedAccountId={selectedAccountId} onSelect={setSelectedAccountId} onViewAllAccounts={() => setShowAllAccounts(true)} /> : null}
           {step === 2 ? <OptionStep options={errorTypes} selected={errorType} onSelect={setErrorType} /> : null}
           {step === 3 ? <BureauStep bureaus={availableBureaus} details={details} selectedBureaus={selectedBureaus} onDetails={setDetails} onToggle={setSelectedBureaus} /> : null}
-          {step === 4 ? <EvidenceStep files={files} requiresClosureCertificate={requiresClosureCertificate} onFiles={setFiles} /> : null}
+          {step === 4 ? <EvidenceStep /> : null}
         </div>
 
        <div className="sticky bottom-24 z-20 mt-4 rounded-[26px] border border-[#1F756B]/35 bg-[#08110D]/88 p-4 shadow-[0_18px_42px_rgba(0,0,0,0.42),inset_0_0_28px_rgba(31,117,107,0.08)] backdrop-blur-2xl">
@@ -371,23 +351,11 @@ const bureauConfig: Record<
   );
 }
 
-function EvidenceStep({ files, requiresClosureCertificate, onFiles }: { files: Record<EvidenceKey, File | null>; requiresClosureCertificate: boolean; onFiles: (files: Record<EvidenceKey, File | null>) => void }) {
+function EvidenceStep() {
   return (
-    <div className="space-y-3">
-      {evidenceRows.map((row) => {
-        const required = row.key === "closureCertificate" && requiresClosureCertificate;
-
-        return (
-          <label className={cn("block rounded-2xl p-4", reportMiniCardClass)} key={row.key}>
-            <span className="flex items-center justify-between gap-3 text-sm font-bold">
-              {row.label}
-              {required ? <span className="rounded-full bg-[#ff4d7d]/14 px-2 py-1 text-caption text-[#ff8cab]">Required</span> : null}
-            </span>
-            <input className="mt-3 block w-full text-caption text-[#9fb2c6] file:mr-3 file:rounded-full file:border-0 file:bg-[#22F2C2] file:px-3 file:py-2 file:text-caption file:font-black file:text-[#04120e]" type="file" onChange={(event) => onFiles({ ...files, [row.key]: event.target.files?.[0] ?? null })} />
-            {files[row.key] ? <span className="mt-2 block text-caption text-[#22F2C2]">{files[row.key]?.name}</span> : null}
-          </label>
-        );
-      })}
+    <div className={cn("rounded-2xl p-4", reportMiniCardClass)}>
+      <p className="text-sm font-bold text-white">Document upload is on hold for now.</p>
+      <p className="mt-1 text-caption leading-5 text-[#9fb2c6]">You can submit this dispute without uploading files.</p>
     </div>
   );
 }

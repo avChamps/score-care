@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, LoaderCircle, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
@@ -51,6 +52,15 @@ type CibilRepairTimeline = {
   isActive?: boolean;
 };
 
+type RepairDocumentForm = {
+  closingDate: string;
+  error: string;
+  file: File | null;
+  remarks: string;
+  uploaded: boolean;
+  uploading: boolean;
+};
+
 const reportCardClass =
   "border border-[#103A2B]/50 bg-[linear-gradient(135deg,#06120E_0%,#081712_50%,#091813_100%)] shadow-[0_20px_45px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]";
 const reportMiniCardClass = "border border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]";
@@ -88,8 +98,12 @@ export default function CibilRepairSummaryPage() {
   const [plans, setPlans] = useState<CibilRepairPlan[]>([]);
   const [timelines, setTimelines] = useState<CibilRepairTimeline[]>([]);
   const [paymentMessage, setPaymentMessage] = useState("");
+  const [documentForms, setDocumentForms] = useState<Record<string, RepairDocumentForm>>({});
+  const [successMessage, setSuccessMessage] = useState("");
   const [toast, setToast] = useState("");
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const isUploadingDocuments = accounts.some((account) => documentForms[account.id]?.uploading);
   const plan = plans.find((repairPlan) => repairPlan.isActive !== false) ?? plans[0] ?? null;
   const selectedCount = accounts.length;
   const perAccountAmount = plan?.amount ?? 0;
@@ -129,6 +143,105 @@ export default function CibilRepairSummaryPage() {
   useEffect(() => {
     setAccounts(readSelectedCibilRepairAccounts());
   }, []);
+
+  function updateDocumentForm(accountId: string, values: Partial<RepairDocumentForm>) {
+    setDocumentForms((currentForms) => {
+      const existingForm = currentForms[accountId] ?? {
+        closingDate: "",
+        error: "",
+        file: null,
+        remarks: "",
+        uploaded: false,
+        uploading: false,
+      };
+
+      return {
+        ...currentForms,
+        [accountId]: {
+          ...existingForm,
+          ...values,
+        },
+      };
+    });
+  }
+
+  async function uploadRepairDocuments() {
+    const token = localStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      clearScorecareSession();
+      router.replace("/login");
+      return false;
+    }
+
+    for (const account of accounts) {
+      const form = documentForms[account.id];
+
+      if (!form?.file) {
+        updateDocumentForm(account.id, { error: "Document upload is required." });
+        return false;
+      }
+
+      if (!form.closingDate) {
+        updateDocumentForm(account.id, { error: "Closing date is required." });
+        return false;
+      }
+
+      const validationError = validateRepairDocumentFile(form.file);
+
+      if (validationError) {
+        updateDocumentForm(account.id, { error: validationError });
+        return false;
+      }
+    }
+
+    for (const account of accounts) {
+      const form = documentForms[account.id];
+
+      if (!form || form.uploaded || !form.file) continue;
+
+      updateDocumentForm(account.id, { error: "", uploading: true });
+
+      const formData = new FormData();
+      formData.append("accountType", account.accountType);
+      formData.append(isCreditCardAccount(account.accountType) ? "creditCardNumber" : "loanNumber", account.accountNumber);
+      formData.append("closingDate", form.closingDate);
+      formData.append("remarks", form.remarks);
+      formData.append("file", form.file);
+
+      try {
+        const response = await apiRequest("/api/credit-repair/documents", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        const result = await response.json().catch(() => null);
+
+        if (response.status === 401 || response.status === 403) {
+          clearScorecareSession();
+          router.replace("/login");
+          return false;
+        }
+
+        if (!response.ok || result?.status !== "success") {
+          updateDocumentForm(account.id, { error: result?.message || "Document upload failed.", uploading: false });
+          return false;
+        }
+
+        updateDocumentForm(account.id, { uploaded: true, uploading: false });
+      } catch {
+        updateDocumentForm(account.id, { error: "Document upload failed.", uploading: false });
+        return false;
+      }
+    }
+
+    setToast("Documents uploaded successfully.");
+    setUploadDialogOpen(false);
+    window.setTimeout(() => {
+      router.replace("/dashboard/score-fix?tab=credit-improvement-plan");
+    }, 1000);
+    return true;
+  }
 
   async function handlePayment() {
     if (!selectedCount || !payableAmount || !plan || paymentLoading) return;
@@ -180,8 +293,6 @@ export default function CibilRepairSummaryPage() {
       if (!orderResponse.ok || !order?.id || !window.Razorpay) {
         throw new Error("Unable to create payment order.");
       }
-
-      console.log("Razorpay Prefill", prefill);
 
       const checkout = new window.Razorpay({
         key: orderResult?.data?.keyId || orderResult?.data?.razorpayKeyId || order.key,
@@ -256,10 +367,7 @@ export default function CibilRepairSummaryPage() {
             }
 
             const requestResult = await requestResponse.json();
-            setToast(requestResult?.message || "CIBIL repair request submitted successfully.");
-            window.setTimeout(() => {
-              router.replace("/dashboard/score-fix?tab=credit-improvement-plan");
-            }, 1200);
+            setSuccessMessage(requestResult?.message || "CIBIL repair request submitted successfully.");
           } catch (error) {
             setPaymentMessage(error instanceof Error ? error.message : "Unable to create repair request.");
           } finally {
@@ -371,9 +479,179 @@ export default function CibilRepairSummaryPage() {
           {toast}
         </div>
       ) : null}
+      {successMessage ? (
+        <PaymentSuccessDialog
+          message={successMessage}
+          onSkip={() => router.replace("/dashboard/score-fix?tab=credit-improvement-plan")}
+          onUpload={() => setUploadDialogOpen(true)}
+        />
+      ) : null}
+      {uploadDialogOpen ? (
+        <RepairDocumentUploadDialog
+          accounts={accounts}
+          forms={documentForms}
+          submitting={isUploadingDocuments}
+          onChange={updateDocumentForm}
+          onClose={() => setUploadDialogOpen(false)}
+          onSubmit={uploadRepairDocuments}
+        />
+      ) : null}
       <DashboardBottomNav />
     </PortalShell>
   );
+}
+
+function PaymentSuccessDialog({ message, onSkip, onUpload }: { message: string; onSkip: () => void; onUpload: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[130] grid place-items-end bg-black/70 px-4 pb-6 text-white backdrop-blur-md sm:place-items-center sm:pb-0">
+      <div className="w-full max-w-md rounded-[28px] border border-[#22F2C2]/25 bg-[linear-gradient(145deg,#061A13,#082519)] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.5)]">
+        <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#22F2C2]/12 text-[#22F2C2]">
+          <CheckCircle2 className="size-8" />
+        </span>
+        <h2 className="mt-4 text-center text-lg font-black">Payment successful</h2>
+        <p className="mt-2 text-center text-caption leading-5 text-[#AAB6C8]">{message}</p>
+        <div className="mt-5 grid gap-3">
+          <button className="h-12 rounded-[18px] bg-[linear-gradient(135deg,#08DB69,#22F2C2)] text-sm font-black text-[#031812] shadow-[0_12px_28px_rgba(8,219,105,0.28)]" type="button" onClick={onUpload}>
+            Upload documents
+          </button>
+          <button className="h-12 rounded-[18px] border border-white/10 bg-white/[0.05] text-sm font-bold text-[#AAB6C8]" type="button" onClick={onSkip}>
+            Skip for now
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RepairDocumentUploadDialog({
+  accounts,
+  forms,
+  onChange,
+  onClose,
+  onSubmit,
+  submitting,
+}: {
+  accounts: SelectedCibilRepairAccount[];
+  forms: Record<string, RepairDocumentForm>;
+  onChange: (accountId: string, values: Partial<RepairDocumentForm>) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+  submitting: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-[140] overflow-y-auto overflow-x-hidden bg-[#050912] text-white backdrop-blur-md">
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-28 pt-5">
+        <div className="rounded-[28px] border border-[#00CFA4]/25 bg-[radial-gradient(circle_at_100%_0%,rgba(34,242,194,0.12),transparent_34%),linear-gradient(145deg,#061A13,#082519)] p-5">
+          <div className="flex items-start gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.07] text-[#22F2C2]">
+              <Upload className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-caption font-black uppercase tracking-[0.22em] text-[#22F2C2]">Upload Documents</p>
+              <h2 className="mt-2 text-lg font-black tracking-tight text-white">Repair documents</h2>
+              <p className="mt-1 text-caption text-[#AAB6C8]">Upload documents for the selected accounts.</p>
+            </div>
+            <button aria-label="Close upload documents" className="grid size-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.07] text-white" type="button" onClick={onClose}>
+              <X className="size-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-4">
+          {accounts.map((account) => {
+            const form = forms[account.id];
+            const numberLabel = isCreditCardAccount(account.accountType) ? "Credit card number" : "Loan number";
+
+            return (
+              <section key={account.id} className="rounded-[24px] border border-[#1F756B]/25 bg-[linear-gradient(145deg,#09131F,#0D1827)] p-5 shadow-[0_18px_38px_rgba(0,0,0,0.24)]">
+                <p className="text-sm font-black text-white">{account.subscriberName}</p>
+                <div className="mt-4 space-y-4">
+                  <RepairDocumentField label={numberLabel}>
+                    <input className="h-12 w-full rounded-[18px] border border-white/10 bg-[#101B2B] px-4 text-body font-medium text-white outline-none" readOnly value={account.accountNumber} />
+                  </RepairDocumentField>
+                  <RepairDocumentField label="Document" required>
+                    <label className="grid min-h-28 cursor-pointer place-items-center rounded-[20px] border border-dashed border-[#22F2C2]/30 bg-[#0A1725] px-4 text-center text-[#AAB6C8]">
+                      <input
+                        accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                        className="sr-only"
+                        required
+                        type="file"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0] ?? null;
+                          onChange(account.id, { error: file ? validateRepairDocumentFile(file) : "", file, uploaded: false });
+                        }}
+                      />
+                      <span className="w-full min-w-0">
+                        <Upload className="mx-auto size-8 text-[#22F2C2]" />
+                        <span className="mt-3 block truncate text-xs font-bold text-white">{form?.file?.name || "Choose document"}</span>
+                        <span className="mt-2 block text-caption text-[#AAB6C8]">PDF, JPG, JPEG, or PNG. Max 5MB.</span>
+                      </span>
+                    </label>
+                  </RepairDocumentField>
+                  <RepairDocumentField label="Closing date" required>
+                    <input className="h-12 w-full rounded-[18px] border border-white/10 bg-[#101B2B] px-4 text-body font-medium text-white outline-none" required type="date" value={form?.closingDate ?? ""} onChange={(event) => onChange(account.id, { closingDate: event.target.value, uploaded: false })} />
+                  </RepairDocumentField>
+                  <RepairDocumentField label="Remarks">
+                    <textarea className="min-h-24 w-full resize-none rounded-[18px] border border-white/10 bg-[#101B2B] px-4 py-3 text-body font-medium text-white outline-none" value={form?.remarks ?? ""} onChange={(event) => onChange(account.id, { remarks: event.target.value, uploaded: false })} />
+                  </RepairDocumentField>
+                  {form?.error ? <p className="rounded-2xl border border-[#FF5C8A]/25 bg-[#FF5C8A]/10 px-4 py-3 text-sm font-medium text-[#FF8AAB]">{form.error}</p> : null}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+
+        <div className="mt-5 grid gap-3 border-t border-white/10 pt-4">
+          <button className="h-12 rounded-[18px] bg-[linear-gradient(135deg,#08DB69,#22F2C2)] text-sm font-black text-[#031812] shadow-[0_12px_28px_rgba(8,219,105,0.28)] disabled:opacity-60" disabled={submitting} type="button" onClick={onSubmit}>
+            {submitting ? (
+              <span className="inline-flex items-center gap-2"><LoaderCircle className="size-4 animate-spin" /> Uploading...</span>
+            ) : (
+              "Submit documents"
+            )}
+          </button>
+          <button className="h-12 rounded-[18px] border border-white/10 bg-white/[0.05] text-sm font-bold text-[#AAB6C8]" type="button" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RepairDocumentField({ children, label, required }: { children: React.ReactNode; label: string; required?: boolean }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-caption font-semibold text-[#DDE7F4]">
+        {label} {required ? <span className="text-[#FF5C8A]">*</span> : null}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function isCreditCardAccount(accountType: string) {
+  return accountType.toLowerCase().includes("credit card") || accountType === "10" || accountType === "31" || accountType === "35" || accountType === "36";
+}
+
+function getRepairDocumentType(accountType: string) {
+  return isCreditCardAccount(accountType) ? "Credit card closure proof" : "Loan closure proof";
+}
+
+function validateRepairDocumentFile(file: File) {
+  const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+  const allowedExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
+  const hasAllowedType = allowedTypes.includes(file.type);
+  const hasAllowedExtension = allowedExtensions.some((extension) => file.name.toLowerCase().endsWith(extension));
+
+  if (!hasAllowedType && !hasAllowedExtension) {
+    return "Only PDF, JPG, JPEG, or PNG files are allowed.";
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    return "File size must be 5MB or less.";
+  }
+
+  return "";
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
