@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState, type ClipboardEvent } from "
 import panDetailsImage from "@/assets/pan-details.png";
 import { ButtonLoader } from "@/components/auth/button-loader";
 import { apiRequest } from "@/lib/api";
+import { getCachedCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { cn } from "@/lib/utils";
 
 type LegalPopup = "terms" | "privacy" | "consent";
@@ -25,6 +26,14 @@ type WebOtpCredential = Credential & {
 
 type WebOtpRequestOptions = CredentialRequestOptions & {
   otp: { transport: string[] };
+};
+
+type CibilPayload = {
+  pan: string;
+  mobile: string;
+  name: string;
+  gender: string;
+  consent: "Y";
 };
 
 const defaultLegalContent: LegalContent = {
@@ -240,14 +249,28 @@ export function LoginFlow() {
 
       if (!response.ok) throw new Error("Unable to save profile");
 
+      const result = await response.json();
+      const savedUser = result?.data?.user ?? result?.data?.profile ?? result?.user ?? result?.profile ?? null;
+      const mobileNumber = savedUser?.mobileNumber ?? localStorage.getItem("scorecare_mobile_number") ?? cleanMobile;
+      const cibilPayload: CibilPayload = {
+        pan: cleanPan,
+        mobile: mobileNumber,
+        name: name.trim(),
+        consent: "Y",
+        gender: "male",
+      };
+
+      await getCachedCibilScoreCheckData(token, cibilPayload, { forceRefresh: true });
+
       localStorage.setItem("scorecare_pan_number", cleanPan);
       localStorage.setItem("scorecare_full_name", name.trim());
       localStorage.setItem("scorecare_email", email.trim());
       localStorage.setItem("scorecare_date_of_birth", dateOfBirth);
+      localStorage.setItem("scorecare_mobile_number", mobileNumber);
 
       goToDashboard();
     } catch {
-      setProfileError("Could not save PAN details. Please try again.");
+      setProfileError("Incorrect PAN details. Please enter your name, PAN, and date of birth exactly as per PAN records.");
     } finally {
       setIsSavingProfile(false);
     }
@@ -485,6 +508,12 @@ export function LoginFlow() {
               </div>
             </div>
 
+            {profileError ? (
+              <p className="mt-3 text-center text-sm font-semibold text-[#FF5C8A]">
+                {profileError}
+              </p>
+            ) : null}
+
             <button
               type="button"
               disabled={!canSubmit || isSavingProfile}
@@ -497,19 +526,13 @@ export function LoginFlow() {
             >
               {isSavingProfile ? (
                 <>
-                  <span className="invisible">Submit</span>
-                  <ButtonLoader className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+                  <span>Verifying details...</span>
+                  <ButtonLoader className="absolute right-5 top-1/2 -translate-y-1/2" />
                 </>
               ) : (
                 "Submit"
               )}
             </button>
-
-            {profileError ? (
-              <p className="mt-3 text-center text-sm font-semibold text-[#FF5C8A]">
-                {profileError}
-              </p>
-            ) : null}
           </div>
         </motion.div>
       );

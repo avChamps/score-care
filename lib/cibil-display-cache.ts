@@ -51,15 +51,15 @@ export async function getCachedCibilDisplayData(token: string, { forceRefresh = 
   }
 }
 
-export async function getCachedCibilScoreCheckData(token: string, payload: unknown) {
+export async function getCachedCibilScoreCheckData(token: string, payload: unknown, { forceRefresh = false }: { forceRefresh?: boolean } = {}) {
   const payloadKey = JSON.stringify(payload);
-  const cachedData = readCachedCibilScoreCheckData(token, payloadKey);
+  const cachedData = forceRefresh ? null : readCachedCibilScoreCheckData(token, payloadKey);
 
   if (cachedData) {
     return cachedData;
   }
 
-  if (inFlightScoreCheckRequest) {
+  if (!forceRefresh && inFlightScoreCheckRequest) {
     return inFlightScoreCheckRequest;
   }
 
@@ -137,7 +137,7 @@ async function fetchCibilScoreCheckData(token: string, payload: unknown, payload
   });
   const result = normalizeCibilDisplayData(parseApiResult(await readResponseJson(response)));
 
-  if (!response.ok && !isSuccessfulCibilScoreResult(result)) {
+  if (!response.ok || !isSuccessfulCibilScoreResult(result)) {
     throw new CibilDisplayDataError(readApiMessage(result) || "Unable to fetch CIBIL score", response.status);
   }
 
@@ -201,9 +201,13 @@ function isSuccessfulCibilScoreResult(result: unknown) {
   }
 
   const data = result as {
+    success?: unknown;
     status?: unknown;
+    status_code?: unknown;
+    message_code?: unknown;
     data?: {
       credit_score?: unknown;
+      pan?: unknown;
     };
     provider?: {
       statusCode?: unknown;
@@ -212,8 +216,11 @@ function isSuccessfulCibilScoreResult(result: unknown) {
   };
 
   return (
-    data.status === "success" &&
-    Boolean(data.data?.credit_score)
+    (data.success === true || data.status === "success") &&
+    (data.status_code === 200 || data.provider?.statusCode === 200) &&
+    (data.message_code === "success" || data.provider?.messageCode === "success") &&
+    Boolean(data.data?.credit_score) &&
+    Boolean(data.data?.pan)
   );
 }
 
