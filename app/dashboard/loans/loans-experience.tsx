@@ -10,7 +10,6 @@ import {
   FileCheck2,
   Info,
   LoaderCircle,
-  Menu,
   Plus,
   Upload,
   X,
@@ -24,6 +23,7 @@ import dashboardBg from "@/assets/dashboard-bg.jpg";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import {
   AppCard,
+  DashboardHeaderHomeControl,
   PageContent,
   PortalShell,
   PortalTopBar,
@@ -513,14 +513,7 @@ function RepaymentsView({
   return (
     <div className="space-y-5 animate-[creditPanelIn_0.42s_ease-out]">
       <div className="mb-5 flex items-center justify-between">
-        <button
-          type="button"
-          aria-label="Open profile menu"
-          className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
-          onClick={onProfileOpen}
-        >
-          <Menu className="size-5" strokeWidth={1.8} />
-        </button>
+        <DashboardHeaderHomeControl className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl" iconClassName="size-5" onMenuClick={onProfileOpen} />
         <Link
           aria-label="Open notifications"
           className="relative grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"

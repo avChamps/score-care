@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { type ComponentPropsWithoutRef } from "react";
-import { CreditCard, Headphones, Home, MessageCircle, Plus, ReceiptText, Users, WalletCards } from "lucide-react";
+import { ArrowLeft, CreditCard, Headphones, Home, Menu, MessageCircle, Plus, ReceiptText, Users, WalletCards } from "lucide-react";
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
 import { useDashboardActionsDisabled } from "@/lib/dashboard-lock";
 import { cn } from "@/lib/utils";
@@ -77,6 +78,23 @@ export function PortalShell({ active, children, variant = "user" }: PortalShellP
 
 export function PortalTopBar({ title: _title, backHref: _backHref, profileHref: _profileHref = "/profile" }: { title?: string; backHref?: string; profileHref?: string }) {
   return null;
+}
+
+export function DashboardHeaderHomeControl({ className, iconClassName, onMenuClick }: { className: string; iconClassName: string; onMenuClick?: () => void }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const isDashboardHome = pathname === "/dashboard";
+
+  return (
+    <button
+      className={className}
+      type="button"
+      aria-label={isDashboardHome ? "Open profile menu" : "Go to dashboard home"}
+      onClick={isDashboardHome ? onMenuClick : () => router.push("/dashboard")}
+    >
+      {isDashboardHome ? <Menu className={iconClassName} strokeWidth={1.8} /> : <ArrowLeft className={iconClassName} strokeWidth={1.8} />}
+    </button>
+  );
 }
 
 export function PageContent({ children, className }: { children: React.ReactNode; className?: string }) {

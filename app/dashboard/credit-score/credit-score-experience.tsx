@@ -11,7 +11,6 @@ import {
   FileSearch,
   Gauge,
   LoaderCircle,
-  Menu,
   ReceiptText,
   RotateCcw,
   Sparkles,
@@ -28,6 +27,7 @@ import { ProfilePanel, type UserProfile } from "@/app/dashboard/home-dashboard";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import {
   AppCard,
+  DashboardHeaderHomeControl,
   PageContent,
   PortalShell,
   PortalTopBar,
@@ -594,14 +594,7 @@ export function CreditScoreExperience() {
         <PageContent className="px-4 py-5">
           <div className="mx-auto max-w-md">
             <div className="mb-5 flex items-center justify-between">
-              <button
-                type="button"
-                aria-label="Open profile menu"
-                className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
-                onClick={() => setShowProfile(true)}
-              >
-                <Menu className="size-5" strokeWidth={1.8} />
-              </button>
+              <DashboardHeaderHomeControl className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl" iconClassName="size-5" onMenuClick={() => setShowProfile(true)} />
               <div className="flex items-center gap-3">
                 {isFreeTier ? (
                   <Link

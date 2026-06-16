@@ -18,7 +18,6 @@ import {
   FileText,
   Lightbulb,
   Languages,
-  Menu,
   ReceiptText,
   LogOut,
   ShieldAlert,
@@ -47,7 +46,7 @@ import {
 } from "lucide-react";
 
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
-import { PortalShell } from "@/components/dashboard/portal-ui";
+import { DashboardHeaderHomeControl, PortalShell } from "@/components/dashboard/portal-ui";
 import { SupportDrawer } from "@/components/dashboard/topbar-actions";
 import { SubscribePromptOverlay, getSubscriptionPlans, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -394,9 +393,7 @@ export function HomeDashboard() {
       >
         <div className="mx-auto max-w-5xl">
           <div className="flex items-center justify-between">
-            <button className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl sm:size-16" type="button" aria-label="Open profile menu" onClick={() => setShowProfile(true)}>
-              <Menu className="size-5 sm:size-6" strokeWidth={1.8} />
-            </button>
+            <DashboardHeaderHomeControl className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl sm:size-16" iconClassName="size-5 sm:size-6" onMenuClick={() => setShowProfile(true)} />
             <div className="flex items-center gap-3">
               {isFreeTier ? (
                 <button

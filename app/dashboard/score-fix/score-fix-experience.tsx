@@ -1,12 +1,12 @@
 "use client";
 
-import { Bell, Crown, Menu, TrendingDown, TrendingUp } from "lucide-react";
+import { Bell, Crown, TrendingDown, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProfilePanel, type UserProfile } from "@/app/dashboard/home-dashboard";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
-import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
+import { DashboardHeaderHomeControl, PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
 import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
@@ -499,14 +499,7 @@ export function ScoreFixExperience() {
       <div className="min-h-screen bg-[#050912] pb-28 text-white">
         <PageContent className="max-w-md space-y-5">
           <div className="flex items-center justify-between">
-            <button
-              type="button"
-              aria-label="Open profile menu"
-              className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
-              onClick={() => setShowProfile(true)}
-            >
-              <Menu className="size-5" strokeWidth={1.8} />
-            </button>
+            <DashboardHeaderHomeControl className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl" iconClassName="size-5" onMenuClick={() => setShowProfile(true)} />
             <div className="flex items-center gap-3">
               {isFreeTier ? (
                 <Link
