@@ -231,6 +231,9 @@ export function LoansExperience() {
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
+  const isMountedRef = useRef(true);
+  const loansRequestIdRef = useRef(0);
+  const applicationRequestIdRef = useRef(0);
 
   const loans = useMemo(() => buildLoans(displayData), [displayData]);
   const summary = useMemo(() => buildLoanSummary(loans, displayData), [displayData, loans]);
@@ -260,6 +263,8 @@ export function LoansExperience() {
   }, []);
 
   const loadLoans = useCallback(async () => {
+    const requestId = ++loansRequestIdRef.current;
+
     if (accessLoading) {
       return;
     }
@@ -273,9 +278,11 @@ export function LoansExperience() {
     }
 
     if (isFreeTier) {
-      setDisplayData(getStoredLatestCibilScoreCheckData(token) as DisplayDataResponse | null);
-      setError("");
-      setLoading(false);
+      if (isMountedRef.current && requestId === loansRequestIdRef.current) {
+        setDisplayData(getStoredLatestCibilScoreCheckData(token) as DisplayDataResponse | null);
+        setError("");
+        setLoading(false);
+      }
       return;
     }
 
@@ -285,7 +292,9 @@ export function LoansExperience() {
     try {
       const result = (await getCachedCibilDisplayData(token)) as DisplayDataResponse;
 
-      setDisplayData(result);
+      if (isMountedRef.current && requestId === loansRequestIdRef.current) {
+        setDisplayData(result);
+      }
     } catch (loadError) {
       if (loadError instanceof CibilDisplayDataError && (loadError.status === 401 || loadError.status === 403)) {
         clearScorecareSession();
@@ -295,14 +304,19 @@ export function LoansExperience() {
 
       const cachedResult = getStoredLatestCibilScoreCheckData(token) as DisplayDataResponse | null;
 
-      setDisplayData(cachedResult);
-      setError(cachedResult ? "" : "Could not load loan accounts from your CIBIL report.");
+      if (isMountedRef.current && requestId === loansRequestIdRef.current) {
+        setDisplayData(cachedResult);
+        setError(cachedResult ? "" : "Could not load loan accounts from your CIBIL report.");
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current && requestId === loansRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [accessLoading, isFreeTier, router]);
 
   const loadApplicationStatus = useCallback(async () => {
+    const requestId = ++applicationRequestIdRef.current;
     const token = localStorage.getItem("scorecare_token");
 
     if (!token || isTokenExpired(token)) {
@@ -329,17 +343,25 @@ export function LoansExperience() {
       }
 
       if (!response.ok || result.status === "error") {
+      if (isMountedRef.current && requestId === applicationRequestIdRef.current) {
         setApplication(null);
         setApplicationError(result.message || "Loan application not found");
-        return;
       }
+      return;
+    }
 
-      setApplication(result.data ?? null);
+      if (isMountedRef.current && requestId === applicationRequestIdRef.current) {
+        setApplication(result.data ?? null);
+      }
     } catch {
-      setApplication(null);
-      setApplicationError("Could not load your loan application status.");
+      if (isMountedRef.current && requestId === applicationRequestIdRef.current) {
+        setApplication(null);
+        setApplicationError("Could not load your loan application status.");
+      }
     } finally {
-      setApplicationLoading(false);
+      if (isMountedRef.current && requestId === applicationRequestIdRef.current) {
+        setApplicationLoading(false);
+      }
     }
   }, [router]);
 
@@ -360,6 +382,16 @@ export function LoansExperience() {
       setNotificationUnreadCount(0);
     }
   }, [router]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+      loansRequestIdRef.current += 1;
+      applicationRequestIdRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     const loadTimer = window.setTimeout(() => {

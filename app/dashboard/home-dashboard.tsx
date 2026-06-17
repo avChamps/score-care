@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { ComponentType } from "react";
 import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -2190,6 +2191,7 @@ function LanguageSettingsPopup({
 }
 
 export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, onProfileUpdate, profile }: { name: string; onClose: () => void; onHelp: () => void; onLanguageLoadingChange: (loading: boolean) => void; onProfileUpdate: (profile: UserProfile | null) => void; profile: UserProfile | null }) {
+  const router = useRouter();
   const phone = profile?.mobileNumber || localStorage.getItem("scorecare_mobile_number") || "--";
   const completion = calculateProfileCompletion(profile);
   const [notificationError, setNotificationError] = useState("");
@@ -2235,7 +2237,9 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
     if (!profileLanguage) return;
 
     setSelectedLanguage(profileLanguage);
-    applyProfileLanguage(profile);
+    if (profileLanguage !== readStoredLanguage()) {
+      applyProfileLanguage(profile);
+    }
   }, [profile?.selectedLanguage]);
 
   useEffect(() => {
@@ -2463,7 +2467,8 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
           subtitle="Smart Offers"
           Icon={ReceiptText}
           onClick={() => {
-            window.location.href = "/dashboard/loans";
+            onClose();
+            router.push("/dashboard/loans");
           }}
         />
       </section>
@@ -2764,6 +2769,8 @@ function loadGoogleTranslate() {
     return;
   }
 
+  ensureGoogleTranslateElement();
+
   const googleWindow = window as typeof window & {
     google?: {
       translate?: {
@@ -2806,6 +2813,10 @@ function loadGoogleTranslate() {
 }
 
 function applyGoogleLanguageWithRetry(language: string) {
+  if (readStoredLanguage() === language && isGoogleLanguageApplied(language)) {
+    return;
+  }
+
   const delays = [0, 300, 800, 1500];
 
   delays.forEach((delay) => {
@@ -2847,17 +2858,37 @@ function applyGoogleLanguage(language: string, reloadWhenMissing = true) {
 
   const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
 
-  if (!select && reloadWhenMissing) {
-    window.location.reload();
-    return;
-  }
-
   if (!select) {
+    if (reloadWhenMissing) {
+      loadGoogleTranslate();
+    }
     return;
   }
 
   select.value = language;
   select.dispatchEvent(new Event("change"));
+}
+
+function ensureGoogleTranslateElement() {
+  if (document.getElementById("google_translate_element")) {
+    return;
+  }
+
+  const element = document.createElement("div");
+  element.id = "google_translate_element";
+  element.className = "hidden";
+  document.body.appendChild(element);
+}
+
+function isGoogleLanguageApplied(language: string) {
+  if (language === "en") {
+    return !document.documentElement.classList.contains("translated-ltr") && !document.documentElement.classList.contains("translated-rtl");
+  }
+
+  const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+  const cookieLanguage = document.cookie.match(/(?:^|;\s*)googtrans=\/en\/([^;]+)/)?.[1];
+
+  return select?.value === language || cookieLanguage === language;
 }
 
 function resetGoogleLanguage() {

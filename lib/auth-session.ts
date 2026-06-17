@@ -16,10 +16,12 @@ const SCORECARE_SESSION_KEYS = [
   "scorecare_registered_fcm_token",
   "scorecare_android_device_id",
   "scorecare_admin_view",
+  "scorecare_language",
 ];
 
 export function clearScorecareSession() {
   SCORECARE_SESSION_KEYS.forEach((key) => localStorage.removeItem(key));
+  clearGoogleTranslateCookie();
 }
 
 export function logoutScorecareSession() {
@@ -27,6 +29,11 @@ export function logoutScorecareSession() {
 
   if (typeof window !== "undefined") {
     window.location.replace("/login");
+    window.setTimeout(() => {
+      if (window.location.pathname !== "/login") {
+        window.location.assign("/login");
+      }
+    }, 120);
   }
 }
 
@@ -40,5 +47,17 @@ export function isTokenExpired(token: string) {
     return Boolean(expiresAt) && Date.now() >= expiresAt;
   } catch {
     return false;
+  }
+}
+
+function clearGoogleTranslateCookie() {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  document.cookie = "googtrans=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+  if (typeof window !== "undefined" && window.location.hostname) {
+    document.cookie = `googtrans=;domain=${window.location.hostname};path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT`;
   }
 }
