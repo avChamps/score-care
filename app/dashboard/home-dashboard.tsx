@@ -343,7 +343,8 @@ export function HomeDashboard() {
 
       const displayData = (event as CustomEvent<unknown>).detail;
       const latestProfile = profile ?? await loadProfile(token).catch(() => profile);
-      const activeDisputes = await loadActiveDisputes(token);
+      const freeTier = isFreeTierProfile(latestProfile);
+      const activeDisputes = freeTier ? 0 : await loadActiveDisputes(token);
 
       if (!isMounted) {
         return;
@@ -351,8 +352,8 @@ export function HomeDashboard() {
 
       setName(latestProfile?.fullName?.trim() || readDisplayName(displayData) || "there");
       setProfile(latestProfile);
-      setIsFreeTier(false);
-      setDashboard(buildDashboardData(displayData, latestProfile, activeDisputes));
+      setIsFreeTier(freeTier);
+      setDashboard(freeTier ? buildFreeTierDashboard(displayData) : buildDashboardData(displayData, latestProfile, activeDisputes));
       setError("");
     }
 
@@ -3070,13 +3071,8 @@ function buildFreeTierDashboard(result: unknown): DashboardData {
 
 function isFreeTierProfile(profile: UserProfile | null) {
   const accessType = normalizeStatus(profile?.accessType ?? profile?.subscription?.accessType);
-  const subscriptionStatus = normalizeStatus(profile?.subscriptionStatus ?? profile?.subscription?.subscriptionStatus ?? profile?.subscription?.status ?? profile?.subscription?.planStatus ?? profile?.planStatus ?? profile?.status);
 
-  if (["active", "paid", "premium", "subscribed"].some((status) => accessType.includes(status) || subscriptionStatus.includes(status))) {
-    return false;
-  }
-
-  return ["free", "expired", "inactive"].some((status) => accessType.includes(status) || subscriptionStatus.includes(status));
+  return accessType !== "paid";
 }
 
 function normalizeStatus(value: unknown) {

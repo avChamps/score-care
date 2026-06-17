@@ -7,7 +7,6 @@ import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 
 type SubscriptionProfile = {
   accessType?: string | null;
-  subscriptionStatus?: string | null;
 };
 
 export function useSubscriptionAccess() {
@@ -39,18 +38,17 @@ export function useSubscriptionAccess() {
         }
 
         if (!response.ok) {
-          setIsFreeTier(false);
+          setIsFreeTier(true);
           return;
         }
 
         const result = await response.json();
         const user = (result?.data?.user ?? null) as SubscriptionProfile | null;
         const accessType = user?.accessType?.toLowerCase() ?? "";
-        const subscriptionStatus = user?.subscriptionStatus?.toLowerCase() ?? "";
 
-        setIsFreeTier(accessType === "free" || accessType === "expired" || subscriptionStatus === "free" || subscriptionStatus === "expired");
+        setIsFreeTier(accessType !== "paid");
       } catch {
-        setIsFreeTier(false);
+        setIsFreeTier(true);
       } finally {
         setLoading(false);
       }
