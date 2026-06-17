@@ -3,20 +3,24 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell } from "lucide-react";
+import { Bell, Crown } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import comingSoonImage from "@/assets/coming-soon.png";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { DashboardHeaderHomeControl, PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
+import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { useSubscriptionAccess } from "@/lib/subscription-access";
 
 const notificationsPageSize = 10;
 
 export function OffersExperience() {
   const router = useRouter();
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
+  const { isFreeTier } = useSubscriptionAccess();
+  const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
   const refreshNotifications = useCallback(async () => {
     const token = localStorage.getItem("scorecare_token");
@@ -52,6 +56,16 @@ export function OffersExperience() {
             <div className="mb-5 flex items-center justify-between">
               <DashboardHeaderHomeControl className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl" iconClassName="size-5" />
               <div className="flex items-center gap-3">
+                {isFreeTier ? (
+                  <button
+                    aria-label="Premium benefits"
+                    className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
+                    type="button"
+                    onClick={promptSubscribe}
+                  >
+                    <Crown className="size-6 fill-[#FFD34D]/20" strokeWidth={1.8} />
+                  </button>
+                ) : null}
                 <Link
                   aria-label="Open notifications"
                   className="relative grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
@@ -83,6 +97,7 @@ export function OffersExperience() {
         </PageContent>
 
         <DashboardBottomNav />
+        <SubscribePromptOverlay onClose={closeSubscribePrompt} show={showSubscribePrompt} />
       </div>
     </PortalShell>
   );

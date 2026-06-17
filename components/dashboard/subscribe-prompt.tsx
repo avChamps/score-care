@@ -2,9 +2,11 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
+import Image from "next/image";
+import subscriptionBenefitsImage from "@/assets/subscription-benefits.png";
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { ArrowLeft, Check, CreditCard, FileWarning, PlaySquare, TrendingUp, Trophy, X, Bot } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
@@ -24,11 +26,19 @@ export type SubscriptionPlan = {
   subtitle?: string;
   description?: string;
   benefits: string[];
+  comparisonBenefits: ComparisonBenefitRow[];
   buttonLabel?: string;
   skipLabel?: string;
   features: string[];
   moreFeatures?: string;
   theme: "blue" | "purple" | "green" | "orange" | "pink" | "cyan";
+};
+
+export type ComparisonBenefitValue = boolean | string;
+export type ComparisonBenefitRow = {
+  benefit: string;
+  free: ComparisonBenefitValue;
+  scorecarePro: ComparisonBenefitValue;
 };
 
 type RazorpaySubscriptionResponse = {
@@ -72,6 +82,7 @@ const subscriptionPlans: SubscriptionPlan[] = [
     subtitle: "Subscribe",
     description: "Choose a plan to continue using reports, health insights, and predictor tools.",
     benefits: [],
+    comparisonBenefits: [],
     features: [
       "Unlimited score checks",
       "All 4 bureaus — live",
@@ -94,6 +105,7 @@ const subscriptionPlans: SubscriptionPlan[] = [
     subtitle: "Subscribe",
     description: "Choose a plan to continue using reports, health insights, and predictor tools.",
     benefits: [],
+    comparisonBenefits: [],
     features: [
       "Everything in Pro",
       "All bureaus — daily sync",
@@ -163,6 +175,230 @@ export function useSubscribePrompt() {
   return { closeSubscribePrompt, promptSubscribe, showSubscribePrompt };
 }
 
+const proComparisonRows: ComparisonBenefitRow[] = [
+  { benefit: "Credit Score Check", free: true, scorecarePro: true },
+  { benefit: "Score Refresh", free: "Monthly", scorecarePro: "Daily" },
+  { benefit: "AI Credit Improvement Plan", free: false, scorecarePro: true },
+  { benefit: "Detailed Credit Reports", free: false, scorecarePro: true },
+  { benefit: "Loan & Credit Card Tracking", free: false, scorecarePro: true },
+  { benefit: "EMI Reminders", free: false, scorecarePro: true },
+  { benefit: "AI Credit Coach", free: false, scorecarePro: true },
+  { benefit: "Priority Support", free: false, scorecarePro: true },
+];
+
+function ProComparisonValue({ value }: { value: ComparisonBenefitValue }) {
+  if (value === true || value === "check") {
+    return (
+      <span className="mx-auto grid size-5 place-items-center rounded-full bg-[#0EBA6D] text-white">
+        <Check className="size-3.5" strokeWidth={3} />
+      </span>
+    );
+  }
+
+  if (value === false || value === "close") {
+    return (
+      <span className="mx-auto grid size-5 place-items-center rounded-full bg-[#F04438] text-white">
+        <X className="size-3.5" strokeWidth={3} />
+      </span>
+    );
+  }
+
+  return <span className="text-[11px] font-bold text-[#AAB6C8]">{String(value)}</span>;
+}
+
+export function ProBenefitsComparisonSheet({ comparisonBenefits, ctaLabel = "View Subscription", loading = false, onClose, onSubscribe, zIndex = "z-[110]" }: { comparisonBenefits?: ComparisonBenefitRow[]; ctaLabel?: string; loading?: boolean; onClose: () => void; onSubscribe: () => void; zIndex?: string }) {
+  const rows = comparisonBenefits?.length ? comparisonBenefits : proComparisonRows;
+
+  return (
+    <div className={`fixed inset-0 ${zIndex} flex items-end bg-black/65 px-0 backdrop-blur-sm sm:px-4`}>
+      <section className="mx-auto max-h-[calc(100dvh-12px)] w-full max-w-md overflow-y-auto animate-[creditPanelIn_0.22s_ease-out] rounded-t-[30px] bg-[#0D131C] px-4 pb-4 pt-5 shadow-[0_-24px_70px_rgba(0,0,0,0.42)]">
+        <button
+          className="ml-auto grid size-8 place-items-center rounded-full bg-white/12 text-white backdrop-blur"
+          type="button"
+          aria-label="Close benefits"
+          onClick={onClose}
+        >
+          <X className="size-4" />
+        </button>
+
+        <p className="mt-1 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-[#22D3EE]">Before you leave</p>
+        <h2 className="mt-2 text-center text-xl font-extrabold leading-6 text-white">Why Choose ScoreCare Pro?</h2>
+
+        <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-[#111821] text-left shadow-[0_16px_34px_rgba(0,0,0,0.24)]">
+          <div className="grid grid-cols-[1.45fr_0.72fr_0.95fr] bg-white/[0.06] text-[11px] font-extrabold uppercase text-[#5EF2C2]">
+            <div className="px-2.5 py-2.5">Benefits</div>
+            <div className="bg-[#0D131C] px-2 py-2.5 text-center">Free</div>
+            <div className="bg-[#112536] px-2 py-2.5 text-center">ScoreCare Pro</div>
+          </div>
+
+          {rows.map((row) => (
+            <div key={row.benefit} className="grid grid-cols-[1.45fr_0.72fr_0.95fr] border-t border-white/10 text-[12px] leading-4 text-[#D7E0EA]">
+              <div className="flex min-h-9 items-center px-2.5 py-1.5 font-semibold">{row.benefit}</div>
+              <div className="flex min-h-9 items-center justify-center bg-[#0D131C] px-2 py-1.5 text-center">
+                <ProComparisonValue value={row.free} />
+              </div>
+              <div className="flex min-h-9 items-center justify-center bg-[#112536] px-2 py-1.5 text-center">
+                <ProComparisonValue value={row.scorecarePro} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button className="mt-4 h-12 w-full rounded-[14px] bg-[#08DB69] text-base font-bold text-[#201300]]" disabled={loading} type="button" onClick={onSubscribe}>
+          {loading ? "Processing..." : ctaLabel}
+        </button>
+        <button className="mx-auto mt-2.5 block text-sm font-semibold text-[#6F7B8E]" type="button" onClick={onClose}>
+       I don't want to increase my credit score.
+        </button>
+      </section>
+    </div>
+  );
+}
+
+
+const premiumPlanSteps = [
+  {
+    accent: "#14A76C",
+    icon: TrendingUp,
+    title: "Monitor bureau scores daily",
+    body: "Track CIBIL, Equifax, Experian & CRIF scores in one place with detailed report insights.",
+  },
+  {
+    accent: "#FF9F1C",
+    icon: FileWarning,
+    title: "Detect unauthorized accounts",
+    body: "Spot fraudulent or incorrect loan entries across bureaus and raise a dispute instantly.",
+  },
+  {
+    accent: "#1261C9",
+    icon: Bot,
+    title: "Get AI-powered score analysis",
+    body: "Understand exactly what's pulling your score down with bureau-wise factor breakdown.",
+  },
+  {
+    accent: "#7752C9",
+    icon: CreditCard,
+    title: "Improve your credit mix smartly",
+    body: "Get personalized recommendations on credit utilization, repayment habits, and loan types.",
+  },
+  {
+    accent: "#14A76C",
+    icon: Trophy,
+    title: "Follow your ScoreCare Action Plan",
+    body: "Step-by-step instructions tailored to your profile to help you reach 750+ in 90 days.",
+  },
+];
+
+
+function TwelveHourTimer({ className = "" }: { className?: string }) {
+  const [endsAt] = useState(() => Date.now() + 12 * 60 * 60 * 1000);
+  const [remaining, setRemaining] = useState(() => Math.max(0, endsAt - Date.now()));
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setRemaining(Math.max(0, endsAt - Date.now()));
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [endsAt]);
+
+  const totalSeconds = Math.floor(remaining / 1000);
+  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+
+  return (
+    <span className={className}>
+      {hours}:{minutes}:{seconds}
+    </span>
+  );
+}
+
+export function PremiumBenefitsIntro({ ctaLabel = "View subscription", loading = false, onClose, onSubscribe }: { ctaLabel?: string; loading?: boolean; onClose: () => void; onSubscribe: () => void }) {
+  return (
+    <div className="flex min-h-full flex-col bg-[#0D131C]">
+      <div className="flex h-11 shrink-0 items-center bg-[#0D131C] px-3">
+        <button className="grid size-8 place-items-center rounded-full bg-white/10 text-white backdrop-blur" type="button" aria-label="Back from benefits" onClick={onClose}>
+          <ArrowLeft className="size-4" />
+        </button>
+      </div>
+
+      <div className="relative mx-3 shrink-0 overflow-hidden rounded-xl bg-[#F4F8FF]">
+        <div className="relative aspect-[580/269] min-h-[168px] w-full">
+          <Image
+            src={subscriptionBenefitsImage}
+            alt="Boost your credit score to 750+"
+            fill
+            sizes="(max-width: 640px) 100vw, 448px"
+            className="object-contain object-top"
+            priority
+          />
+        </div>
+      </div>
+
+     <div className="flex min-h-0 flex-1 flex-col bg-[#0D131C] px-2 pb-5 pt-4">
+  <div className="overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.06]">
+    {premiumPlanSteps.map((step, index) => {
+      const Icon = step.icon;
+
+      return (
+        <div
+          key={step.title}
+          className={`grid grid-cols-[3rem_1fr] items-center gap-3 px-3 py-3 ${
+            index !== premiumPlanSteps.length - 1
+              ? "border-b border-white/10"
+              : ""
+          }`}
+        >
+          <motion.span
+            className="grid size-10 place-items-center rounded-xl bg-[#111821] text-[#5EF2C2] shadow-[0_0_18px_rgba(94,242,194,0.18)]"
+            animate={{
+              scale: [1, 1.08, 1],
+              rotate: [0, -4, 4, 0],
+            }}
+            transition={{
+              duration: 2.2,
+              repeat: Infinity,
+              repeatType: "loop",
+              ease: "easeInOut",
+              delay: index * 0.18,
+            }}
+          >
+            <Icon className="size-4" strokeWidth={1.8} />
+          </motion.span>
+
+          <div>
+            <p className="text-[12px] font-bold leading-4 text-white">
+              {step.title}
+            </p>
+
+            <p className="mt-1 text-[10px] font-medium leading-[14px] text-[#AAB6C8]">
+              {step.body}
+            </p>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+
+  <div className="mt-auto mb-1 flex justify-end pr-1 text-[10px] font-semibold text-[#AAB6C8]">
+    <span>Offer closes in&nbsp;</span>
+    <TwelveHourTimer className="font-bold text-[#FFD34D]" />
+  </div>
+
+  <button
+    className="h-11 w-full rounded-2xl bg-[#08DB69] text-[14px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+    disabled={loading}
+    type="button"
+    onClick={onSubscribe}
+  >
+    {loading ? "Processing..." : ctaLabel}
+  </button>
+</div>
+    </div>
+  );
+}
+
 export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void; show: boolean }) {
   const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState(subscriptionPlans[0].id);
@@ -172,7 +408,6 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState("");
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) ?? plans[0];
-  const premiumBenefits = Array.from(new Set(plans.flatMap((plan) => (plan.benefits.length ? plan.benefits : plan.features)).filter(Boolean)));
 
   useEffect(() => {
     if (!show) {
@@ -217,12 +452,6 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
   function closePrompt(event: MouseEvent) {
     event.stopPropagation();
     setShowSkipMessage(true);
-  }
-
-  function closeAll(event: MouseEvent) {
-    event.stopPropagation();
-    setShowSkipMessage(false);
-    onClose();
   }
 
   async function handleSubscriptionPayment() {
@@ -378,7 +607,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
           onClick={closePrompt}
         >
           <motion.div
-            className="relative mx-auto flex max-h-[calc(100dvh-4rem)] min-h-[25rem] w-full max-w-md flex-col overflow-hidden rounded-t-[2rem] bg-[#0D131C] text-white shadow-[0_-24px_80px_rgba(0,0,0,0.42)] sm:rounded-[2rem]"
+            className="relative mx-auto flex h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-[2rem] bg-[#0D131C] text-white shadow-[0_-24px_80px_rgba(0,0,0,0.42)]"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -430,58 +659,24 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
               </>
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto">
-                <div className="min-h-44 bg-[radial-gradient(circle_at_82%_0%,rgba(94,242,194,0.24),transparent_34%),linear-gradient(180deg,#1D2A3A_0%,#0D131C_100%)] px-5 py-6">
-                  <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close benefits" onClick={closePrompt}>
-                    <X className="size-5" />
-                  </button>
-                  <div className="mt-10 max-w-[18rem]">
-                    <p className="text-caption font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Premium Benefits</p>
-                    <h2 className="mt-2 text-heading font-semibold leading-7 text-white">Unlock your complete credit dashboard</h2>
-                  </div>
-                </div>
-
-                <div className="px-5 pb-5 pt-4">
-                  <div className="grid gap-3 text-body-sm font-medium leading-5 text-[#AAB6C8]">
-                    {premiumBenefits.map((benefit) => (
-                      <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
-                    ))}
-                  </div>
-
-                  <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-body font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={() => setShowPlans(true)}>
-                    Subscription
-                  </button>
-                  <button className="mx-auto mt-3 block text-caption font-medium text-[#6F7B8E]" type="button" onClick={closePrompt}>
-                    skip for later
-                  </button>
-                </div>
+                <PremiumBenefitsIntro ctaLabel={`Pay ${formatPlanAmount(selectedPlan)} ${formatBillingCycle(selectedPlan.billingCycle)}`} loading={paymentLoading} onClose={() => setShowSkipMessage(true)} onSubscribe={handleSubscriptionPayment} />
               </div>
             )}
             {showSkipMessage ? (
-              <div className="absolute inset-0 z-10 flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm" onClick={closeAll}>
-                <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]" onClick={(event) => event.stopPropagation()}>
-                  <div className="min-h-44 bg-[radial-gradient(circle_at_82%_0%,rgba(94,242,194,0.24),transparent_34%),linear-gradient(180deg,#1D2A3A_0%,#0D131C_100%)] px-5 py-6">
-                    <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close subscription message" onClick={closeAll}>
-                      <X className="size-5" />
-                    </button>
-                    <div className="mt-10 max-w-[18rem]">
-                      <p className="text-caption font-semibold uppercase tracking-[3px] text-[#5EF2C2]">{selectedPlan.subtitle}</p>
-                      <h2 className="mt-2 text-heading font-semibold leading-7 text-white">{selectedPlan.title}</h2>
-                    </div>
-                  </div>
-
-                  <div className="px-5 pb-5 pt-4">
-                    <div className="grid gap-3 text-body-sm font-medium leading-5 text-[#AAB6C8]">
-                      {premiumBenefits.map((benefit) => (
-                        <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
-                      ))}
-                    </div>
-
-                    <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-body font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={closeAll}>
-                      {selectedPlan.skipLabel}
-                    </button>
-                  </div>
-                </section>
-              </div>
+              <ProBenefitsComparisonSheet
+                comparisonBenefits={selectedPlan.comparisonBenefits}
+                ctaLabel={`Pay ${formatPlanAmount(selectedPlan)} ${formatBillingCycle(selectedPlan.billingCycle)}`}
+                loading={paymentLoading}
+                zIndex="z-[10000]"
+                onClose={() => {
+                  setShowSkipMessage(false);
+                  onClose();
+                }}
+                onSubscribe={() => {
+                  setShowSkipMessage(false);
+                  void handleSubscriptionPayment();
+                }}
+              />
             ) : null}
           </motion.div>
         </motion.div>
@@ -497,9 +692,8 @@ function SubscriptionPlanCard({ onSelect, plan, selected }: { onSelect: () => vo
 
   return (
     <button
-      className={`overflow-hidden rounded-[26px] bg-[#101E2E] text-left shadow-[0_18px_36px_rgba(0,0,0,0.28)] transition ${
-        selected ? `ring-2 ${theme.selectedRing}` : "ring-1 ring-white/8"
-      }`}
+      className={`overflow-hidden rounded-[26px] bg-[#101E2E] text-left shadow-[0_18px_36px_rgba(0,0,0,0.28)] transition ${selected ? `ring-2 ${theme.selectedRing}` : "ring-1 ring-white/8"
+        }`}
       onClick={onSelect}
       type="button"
     >
@@ -539,7 +733,7 @@ export function readSubscriptionPlans(result: unknown): SubscriptionPlan[] {
   const normalizedPlans: SubscriptionPlan[] = [];
 
   plans.forEach((plan, index) => {
-    const item = plan as Partial<SubscriptionPlan> & { name?: string; offerTag?: string; price?: number; monthlyPrice?: number };
+    const item = plan as Partial<SubscriptionPlan> & { comparisonBenefits?: unknown; name?: string; offerTag?: string; price?: number; monthlyPrice?: number };
     const id = String(item.publicId ?? item.id ?? item.planName ?? item.name ?? index);
     const planName = String(item.planName ?? item.name ?? "");
     const amount = Number(item.amount ?? item.price ?? item.monthlyPrice ?? 0);
@@ -561,6 +755,7 @@ export function readSubscriptionPlans(result: unknown): SubscriptionPlan[] {
       subtitle: item.subtitle ?? "Subscribe",
       description: item.description ?? "Choose a plan to continue using reports, health insights, and predictor tools.",
       benefits: Array.isArray(item.benefits) ? item.benefits.map(String) : [],
+      comparisonBenefits: readComparisonBenefits(item.comparisonBenefits),
       buttonLabel: item.buttonLabel ?? "Subscribe",
       skipLabel: item.skipLabel ?? "Skip for later",
       theme: item.theme && subscriptionPlanThemes.includes(item.theme) ? item.theme : subscriptionPlanThemes[index % subscriptionPlanThemes.length],
@@ -572,7 +767,40 @@ export function readSubscriptionPlans(result: unknown): SubscriptionPlan[] {
   return normalizedPlans;
 }
 
-function formatPlanAmount(plan: SubscriptionPlan) {
+function readComparisonBenefits(value: unknown): ComparisonBenefitRow[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+
+    const row = item as { benefit?: unknown; free?: unknown; scorecarePro?: unknown };
+    const benefit = String(row.benefit ?? "").trim();
+
+    if (!benefit) {
+      return [];
+    }
+
+    return [{
+      benefit,
+      free: readComparisonValue(row.free),
+      scorecarePro: readComparisonValue(row.scorecarePro),
+    }];
+  });
+}
+
+function readComparisonValue(value: unknown): ComparisonBenefitValue {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  return String(value ?? "").trim();
+}
+
+export function formatPlanAmount(plan: SubscriptionPlan) {
   if (plan.currency === "INR" || !plan.currency) {
     return `₹${plan.amount}`;
   }
@@ -632,7 +860,7 @@ async function fetchSubscriptionStatus(token: string) {
   return fallbackResponse.json();
 }
 
-function formatBillingCycle(billingCycle?: string) {
+export function formatBillingCycle(billingCycle?: string) {
   const cycle = billingCycle?.toLowerCase();
 
   if (cycle === "yearly" || cycle === "annual" || cycle === "annually") {

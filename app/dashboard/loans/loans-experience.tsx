@@ -7,6 +7,7 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  Crown,
   FileCheck2,
   Info,
   LoaderCircle,
@@ -19,7 +20,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ProfilePanel, type UserProfile } from "@/app/dashboard/home-dashboard";
-import dashboardBg from "@/assets/dashboard-bg.jpg";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import {
@@ -30,7 +30,7 @@ import {
   PortalTopBar,
   PrimaryPortalButton,
 } from "@/components/dashboard/portal-ui";
-import { SubscribePromptOverlay, getSubscriptionPlans, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
+import { PremiumBenefitsIntro, ProBenefitsComparisonSheet, SubscribePromptOverlay, formatBillingCycle, formatPlanAmount, getSubscriptionPlans, useSubscribePrompt, type ComparisonBenefitRow, type SubscriptionPlan } from "@/components/dashboard/subscribe-prompt";
 import { apiFetch, apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
@@ -457,7 +457,9 @@ export function LoansExperience() {
               }}
               onRefresh={loadLoans}
               onLoanStatusFilterChange={setLoanStatusFilter}
+              isFreeTier={isFreeTier}
               notificationUnreadCount={notificationUnreadCount}
+              onPremiumClick={promptSubscribe}
               onProfileOpen={() => setShowProfile(true)}
               score={score}
               summary={summary}
@@ -524,11 +526,13 @@ function RepaymentsView({
   loanStatusFilter,
   loading,
   loans,
+  isFreeTier,
   onApplicationsRefresh,
   onApply,
   onFilterChange,
   onLoanStatusFilterChange,
   notificationUnreadCount,
+  onPremiumClick,
   onProfileOpen,
   onRefresh,
   score,
@@ -543,11 +547,13 @@ function RepaymentsView({
   loanStatusFilter: LoanStatusFilter;
   loading: boolean;
   loans: Loan[];
+  isFreeTier: boolean;
   onApplicationsRefresh: () => void;
   onApply: () => void;
   onFilterChange: (filter: LoanFilter) => void;
   onLoanStatusFilterChange: (filter: LoanStatusFilter) => void;
   notificationUnreadCount: number;
+  onPremiumClick: () => void;
   onProfileOpen: () => void;
   onRefresh: () => void;
   score: number | null;
@@ -560,18 +566,30 @@ function RepaymentsView({
     <div className="space-y-5 animate-[creditPanelIn_0.42s_ease-out]">
       <div className="mb-5 flex items-center justify-between">
         <DashboardHeaderHomeControl className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl" iconClassName="size-5" onMenuClick={onProfileOpen} />
-        <Link
-          aria-label="Open notifications"
-          className="relative grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
-          href="/notifications"
-        >
-          <Bell className="size-6" strokeWidth={1.8} />
-          {notificationUnreadCount > 0 ? (
-            <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-[11px] font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
-              <AnimatedNumber value={notificationUnreadCount > 99 ? "99+" : notificationUnreadCount} />
-            </span>
+        <div className="flex items-center gap-3">
+          {isFreeTier ? (
+            <button
+              aria-label="Premium benefits"
+              className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
+              type="button"
+              onClick={onPremiumClick}
+            >
+              <Crown className="size-6 fill-[#FFD34D]/20" strokeWidth={1.8} />
+            </button>
           ) : null}
-        </Link>
+          <Link
+            aria-label="Open notifications"
+            className="relative grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
+            href="/notifications"
+          >
+            <Bell className="size-6" strokeWidth={1.8} />
+            {notificationUnreadCount > 0 ? (
+              <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-[11px] font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
+                <AnimatedNumber value={notificationUnreadCount > 99 ? "99+" : notificationUnreadCount} />
+              </span>
+            ) : null}
+          </Link>
+        </div>
       </div>
 
       <div className="flex items-end justify-between gap-4">
@@ -755,8 +773,8 @@ function LoanSuccessToast({ message, onClose, title }: { message: string; onClos
 
 function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubscribe: () => void }) {
   const [showLeavingMessage, setShowLeavingMessage] = useState(false);
-  const [benefits, setBenefits] = useState<string[]>([]);
-  const [isLoadingBenefits, setIsLoadingBenefits] = useState(true);
+  const [comparisonBenefits, setComparisonBenefits] = useState<ComparisonBenefitRow[]>([]);
+  const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -764,18 +782,16 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
     async function loadBenefits() {
       try {
         const plans = await getSubscriptionPlans();
-        const apiBenefits = Array.from(new Set(plans.flatMap((plan) => plan.benefits).filter(Boolean)));
 
         if (isMounted) {
-          setBenefits(apiBenefits);
+          const plan = plans[0] ?? null;
+          setSubscriptionPlan(plan);
+          setComparisonBenefits(plans.find((item) => item.comparisonBenefits.length)?.comparisonBenefits ?? []);
         }
       } catch {
         if (isMounted) {
-          setBenefits([]);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingBenefits(false);
+          setSubscriptionPlan(null);
+          setComparisonBenefits([]);
         }
       }
     }
@@ -787,80 +803,14 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
     };
   }, []);
 
-  const benefitItems = benefits.length ? benefits : ["Loan payment tracking", "EMI reminders", "AI Credit Coach weekly"];
-
   return (
     <div className="fixed inset-0 z-[110] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
-      <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
-        <div
-          className="min-h-44 bg-cover bg-center px-5 py-6"
-          style={{ backgroundImage: `linear-gradient(180deg, rgba(9,14,22,0.1), rgba(9,14,22,0.9)), url(${dashboardBg.src})` }}
-        >
-          <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close benefits" onClick={() => setShowLeavingMessage(true)}>
-            <X className="size-5" />
-          </button>
-          <div className="mt-10 max-w-[18rem]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5EF2C2]">Premium Benefits</p>
-            <h2 className="mt-2 text-xl font-bold leading-7 text-white">Unlock complete loan tracking</h2>
-          </div>
-        </div>
-
-        <div className="px-5 pb-5 pt-4">
-          <div className="grid gap-3 text-sm font-medium leading-5 text-[#AAB6C8]">
-            {isLoadingBenefits ? (
-              <>
-                <span className="h-11 animate-pulse rounded-2xl bg-white/[0.08]" />
-                <span className="h-11 animate-pulse rounded-2xl bg-white/[0.08]" />
-                <span className="h-11 animate-pulse rounded-2xl bg-white/[0.08]" />
-              </>
-            ) : (
-              benefitItems.map((benefit) => (
-                <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
-              ))
-            )}
-          </div>
-
-          <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-base font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
-            Subscription
-          </button>
-          <button className="mx-auto mt-3 block text-xs font-medium text-[#6F7B8E]" type="button" onClick={() => setShowLeavingMessage(true)}>
-            skip for later
-          </button>
-        </div>
+      <section className="mx-auto h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+        <PremiumBenefitsIntro ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} onClose={() => setShowLeavingMessage(true)} onSubscribe={onSubscribe} />
       </section>
 
       {showLeavingMessage ? (
-        <div className="absolute inset-0 z-10 flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm" onClick={onClose}>
-          <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]" onClick={(event) => event.stopPropagation()}>
-            <div
-              className="min-h-44 bg-cover bg-center px-5 py-6"
-              style={{ backgroundImage: `linear-gradient(180deg, rgba(9,14,22,0.1), rgba(9,14,22,0.9)), url(${dashboardBg.src})` }}
-            >
-              <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close benefits message" onClick={onClose}>
-                <X className="size-5" />
-              </button>
-              <div className="mt-10 max-w-[18rem]">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5EF2C2]">Before you leave</p>
-                <h2 className="mt-2 text-xl font-bold leading-7 text-white">Enjoy more benefits with premium</h2>
-              </div>
-            </div>
-
-            <div className="px-5 pb-5 pt-4">
-              <div className="grid gap-3 text-sm font-medium leading-5 text-[#AAB6C8]">
-                {benefitItems.map((benefit) => (
-                  <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
-                ))}
-              </div>
-
-              <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-base font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
-                View subscription
-              </button>
-              <button className="mx-auto mt-3 block text-xs font-medium text-[#6F7B8E]" type="button" onClick={onClose}>
-                Continue free
-              </button>
-            </div>
-          </section>
-        </div>
+        <ProBenefitsComparisonSheet comparisonBenefits={comparisonBenefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} onClose={onClose} onSubscribe={onSubscribe} />
       ) : null}
     </div>
   );
@@ -968,7 +918,9 @@ function SummaryStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[22px] border border-[#0F5D43]/45 bg-[#102017]/70 p-3">
       <p className="text-body-sm font-medium text-white/60">{label}</p>
-      <p className="mt-2 text-2xl font-extrabold text-[#08DB69]"><AnimatedNumber value={value} /></p>
+    <p className="mt-2 text-2xl font-extrabold text-[#08DB69]">
+  <AnimatedNumber value={value.replace(/^Rs\.?\s*/, "")} />
+</p>
     </div>
   );
 }

@@ -49,7 +49,7 @@ import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardHeaderHomeControl, PortalShell } from "@/components/dashboard/portal-ui";
 import { SupportDrawer } from "@/components/dashboard/topbar-actions";
-import { SubscribePromptOverlay, getSubscriptionPlans, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
+import { PremiumBenefitsIntro, ProBenefitsComparisonSheet, SubscribePromptOverlay, formatBillingCycle, formatPlanAmount, getSubscriptionPlans, useSubscribePrompt, type ComparisonBenefitRow, type SubscriptionPlan } from "@/components/dashboard/subscribe-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CibilDisplayDataError, clearCachedCibilDisplayData, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { apiRequest, apiUrl } from "@/lib/api";
@@ -590,7 +590,7 @@ export function HomeDashboard() {
                   aria-label="Premium benefits"
                   className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl sm:size-16"
                   type="button"
-                  onClick={() => setShowBenefitsPrompt(true)}
+                  onClick={promptSubscribe}
                 >
                   <Crown className="size-6 fill-[#FFD34D]/20" strokeWidth={1.8} />
                 </button>
@@ -1838,7 +1838,7 @@ function ActionPlanPopup({ dashboard, onClose }: { dashboard: DashboardData; onC
 
   return (
     <div className="fixed inset-0 z-[72] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
-      <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+      <section className="mx-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
         <div className="bg-[radial-gradient(circle_at_90%_0%,rgba(94,242,194,0.28),transparent_35%),linear-gradient(145deg,#121C28,#0D131C)] px-5 pb-5 pt-4">
           <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/10 text-white backdrop-blur" type="button" aria-label="Close action plan" onClick={onClose}>
             <X className="size-5" />
@@ -2029,20 +2029,10 @@ function buildActionPlanPoints(dashboard: DashboardData) {
   ];
 }
 
-function BenefitsSkeleton() {
-  return (
-    <>
-      <Skeleton className="h-11 bg-white/[0.06]" />
-      <Skeleton className="h-11 bg-white/[0.06]" />
-      <Skeleton className="h-11 bg-white/[0.06]" />
-    </>
-  );
-}
-
 function BenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubscribe: () => void }) {
   const [showLeavingMessage, setShowLeavingMessage] = useState(false);
-  const [benefits, setBenefits] = useState<string[]>([]);
-  const [isLoadingBenefits, setIsLoadingBenefits] = useState(true);
+  const [comparisonBenefits, setComparisonBenefits] = useState<ComparisonBenefitRow[]>([]);
+  const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -2050,18 +2040,16 @@ function BenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubsc
     async function loadBenefits() {
       try {
         const plans = await getSubscriptionPlans();
-        const apiBenefits = Array.from(new Set(plans.flatMap((plan) => plan.benefits).filter(Boolean)));
 
         if (isMounted) {
-          setBenefits(apiBenefits);
+          const plan = plans[0] ?? null;
+          setSubscriptionPlan(plan);
+          setComparisonBenefits(plans.find((item) => item.comparisonBenefits.length)?.comparisonBenefits ?? []);
         }
       } catch {
         if (isMounted) {
-          setBenefits([]);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingBenefits(false);
+          setSubscriptionPlan(null);
+          setComparisonBenefits([]);
         }
       }
     }
@@ -2075,67 +2063,11 @@ function BenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubsc
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
-      <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
-        <div
-          className="min-h-44 bg-cover bg-center px-5 py-6"
-          style={{ backgroundImage: `linear-gradient(180deg, rgba(9,14,22,0.1), rgba(9,14,22,0.9)), url(${dashboardBg.src})` }}
-        >
-          <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close benefits" onClick={() => setShowLeavingMessage(true)}>
-            <X className="size-5" />
-          </button>
-          <div className="mt-10 max-w-[18rem]">
-            <p className="text-caption font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Premium Benefits</p>
-            <h2 className="mt-2 text-heading font-semibold leading-7 text-white">Unlock your complete credit dashboard</h2>
-          </div>
-        </div>
-
-        <div className="px-5 pb-5 pt-4">
-          <div className="grid gap-3 text-body-sm font-medium leading-5 text-[#AAB6C8]">
-            {isLoadingBenefits ? <BenefitsSkeleton /> : benefits.map((benefit) => (
-              <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
-            ))}
-          </div>
-
-          <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-body font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
-            Subscription
-          </button>
-          <button className="mx-auto mt-3 block text-caption font-medium text-[#6F7B8E]" type="button" onClick={() => setShowLeavingMessage(true)}>
-            skip for later
-          </button>
-        </div>
+      <section className="mx-auto h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+        <PremiumBenefitsIntro ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} onClose={() => setShowLeavingMessage(true)} onSubscribe={onSubscribe} />
       </section>
       {showLeavingMessage ? (
-        <div className="absolute inset-0 z-10 flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm" onClick={onClose}>
-          <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]" onClick={(event) => event.stopPropagation()}>
-            <div
-              className="min-h-44 bg-cover bg-center px-5 py-6"
-              style={{ backgroundImage: `linear-gradient(180deg, rgba(9,14,22,0.1), rgba(9,14,22,0.9)), url(${dashboardBg.src})` }}
-            >
-              <button className="ml-auto grid size-9 place-items-center rounded-full bg-white/12 text-white backdrop-blur" type="button" aria-label="Close benefits message" onClick={onClose}>
-                <X className="size-5" />
-              </button>
-              <div className="mt-10 max-w-[18rem]">
-                <p className="text-caption font-semibold uppercase tracking-[3px] text-[#5EF2C2]">Before you leave</p>
-                <h2 className="mt-2 text-heading font-semibold leading-7 text-white">Enjoy more benefits with premium</h2>
-              </div>
-            </div>
-
-            <div className="px-5 pb-5 pt-4">
-              <div className="grid gap-3 text-body-sm font-medium leading-5 text-[#AAB6C8]">
-                {isLoadingBenefits ? <BenefitsSkeleton /> : benefits.map((benefit) => (
-                  <p key={benefit} className="rounded-2xl bg-white/[0.06] px-4 py-3">{benefit}</p>
-                ))}
-              </div>
-
-              <button className="mt-5 h-12 w-full rounded-2xl bg-[linear-gradient(135deg,#FFD34D,#FF7A00)] text-body font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)]" type="button" onClick={onSubscribe}>
-                View subscription
-              </button>
-              <button className="mx-auto mt-3 block text-caption font-medium text-[#6F7B8E]" type="button" onClick={onClose}>
-                Continue free
-              </button>
-            </div>
-          </section>
-        </div>
+        <ProBenefitsComparisonSheet comparisonBenefits={comparisonBenefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} onClose={onClose} onSubscribe={onSubscribe} zIndex="z-[70]" />
       ) : null}
     </div>
   );
