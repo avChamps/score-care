@@ -38,6 +38,7 @@ import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboa
 import { apiFetch, apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
+import { canUseNativeReportDownload, enqueueNativeReportDownload } from "@/lib/native-report-download";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
 import { trackEvent } from "@/src/lib/analytics";
 import { cn } from "@/lib/utils";
@@ -514,6 +515,15 @@ export function CreditScoreExperience() {
     setError("");
 
     try {
+      if (canUseNativeReportDownload()) {
+        await enqueueNativeReportDownload("/credit-reports/cibil/download-report", token, getReportFileName(null));
+        void trackEvent("pdf_report_downloaded", {
+          page_name: "credit_report",
+          report_available: true,
+        });
+        return;
+      }
+
       const response = await apiFetch("/credit-reports/cibil/download-report", {
         method: "GET",
         headers: {

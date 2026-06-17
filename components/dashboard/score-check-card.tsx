@@ -13,6 +13,7 @@ import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboa
 import { apiFetch, apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredCibilScoreCheckData } from "@/lib/cibil-display-cache";
+import { canUseNativeReportDownload, enqueueNativeReportDownload } from "@/lib/native-report-download";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
 
 type CibilPayload = {
@@ -264,6 +265,11 @@ export function ScoreCheckCard() {
     setDownloading(true);
 
     try {
+      if (canUseNativeReportDownload()) {
+        await enqueueNativeReportDownload("/credit-reports/cibil/download-report", token, getReportFileName(null));
+        return;
+      }
+
       const response = await apiFetch("/credit-reports/cibil/download-report", {
         method: "GET",
         headers: {
