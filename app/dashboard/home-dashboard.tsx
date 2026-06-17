@@ -2362,7 +2362,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#070B12] px-4 pb-28 pt-7 text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#070B12] px-4 pb-28 pt-[calc(var(--native-status-offset,0px)+1.75rem)] text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
       <section className="relative mx-auto max-w-md overflow-hidden rounded-[30px] bg-[linear-gradient(160deg,#ebe7d9,#faf7ed_48%,#d9d0bd)] p-5 text-[#111827] shadow-[0_22px_46px_rgba(58,75,140,0.38)]">
         <button className="absolute left-5 top-5 grid size-8 place-items-center rounded-full bg-black/18 text-white backdrop-blur" type="button" aria-label="Close profile" onClick={onClose}>
           <X className="size-6" strokeWidth={1.6} />
@@ -2546,7 +2546,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
 function NotificationsScreen({ error, loading, markingAll, notifications, onBack, onReadAll, unreadCount }: { error: string; loading: boolean; markingAll: boolean; notifications: NotificationItem[]; onBack: () => void; onReadAll: () => void; unreadCount: number }) {
   return (
     <div className="fixed inset-0 z-[60] bg-white text-[#1F2937] [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
-      <header className="flex h-[72px] items-center gap-2 border-b border-black/10 bg-white px-5 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+      <header className="flex h-[calc(var(--native-status-offset,0px)+72px)] items-center gap-2 border-b border-black/10 bg-white px-5 pt-[var(--native-status-offset,0px)] shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
         <button className="grid size-6 place-items-center text-[#1F2937]" type="button" aria-label="Back" onClick={onBack}>
           <ArrowLeft className="size-6" strokeWidth={2.2} />
         </button>

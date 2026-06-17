@@ -96,7 +96,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-dvh bg-white text-[#1F2937] [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
-      <header className="sticky top-0 z-10 flex h-[72px] items-center gap-2 border-b border-black/10 bg-white px-5 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+      <header className="sticky top-0 z-10 flex h-[calc(var(--native-status-offset,0px)+72px)] items-center gap-2 border-b border-black/10 bg-white px-5 pt-[var(--native-status-offset,0px)] shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
         <Link className="grid size-6 place-items-center text-[#1F2937]" href="/dashboard" aria-label="Back">
           <ArrowLeft className="size-6" strokeWidth={2.2} />
         </Link>

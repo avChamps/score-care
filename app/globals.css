@@ -98,11 +98,6 @@ html.translated-rtl body {
   top: 0 !important;
 }
 
-.native-shell header,
-.native-shell footer {
-  display: none !important;
-}
-
 .native-shell body {
   background: var(--portal-bg);
 }
