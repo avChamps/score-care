@@ -1675,10 +1675,6 @@ function LanguageApplyLoader() {
   return (
     <div className="fixed inset-0 z-[100] overflow-hidden bg-[#050912] px-4 pb-8 pt-8 text-white">
       <div className="mx-auto max-w-5xl">
-        <div className="flex items-center justify-between">
-          <div className="size-14 animate-pulse rounded-full bg-white/[0.08] sm:size-16" />
-          <div className="size-14 animate-pulse rounded-full bg-white/[0.08] sm:size-16" />
-        </div>
         <div className="mt-12">
           <div className="h-4 w-36 animate-pulse rounded-full bg-white/[0.08]" />
           <div className="mt-3 h-7 w-52 animate-pulse rounded-full bg-white/[0.08]" />

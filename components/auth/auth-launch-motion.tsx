@@ -21,12 +21,6 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
     if (!isNativeShell && !isMobileView) return;
 
     setShowLaunch(true);
-
-    const timer = window.setTimeout(() => {
-      setShowLaunch(false);
-    }, 5000);
-
-    return () => window.clearTimeout(timer);
   }, []);
 
   const launchVideo =
@@ -38,9 +32,9 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
   <video
     autoPlay
     muted
-    loop
     playsInline
     preload="auto"
+    onEnded={() => setShowLaunch(false)}
     className="absolute inset-0 h-full w-full object-fill"
   >
     <source src="/loginpage-animation.mp4" type="video/mp4" />
