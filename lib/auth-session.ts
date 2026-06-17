@@ -22,6 +22,14 @@ export function clearScorecareSession() {
   SCORECARE_SESSION_KEYS.forEach((key) => localStorage.removeItem(key));
 }
 
+export function logoutScorecareSession() {
+  clearScorecareSession();
+
+  if (typeof window !== "undefined") {
+    window.location.replace("/login");
+  }
+}
+
 export function isTokenExpired(token: string) {
   if (token.split(".").length !== 3) return false;
 

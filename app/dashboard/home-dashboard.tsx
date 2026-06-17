@@ -53,7 +53,7 @@ import { SubscribePromptOverlay, getSubscriptionPlans, useSubscribePrompt } from
 import { Skeleton } from "@/components/ui/skeleton";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { apiRequest, apiUrl } from "@/lib/api";
-import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { clearScorecareSession, isTokenExpired, logoutScorecareSession } from "@/lib/auth-session";
 import { initializePushNotifications, type PushNotificationInitState } from "@/src/lib/pushNotifications";
 import { cn } from "@/lib/utils";
 
@@ -969,7 +969,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
 
   return (
     <section
-      className="fixed inset-0 z-[80] overflow-y-auto bg-[#070B12] px-4 pb-28 pt-7 text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]"
+      className="fixed inset-0 z-[80] overflow-y-auto bg-[#070B12] px-4 pb-28 pt-[calc(var(--native-status-offset,0px)+1.75rem)] text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]"
       onClick={(event) => event.stopPropagation()}
     >
       <div className="mx-auto max-w-md pb-10">
@@ -2393,7 +2393,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
           <X className="size-6" strokeWidth={1.6} />
         </button>
 
-        <div className="mt-8 rounded-[24px] bg-white/35 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
+        <div className="mt-12 rounded-[24px] bg-white/35 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
           <div className="mb-5 inline-flex rounded-full bg-[#C9F9DF] px-4 py-1.5 text-caption font-medium text-[#07844E]">{completion}% Complete</div>
           <div className="grid gap-3.5">
             <ProfileField label="Full name" value={profile?.fullName || name} />
@@ -3691,6 +3691,5 @@ function calculateProfileCompletion(profile: UserProfile | null) {
 }
 
 function logoutUser() {
-  clearScorecareSession();
-  window.location.replace("/login");
+  logoutScorecareSession();
 }

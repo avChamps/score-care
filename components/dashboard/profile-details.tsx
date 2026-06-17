@@ -16,7 +16,7 @@ import { useEffect, useState } from "react";
 import { AppCard } from "@/components/dashboard/portal-ui";
 import { ScorecareBrandAnimation } from "@/components/auth/scorecare-brand-animation";
 import { apiRequest } from "@/lib/api";
-import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { clearScorecareSession, isTokenExpired, logoutScorecareSession } from "@/lib/auth-session";
 
 type UserProfile = {
   id: number;
@@ -79,8 +79,7 @@ export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean 
   }, [router]);
 
   function logout() {
-    clearScorecareSession();
-    router.replace("/login");
+    logoutScorecareSession();
   }
 
   function openAdminView() {

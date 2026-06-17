@@ -571,7 +571,7 @@ export function LoginFlow() {
 
               <p className="mt-3 text-base font-medium leading-6 text-white">
                 We sent a verification code to{" "}
-                <span className="font-bold text-[#22F2C2]">
+                <span className="whitespace-nowrap font-bold text-[#22F2C2]">
                   +91 {cleanMobile}
                 </span>
                 .
