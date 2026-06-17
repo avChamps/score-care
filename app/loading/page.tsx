@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 
+const launchVideoSrc = "/loginpage-animation-20260617.mp4";
+
 export default function LoadingPage() {
   const router = useRouter();
 
@@ -26,7 +28,7 @@ export default function LoadingPage() {
   return (
     <div className="fixed inset-0 z-[120] h-[100dvh] w-[100vw] overflow-hidden bg-[#020B18]">
       <video autoPlay muted playsInline preload="auto" className="absolute inset-0 h-full w-full object-fill">
-        <source src="/loginpage-animation.mp4" type="video/mp4" />
+        <source src={launchVideoSrc} type="video/mp4" />
       </video>
     </div>
   );

@@ -8,6 +8,8 @@ type AuthLaunchMotionProps = {
   children: ReactNode;
 };
 
+const launchVideoSrc = "/loginpage-animation-20260617.mp4";
+
 export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
   const [showLaunch, setShowLaunch] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -37,7 +39,7 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
     onEnded={() => setShowLaunch(false)}
     className="absolute inset-0 h-full w-full object-fill"
   >
-    <source src="/loginpage-animation.mp4" type="video/mp4" />
+    <source src={launchVideoSrc} type="video/mp4" />
   </video>
 </motion.div>
 
