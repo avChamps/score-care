@@ -616,14 +616,14 @@ export function HomeDashboard() {
               <h1 className="mt-1 text-[31px] font-bold italic leading-none text-[#10206B] sm:text-[35px]"><AnimatedNumber value="800+" /></h1>
               <p className="mt-1.5 text-heading font-medium leading-5 text-white sm:text-heading sm:leading-6">Credit Ready</p>
 
-              <p className="mt-4 inline-flex items-center rounded-full bg-[#112C8F] px-4 py-2 text-white shadow-[0_12px_26px_rgba(17,44,143,0.22)] sm:mt-5">
-                <span className="text-body-sm font-medium sm:text-body">
-                  Hi,
-                </span>
-                <span className="ml-1 text-caption font-semibold sm:text-body-sm">
-                  {name}
-                </span>
-              </p>
+                <p className="mt-4 inline-flex items-center rounded-full bg-[#112C8F] px-4 py-2 text-white shadow-[0_12px_26px_rgba(17,44,143,0.22)] sm:mt-5">
+                  <span className="text-base font-medium sm:text-lg">
+                    Hi,
+                  </span>
+                  <span className="ml-1 text-lg font-semibold sm:text-xl">
+                    {name}
+                  </span>
+                </p>
             </div>
           </div>
         </div>
