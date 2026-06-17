@@ -31,7 +31,7 @@ import {
   PrimaryPortalButton,
 } from "@/components/dashboard/portal-ui";
 import { SubscribePromptOverlay, getSubscriptionPlans, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
-import { apiRequest, apiUrl } from "@/lib/api";
+import { apiFetch, apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
@@ -376,6 +376,18 @@ export function LoansExperience() {
 
     return () => window.removeEventListener("scorecare:notifications-updated", refreshNotifications);
   }, [refreshNotifications]);
+
+  useEffect(() => {
+    function refreshLoansScreen() {
+      void loadLoans();
+      void loadApplicationStatus();
+      void refreshNotifications();
+    }
+
+    window.addEventListener("scorecare:app-refresh", refreshLoansScreen);
+
+    return () => window.removeEventListener("scorecare:app-refresh", refreshLoansScreen);
+  }, [loadApplicationStatus, loadLoans, refreshNotifications]);
 
   useEffect(() => {
     if (!toast) return;
@@ -1245,7 +1257,7 @@ function ApplyLoanDialog({
     setSubmitError("");
 
     try {
-      const response = await fetch(apiUrl("/loans/apply"), {
+      const response = await apiFetch("/loans/apply", {
         body: payload,
         headers: {
           Authorization: `Bearer ${token}`,

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AppLifecycleProvider } from "@/components/layout/app-lifecycle-provider";
 import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 
@@ -58,7 +59,9 @@ export default function RootLayout({
         />
       </head>
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        <AppShell>{children}</AppShell>
+        <AppLifecycleProvider>
+          <AppShell>{children}</AppShell>
+        </AppLifecycleProvider>
       </body>
     </html>
   );

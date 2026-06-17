@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
+import { memo } from "react";
 import {
   BadgeIndianRupee,
   FileText,
@@ -20,7 +21,7 @@ const dashboardTabs = [
   { label: "Loans", href: "/dashboard/loans", Icon: BadgeIndianRupee },
 ];
 
-export function DashboardBottomNav() {
+function DashboardBottomNavComponent() {
   const pathname = usePathname();
 
   return (
@@ -86,3 +87,6 @@ export function DashboardBottomNav() {
     </div>
   );
 }
+
+export const DashboardBottomNav = memo(DashboardBottomNavComponent);
+DashboardBottomNav.displayName = "DashboardBottomNav";

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppCard } from "@/components/dashboard/portal-ui";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
-import { apiRequest, apiUrl } from "@/lib/api";
+import { apiFetch, apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 
 type AdminDataColumn = {
@@ -121,7 +121,7 @@ export function AdminDataTable({ columns, description, emptyMessage, endpoint, e
       setNotice("");
 
       try {
-        const response = await fetch(apiUrl(exportEndpoint), {
+        const response = await apiFetch(exportEndpoint, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

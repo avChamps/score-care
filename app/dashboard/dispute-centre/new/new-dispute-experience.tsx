@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
-import { apiUrl } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
 import { cn } from "@/lib/utils";
@@ -127,7 +127,7 @@ export function NewDisputeExperience() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(apiUrl("/api/disputes"), {
+      const response = await apiFetch("/api/disputes", {
         body: payload,
         headers: { Authorization: `Bearer ${token}` },
         method: "POST",

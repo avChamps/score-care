@@ -35,7 +35,7 @@ import {
   PrimaryPortalButton,
 } from "@/components/dashboard/portal-ui";
 import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
-import { apiRequest, apiUrl } from "@/lib/api";
+import { apiFetch, apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
@@ -471,6 +471,16 @@ export function CreditScoreExperience() {
     return () => window.removeEventListener("scorecare:notifications-updated", refreshNotifications);
   }, []);
 
+  useEffect(() => {
+    function refreshCreditScoreScreen() {
+      void loadDisplayData();
+    }
+
+    window.addEventListener("scorecare:app-refresh", refreshCreditScoreScreen);
+
+    return () => window.removeEventListener("scorecare:app-refresh", refreshCreditScoreScreen);
+  }, [loadDisplayData]);
+
   async function downloadReport() {
     if (downloading) return;
 
@@ -491,7 +501,7 @@ export function CreditScoreExperience() {
     setError("");
 
     try {
-      const response = await fetch(apiUrl("/credit-reports/cibil/download-report"), {
+      const response = await apiFetch("/credit-reports/cibil/download-report", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,

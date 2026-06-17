@@ -148,6 +148,33 @@ html.translated-rtl body {
   padding-bottom: max(0.375rem, env(safe-area-inset-bottom, 0));
 }
 
+.native-shell .backdrop-blur,
+.native-shell .backdrop-blur-sm,
+.native-shell .backdrop-blur-md,
+.native-shell .backdrop-blur-lg,
+.native-shell .backdrop-blur-xl,
+.native-shell .backdrop-blur-2xl,
+.native-shell .backdrop-blur-3xl {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.native-shell .shadow-lg,
+.native-shell .shadow-xl,
+.native-shell .shadow-2xl,
+.native-shell .shadow-\[0_20px_60px_rgba\(8\,_15\,_40\,_0\.18\)\],
+.native-shell .shadow-\[0_24px_80px_rgba\(8\,_15\,_40\,_0\.22\)\] {
+  box-shadow: var(--portal-shadow) !important;
+}
+
+.native-shell * {
+  scroll-behavior: auto !important;
+}
+
+.native-shell [style*="transform"] {
+  will-change: auto;
+}
+
 .scorecare-utilization-slider::-webkit-slider-thumb {
   appearance: none;
   width: 22px;

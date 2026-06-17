@@ -1,4 +1,6 @@
 /// <reference types="@capacitor/push-notifications" />
+/// <reference types="@capacitor/app" />
+/// <reference types="@capacitor/network" />
 
 import type { CapacitorConfig } from "@capacitor/cli";
 
@@ -13,6 +15,8 @@ const config: CapacitorConfig = {
     CapacitorHttp: {
       enabled: true,
     },
+    App: {},
+    Network: {},
     PushNotifications: {
       presentationOptions: ["alert", "sound"],
     },

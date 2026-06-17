@@ -498,6 +498,20 @@ export function ScoreFixExperience() {
   }, [activeTab, loadRepairContent, loadRepairRequests]);
 
   useEffect(() => {
+    function refreshScoreFixScreen() {
+      void loadRepairContent();
+
+      if (activeTab === "Credit Improvement Plan") {
+        void loadRepairRequests();
+      }
+    }
+
+    window.addEventListener("scorecare:app-refresh", refreshScoreFixScreen);
+
+    return () => window.removeEventListener("scorecare:app-refresh", refreshScoreFixScreen);
+  }, [activeTab, loadRepairContent, loadRepairRequests]);
+
+  useEffect(() => {
     if (subscriptionLoading) return;
 
     let tabTimer: number | undefined;

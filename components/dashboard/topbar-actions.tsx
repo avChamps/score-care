@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { apiRequest, apiUrl } from "@/lib/api";
+import { apiFetch, apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
@@ -638,7 +638,7 @@ export function SupportDrawer({ onClose }: { onClose: () => void }) {
 
       localStorage.setItem(assistantContextCacheKey, context);
 
-      const response = await fetch(apiUrl("/ai/gemini"), {
+      const response = await apiFetch("/ai/gemini", {
         method: "POST",
         headers: {
           Accept: "text/event-stream",

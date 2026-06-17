@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { AppCard, PrimaryPortalButton } from "@/components/dashboard/portal-ui";
 import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
-import { apiRequest, apiUrl } from "@/lib/api";
+import { apiFetch, apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
@@ -264,7 +264,7 @@ export function ScoreCheckCard() {
     setDownloading(true);
 
     try {
-      const response = await fetch(apiUrl("/credit-reports/cibil/download-report"), {
+      const response = await apiFetch("/credit-reports/cibil/download-report", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,

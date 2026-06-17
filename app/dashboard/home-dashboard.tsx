@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ComponentType } from "react";
 import type { KeyboardEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dashboardBg from "@/assets/dashboard-bg.jpg";
 
 import {
@@ -229,58 +229,82 @@ export function HomeDashboard() {
   });
   const [homepageBackgroundImages, setHomepageBackgroundImages] = useState<string[]>([dashboardBg.src]);
   const [homepageBackgroundIndex, setHomepageBackgroundIndex] = useState(0);
+  const isDashboardLoadingRef = useRef(false);
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
-  useEffect(() => {
-    async function loadDashboard() {
-      const token = localStorage.getItem("scorecare_token");
+  const loadDashboard = useCallback(async (showLoading = true) => {
+    if (isDashboardLoadingRef.current) {
+      return;
+    }
 
-      if (!token || isTokenExpired(token)) {
+    isDashboardLoadingRef.current = true;
+
+    const token = localStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      isDashboardLoadingRef.current = false;
+      clearScorecareSession();
+      window.location.replace("/login");
+      return;
+    }
+
+    try {
+      if (showLoading) {
+        setIsLoading(true);
+      }
+
+      setIsLanguageLoading(readStoredLanguage() !== "en");
+      setError("");
+
+      const profile = await loadProfile(token);
+      const shouldWaitForLanguage = applyProfileLanguage(profile);
+      setIsLanguageLoading(shouldWaitForLanguage);
+      const freeTier = isFreeTierProfile(profile);
+      const displayData = freeTier ? await loadBasicCibilScoreData(token, profile) : await loadCibilData(token, profile);
+      const activeDisputes = freeTier ? 0 : await loadActiveDisputes(token);
+      const notifications = await loadNotifications(token);
+
+      setName(profile?.fullName?.trim() || readDisplayName(displayData) || "there");
+      setProfile(profile);
+      setIsFreeTier(freeTier);
+      setNotificationUnreadCount(notifications.unreadCount);
+      setDashboard(freeTier ? buildFreeTierDashboard(displayData) : buildDashboardData(displayData, profile, activeDisputes));
+      if (shouldWaitForLanguage) {
+        await waitForLanguageApply();
+      }
+      setIsLanguageLoading(false);
+    } catch (loadError) {
+      if (loadError instanceof CibilDisplayDataError && (loadError.status === 401 || loadError.status === 403)) {
         clearScorecareSession();
         window.location.replace("/login");
         return;
       }
 
-      try {
-        setIsLoading(true);
-        setIsLanguageLoading(readStoredLanguage() !== "en");
-        setError("");
-
-        const profile = await loadProfile(token);
-        const shouldWaitForLanguage = applyProfileLanguage(profile);
-        setIsLanguageLoading(shouldWaitForLanguage);
-        const freeTier = isFreeTierProfile(profile);
-        const displayData = freeTier ? await loadBasicCibilScoreData(token, profile) : await loadCibilData(token, profile);
-        const activeDisputes = freeTier ? 0 : await loadActiveDisputes(token);
-        const notifications = await loadNotifications(token);
-
-        setName(profile?.fullName?.trim() || readDisplayName(displayData) || "there");
-        setProfile(profile);
-        setIsFreeTier(freeTier);
-        setNotificationUnreadCount(notifications.unreadCount);
-        setDashboard(freeTier ? buildFreeTierDashboard(displayData) : buildDashboardData(displayData, profile, activeDisputes));
-        if (shouldWaitForLanguage) {
-          await waitForLanguageApply();
-        }
-        setIsLanguageLoading(false);
-      } catch (loadError) {
-        if (loadError instanceof CibilDisplayDataError && (loadError.status === 401 || loadError.status === 403)) {
-          clearScorecareSession();
-          window.location.replace("/login");
-          return;
-        }
-
-        setName(localStorage.getItem("scorecare_full_name")?.trim() || "there");
-        setDashboard(createEmptyDashboard());
-        setError("Score data is unavailable right now.");
-        setIsLanguageLoading(false);
-      } finally {
+      setName(localStorage.getItem("scorecare_full_name")?.trim() || "there");
+      setDashboard(createEmptyDashboard());
+      setError("Score data is unavailable right now.");
+      setIsLanguageLoading(false);
+    } finally {
+      isDashboardLoadingRef.current = false;
+      if (showLoading) {
         setIsLoading(false);
       }
     }
-
-    loadDashboard();
   }, []);
+
+  useEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    function refreshDashboard() {
+      void loadDashboard(false);
+    }
+
+    window.addEventListener("scorecare:app-refresh", refreshDashboard);
+
+    return () => window.removeEventListener("scorecare:app-refresh", refreshDashboard);
+  }, [loadDashboard]);
 
   useEffect(() => {
     let isMounted = true;
