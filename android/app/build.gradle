@@ -1,4 +1,37 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'
+
+def scoreCareSigningProperties = new Properties()
+def scoreCareLocalPropertiesFile = rootProject.file('local.properties')
+if (scoreCareLocalPropertiesFile.exists()) {
+    scoreCareLocalPropertiesFile.withInputStream { scoreCareSigningProperties.load(it) }
+}
+
+def scoreCareSigningValue = { key ->
+    def localValue = scoreCareSigningProperties.getProperty(key)
+    if (localValue != null && localValue.trim()) {
+        return localValue.trim()
+    }
+
+    def projectValue = project.findProperty(key)
+    if (projectValue != null && projectValue.toString().trim()) {
+        return projectValue.toString().trim()
+    }
+
+    def environmentValue = System.getenv(key)
+    if (environmentValue != null && environmentValue.trim()) {
+        return environmentValue.trim()
+    }
+
+    return null
+}
+
+def scoreCareUploadStoreFile = scoreCareSigningValue('SCORECARE_UPLOAD_STORE_FILE')
+def scoreCareUploadKeyAlias = scoreCareSigningValue('SCORECARE_UPLOAD_KEY_ALIAS')
+def scoreCareUploadStorePassword = scoreCareSigningValue('SCORECARE_UPLOAD_STORE_PASSWORD')
+def scoreCareUploadKeyPassword = scoreCareSigningValue('SCORECARE_UPLOAD_KEY_PASSWORD')
+def hasScoreCareReleaseSigning = scoreCareUploadStoreFile && scoreCareUploadKeyAlias && scoreCareUploadStorePassword && scoreCareUploadKeyPassword
 
 android {
     namespace "in.scorecare.app"
@@ -8,7 +41,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,11 +49,30 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hasScoreCareReleaseSigning) {
+                storeFile file(scoreCareUploadStoreFile)
+                keyAlias scoreCareUploadKeyAlias
+                storePassword scoreCareUploadStorePassword
+                keyPassword scoreCareUploadKeyPassword
+            }
+        }
+    }
     buildTypes {
         release {
+            if (hasScoreCareReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    if (!hasScoreCareReleaseSigning && taskGraph.allTasks.any { it.name == 'bundleRelease' || it.name == 'assembleRelease' }) {
+        throw new GradleException('Missing ScoreCare release signing config. Define SCORECARE_UPLOAD_STORE_FILE, SCORECARE_UPLOAD_KEY_ALIAS, SCORECARE_UPLOAD_STORE_PASSWORD, and SCORECARE_UPLOAD_KEY_PASSWORD in android/local.properties, android/gradle.properties, or environment variables.')
     }
 }
 
@@ -32,6 +84,9 @@ repositories {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation platform('com.google.firebase:firebase-bom:33.10.0')
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-crashlytics'
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
@@ -43,12 +98,3 @@ dependencies {
 }
 
 apply from: 'capacitor.build.gradle'
-
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-    }
-} catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
-}

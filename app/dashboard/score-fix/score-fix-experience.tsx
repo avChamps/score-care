@@ -15,6 +15,7 @@ import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { readSelectedCibilRepairAccounts, writeSelectedCibilRepairAccounts, type SelectedCibilRepairAccount } from "@/lib/cibil-repair-selection";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
+import { trackEvent } from "@/src/lib/analytics";
 import { cn } from "@/lib/utils";
 
 const improveTabs = ["Credit Improvement Plan", "Simulator"] as const;
@@ -368,6 +369,18 @@ export function ScoreFixExperience() {
   useEffect(() => {
     validateSession();
   }, [validateSession]);
+
+  useEffect(() => {
+    if (subscriptionLoading) {
+      return;
+    }
+
+    void trackEvent("score_improve_viewed", {
+      page_name: "score_improve",
+      report_available: Boolean(displayData),
+      subscription_status: isFreeTier ? "free" : "paid",
+    });
+  }, [displayData, isFreeTier, subscriptionLoading]);
 
   useEffect(() => {
     async function loadDisplayData() {

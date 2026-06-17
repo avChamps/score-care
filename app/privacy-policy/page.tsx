@@ -10,7 +10,7 @@ const privacySections = [
     items: [
       "Identity and contact details such as name, mobile number, email address, date of birth, PAN, and account login information.",
       "Credit and financial information received with your consent, including credit score, report data, account summaries, enquiries, repayment behaviour, dispute details, and report documents.",
-      "Usage, device, technical, payment status, and support information needed to operate, secure, and improve ScoreCare.",
+      "Usage, app interaction, device, diagnostics, crash logs, ANR information, payment status, and support information needed to operate, secure, and improve ScoreCare.",
     ],
   },
   {
@@ -18,6 +18,7 @@ const privacySections = [
     items: [
       "To verify your identity, fetch or display credit information, provide report analysis, generate insights, support dispute or score repair workflows, and manage subscriptions.",
       "To send OTPs, service messages, payment updates, support responses, security alerts, and legally required notices.",
+      "To measure app performance, understand safe feature usage, diagnose crashes and errors, and improve reliability without sending PAN, credit score, report details, mobile number, email, date of birth, full name, or sensitive financial data to analytics.",
       "To prevent fraud, protect the platform, comply with applicable law, resolve disputes, and enforce our terms.",
     ],
   },

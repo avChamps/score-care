@@ -54,6 +54,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CibilDisplayDataError, clearCachedCibilDisplayData, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired, logoutScorecareSession } from "@/lib/auth-session";
+import { logCrashlyticsMessage, setSafeUserId, trackEvent } from "@/src/lib/analytics";
 import { initializePushNotifications, type PushNotificationInitState } from "@/src/lib/pushNotifications";
 import { cn } from "@/lib/utils";
 
@@ -97,6 +98,8 @@ export type UserProfile = {
   fullName?: string;
   email?: string;
   dateOfBirth?: string;
+  publicId?: string | null;
+  public_id?: string | null;
   selectedLanguage?: string | null;
   cibilScore?: string | number | null;
 };
@@ -271,9 +274,16 @@ export function HomeDashboard() {
 
       setName(profileWithSubscription?.fullName?.trim() || readDisplayName(displayData) || "there");
       setProfile(profileWithSubscription);
+      void setSafeUserId(profileWithSubscription?.publicId ?? profileWithSubscription?.public_id ?? null);
       setIsFreeTier(freeTier);
       setNotificationUnreadCount(notifications.unreadCount);
       setDashboard(freeTier ? buildFreeTierDashboard(displayData) : buildDashboardData(displayData, profileWithSubscription, activeDisputes));
+      void trackEvent("dashboard_viewed", {
+        page_name: "dashboard",
+        report_available: Boolean(displayData),
+        subscription_status: freeTier ? "free" : "paid",
+      });
+      void logCrashlyticsMessage("Dashboard loaded");
       if (shouldWaitForLanguage) {
         await waitForLanguageApply();
       }

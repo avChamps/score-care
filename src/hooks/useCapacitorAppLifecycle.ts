@@ -5,6 +5,7 @@ import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { Network } from "@capacitor/network";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
+import { logCrashlyticsMessage, trackEvent } from "@/src/lib/analytics";
 
 const RESUME_REFRESH_THROTTLE_MS = 1500;
 
@@ -58,6 +59,9 @@ export function useCapacitorAppLifecycle() {
 
     window.addEventListener("scorecare:session-expired", handleSessionExpired);
     addCleanup(() => window.removeEventListener("scorecare:session-expired", handleSessionExpired));
+
+    void trackEvent("app_open", { page_name: "app" });
+    void logCrashlyticsMessage("App opened");
 
     void App.addListener("pause", () => {
       isActive = false;

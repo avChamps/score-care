@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { clearCachedCibilDisplayData, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
+import { logCrashlyticsMessage, trackEvent } from "@/src/lib/analytics";
 
 export type SubscriptionPlan = {
   id: string;
@@ -202,6 +203,17 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
     return () => window.clearTimeout(resetTimer);
   }, [show]);
 
+  useEffect(() => {
+    if (!show || !showPlans || !selectedPlan) {
+      return;
+    }
+
+    void trackEvent("subscription_plan_viewed", {
+      page_name: "subscription",
+      plan_public_id: selectedPlan.publicId || selectedPlan.id,
+    });
+  }, [selectedPlan, show, showPlans]);
+
   function closePrompt(event: MouseEvent) {
     event.stopPropagation();
     setShowSkipMessage(true);
@@ -228,6 +240,12 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
 
     setPaymentLoading(true);
     setPaymentMessage("");
+    void trackEvent("razorpay_payment_started", {
+      page_name: "subscription",
+      payment_status: "started",
+      plan_public_id: planPublicId,
+    });
+    void logCrashlyticsMessage("Payment started");
 
     try {
       await loadRazorpayCheckout();
@@ -256,8 +274,6 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
       if (!subscriptionResponse.ok || !data?.keyId || !order?.id || !data?.customerId || data?.recurring !== "1" || !window.Razorpay) {
         throw new Error("Unable to create subscription.");
       }
-
-      console.log("Razorpay Prefill", prefill);
 
       const checkout = new window.Razorpay({
         key: data.keyId,
@@ -293,6 +309,17 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
               throw new Error("Unable to confirm subscription.");
             }
 
+            void trackEvent("razorpay_payment_success", {
+              page_name: "subscription",
+              payment_status: "success",
+              plan_public_id: planPublicId,
+            });
+            void trackEvent("subscription_activated", {
+              page_name: "subscription",
+              subscription_status: "active",
+              plan_public_id: planPublicId,
+            });
+            void logCrashlyticsMessage("Payment confirm API success");
             clearSubscriptionPaymentCache();
             await Promise.allSettled([
               fetchSubscriptionStatus(token),
@@ -303,18 +330,37 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
             onClose();
             router.replace("/dashboard?subscription=success");
           } catch (error) {
+            void trackEvent("razorpay_payment_failed", {
+              page_name: "subscription",
+              payment_status: "confirm_failed",
+              plan_public_id: planPublicId,
+            });
+            void logCrashlyticsMessage("Payment confirm API failure");
             setPaymentMessage(error instanceof Error ? error.message : "Unable to confirm subscription.");
           } finally {
             setPaymentLoading(false);
           }
         },
         modal: {
-          ondismiss: () => setPaymentLoading(false),
+          ondismiss: () => {
+            void trackEvent("razorpay_payment_failed", {
+              page_name: "subscription",
+              payment_status: "dismissed",
+              plan_public_id: planPublicId,
+            });
+            setPaymentLoading(false);
+          },
         },
       });
 
       checkout.open();
     } catch (error) {
+      void trackEvent("razorpay_payment_failed", {
+        page_name: "subscription",
+        payment_status: "failed",
+        plan_public_id: planPublicId,
+      });
+      void logCrashlyticsMessage("Payment setup failure");
       setPaymentMessage(error instanceof Error ? error.message : "Payment failed. Please try again.");
       setPaymentLoading(false);
     }

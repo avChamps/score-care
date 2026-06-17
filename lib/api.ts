@@ -1,10 +1,20 @@
 import { Capacitor, CapacitorHttp, type HttpOptions } from "@capacitor/core";
 
-export const API_BASE_URL = 'http://192.168.1.7:5000';
-// export const API_BASE_URL = "https://scorecareapp.com/api";
+const PRODUCTION_API_BASE_URL = "https://scorecareapp.com/api";
+const DEVELOPMENT_API_BASE_URL = "https://scorecareapp.com/api";
+
+export const API_BASE_URL = process.env.NODE_ENV === "development"
+  ? normalizeApiBaseUrl(DEVELOPMENT_API_BASE_URL)
+  : PRODUCTION_API_BASE_URL;
 
 export function apiUrl(path: string) {
-  return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  if (API_BASE_URL.endsWith("/api") && normalizedPath.startsWith("/api/")) {
+    return `${API_BASE_URL}${normalizedPath.slice(4)}`;
+  }
+
+  return `${API_BASE_URL}${normalizedPath}`;
 }
 
 type ApiRequestOptions = {
@@ -180,4 +190,8 @@ function notifySessionExpired() {
 
 function wait(ms: number) {
   return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
+}
+
+function normalizeApiBaseUrl(url: string) {
+  return url.replace(/\/+$/, "");
 }

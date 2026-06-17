@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState, type ClipboardEvent } from "
 import panDetailsImage from "@/assets/pan-details.png";
 import { ButtonLoader } from "@/components/auth/button-loader";
 import { apiRequest } from "@/lib/api";
+import { logCrashlyticsMessage, setSafeUserId, trackEvent } from "@/src/lib/analytics";
 import { getCachedCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { cn } from "@/lib/utils";
 
@@ -109,6 +110,11 @@ export function LoginFlow() {
   const otpTimerText = `00:${String(otpSeconds).padStart(2, "0")}`;
 
   useEffect(() => {
+    void trackEvent("login_started", { page_name: "login" });
+    void logCrashlyticsMessage("Login screen opened");
+  }, []);
+
+  useEffect(() => {
     if (step !== "otp" || otpSeconds === 0) return;
 
     const timer = window.setTimeout(() => {
@@ -159,6 +165,7 @@ export function LoginFlow() {
 
       if (!response.ok) throw new Error("Unable to send OTP");
 
+      void trackEvent("otp_requested", { page_name: "login" });
       setOtpDigits(["", "", "", "", "", ""]);
       setOtpSeconds(45);
       setStep("otp");
@@ -174,6 +181,7 @@ export function LoginFlow() {
 
     setOtpError("");
     setIsVerifyingOtp(true);
+    void logCrashlyticsMessage("OTP submitted");
 
     try {
       const response = await apiRequest("/auth/verify-otp", {
@@ -196,12 +204,15 @@ export function LoginFlow() {
       }
 
       if (session?.user) {
+        void setSafeUserId(session.user.publicId ?? session.user.public_id ?? null);
         localStorage.setItem("scorecare_mobile_number", session.user.mobileNumber ?? session.mobileNumber ?? cleanMobile);
         localStorage.setItem("scorecare_pan_number", session.user.panNumber ?? "");
         localStorage.setItem("scorecare_full_name", session.user.fullName ?? "");
         localStorage.setItem("scorecare_email", session.user.email ?? "");
         localStorage.setItem("scorecare_date_of_birth", session.user.dateOfBirth ?? "");
       }
+
+      void trackEvent("otp_verified", { page_name: "login" });
 
       if (
         session?.nextStep === "dashboard" ||
@@ -262,6 +273,9 @@ export function LoginFlow() {
 
       await getCachedCibilScoreCheckData(token, cibilPayload, { forceRefresh: true });
 
+      void setSafeUserId(savedUser?.publicId ?? savedUser?.public_id ?? null);
+      void trackEvent("consent_accepted", { page_name: "login" });
+      void trackEvent("pan_submitted", { page_name: "login" });
       localStorage.setItem("scorecare_pan_number", cleanPan);
       localStorage.setItem("scorecare_full_name", name.trim());
       localStorage.setItem("scorecare_email", email.trim());
@@ -478,6 +492,9 @@ export function LoginFlow() {
                     onChange={(event) => {
                       setProfileError("");
                       setConsent(event.target.checked);
+                      if (event.target.checked) {
+                        void trackEvent("consent_accepted", { page_name: "login" });
+                      }
                     }}
                     type="checkbox"
                     className="mt-1 size-5 rounded border-white/20 bg-[#071626] accent-[#22F2C2]"

@@ -23,6 +23,12 @@
 # misc
 .DS_Store
 *.pem
+*.jks
+*.keystore
+gradle.properties
+local.properties
+.env
+.env.local
 
 # debug
 npm-debug.log*

@@ -35,6 +35,7 @@ import { apiFetch, apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
+import { trackEvent } from "@/src/lib/analytics";
 import { cn } from "@/lib/utils";
 
 type LoanFilter = "All Loans" | "Your Applications";
@@ -369,6 +370,18 @@ export function LoansExperience() {
       window.clearTimeout(loadTimer);
     };
   }, [loadLoans]);
+
+  useEffect(() => {
+    if (loading || accessLoading) {
+      return;
+    }
+
+    void trackEvent("loan_page_viewed", {
+      page_name: "loans",
+      report_available: Boolean(displayData),
+      subscription_status: isFreeTier ? "free" : "paid",
+    });
+  }, [accessLoading, displayData, isFreeTier, loading]);
 
   useEffect(() => {
     void refreshNotifications();

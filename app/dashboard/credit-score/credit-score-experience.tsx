@@ -39,6 +39,7 @@ import { apiFetch, apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
+import { trackEvent } from "@/src/lib/analytics";
 import { cn } from "@/lib/utils";
 
 type Tab = "accounts" | "enquiries";
@@ -428,6 +429,18 @@ export function CreditScoreExperience() {
   }, [toast]);
 
   useEffect(() => {
+    if (loading || accessLoading) {
+      return;
+    }
+
+    void trackEvent("credit_report_viewed", {
+      page_name: "credit_report",
+      report_available: Boolean(displayData),
+      subscription_status: isFreeTier ? "free" : "paid",
+    });
+  }, [accessLoading, displayData, isFreeTier, loading]);
+
+  useEffect(() => {
     function handleDisplayUpdate(event: Event) {
       if (isFreeTier) {
         return;
@@ -526,6 +539,10 @@ export function CreditScoreExperience() {
       link.download = getReportFileName(response.headers.get("content-disposition"));
       link.click();
       URL.revokeObjectURL(url);
+      void trackEvent("pdf_report_downloaded", {
+        page_name: "credit_report",
+        report_available: true,
+      });
     } catch {
       setError("Could not download your CIBIL report. Please try again.");
     } finally {
