@@ -624,6 +624,20 @@ input:-webkit-autofill:focus {
   }
 }
 
+.launch-video-element {
+  pointer-events: none;
+}
+
+.launch-video-element::-webkit-media-controls,
+.launch-video-element::-webkit-media-controls-enclosure,
+.launch-video-element::-webkit-media-controls-panel,
+.launch-video-element::-webkit-media-controls-play-button,
+.launch-video-element::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .hero-video-poster {
     display: none;

@@ -1,18 +1,19 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { launchVideoSrc, markLaunchVideoPlayed, wasLaunchVideoRecentlyPlayed } from "@/lib/launch-video";
 
 type AuthLaunchMotionProps = {
   children: ReactNode;
 };
 
-const launchVideoSrc = "/loginpage-animation-20260617.mp4";
-
 export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
   const [showLaunch, setShowLaunch] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [videoVisible, setVideoVisible] = useState(false);
+  const revealTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -21,8 +22,34 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
     const isMobileView = window.matchMedia("(max-width: 768px)").matches;
 
     if (!isNativeShell && !isMobileView) return;
+    if (wasLaunchVideoRecentlyPlayed()) return;
 
+    markLaunchVideoPlayed();
     setShowLaunch(true);
+  }, []);
+
+  useEffect(() => {
+    if (showLaunch) return;
+
+    setVideoVisible(false);
+  }, [showLaunch]);
+
+  useEffect(() => {
+    return () => {
+      if (revealTimerRef.current) {
+        window.clearTimeout(revealTimerRef.current);
+      }
+    };
+  }, []);
+
+  const revealVideo = useCallback(() => {
+    if (revealTimerRef.current) {
+      window.clearTimeout(revealTimerRef.current);
+    }
+
+    revealTimerRef.current = window.setTimeout(() => {
+      setVideoVisible(true);
+    }, 180);
   }, []);
 
   const launchVideo =
@@ -36,8 +63,16 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
     muted
     playsInline
     preload="auto"
+    controls={false}
+    disablePictureInPicture
+    controlsList="nodownload nofullscreen noremoteplayback"
+    onCanPlay={(event) => {
+      event.currentTarget.play().catch(() => undefined);
+    }}
+    onPlaying={revealVideo}
     onEnded={() => setShowLaunch(false)}
-    className="absolute inset-0 h-full w-full object-fill"
+    onError={() => setShowLaunch(false)}
+    className={`launch-video-element absolute inset-0 h-full w-full object-fill transition-opacity duration-150 ${videoVisible ? "opacity-100" : "opacity-0"}`}
   >
     <source src={launchVideoSrc} type="video/mp4" />
   </video>
