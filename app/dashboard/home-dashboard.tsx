@@ -2224,9 +2224,14 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
   const [showDownloadReports, setShowDownloadReports] = useState(false);
   const [showLanguageSettings, setShowLanguageSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [whatsappAlertsEnabled, setWhatsappAlertsEnabled] = useState(false);
+  const [whatsappAlertsError, setWhatsappAlertsError] = useState("");
+  const [whatsappAlertsLoading, setWhatsappAlertsLoading] = useState(true);
+  const [whatsappAlertsSaving, setWhatsappAlertsSaving] = useState(false);
 
   useEffect(() => {
     void refreshProfileNotifications();
+    void loadWhatsappAlertsPreference();
 
     window.addEventListener("scorecare:profile-notifications-refresh", refreshProfileNotifications);
 
@@ -2323,6 +2328,48 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
       setNotificationError("Unable to mark all notifications read.");
     } finally {
       setNotificationsMarkingAll(false);
+    }
+  }
+
+  async function loadWhatsappAlertsPreference() {
+    const token = localStorage.getItem("scorecare_token");
+
+    if (!token || isTokenExpired(token)) {
+      setWhatsappAlertsLoading(false);
+      return;
+    }
+
+    setWhatsappAlertsError("");
+    setWhatsappAlertsLoading(true);
+
+    try {
+      const enabled = await getNotificationPreferences(token);
+      setWhatsappAlertsEnabled(enabled);
+    } catch {
+      setWhatsappAlertsError("Unable to load WhatsApp alerts.");
+    } finally {
+      setWhatsappAlertsLoading(false);
+    }
+  }
+
+  async function updateWhatsappAlertsPreference(enabled: boolean) {
+    const token = localStorage.getItem("scorecare_token");
+    const previousValue = whatsappAlertsEnabled;
+
+    if (!token || isTokenExpired(token) || whatsappAlertsSaving) return;
+
+    setWhatsappAlertsEnabled(enabled);
+    setWhatsappAlertsSaving(true);
+    setWhatsappAlertsError("");
+
+    try {
+      const updatedValue = await updateNotificationPreferences(token, enabled);
+      setWhatsappAlertsEnabled(updatedValue);
+    } catch {
+      setWhatsappAlertsEnabled(previousValue);
+      setWhatsappAlertsError("Unable to update WhatsApp alerts.");
+    } finally {
+      setWhatsappAlertsSaving(false);
     }
   }
 
@@ -2529,6 +2576,23 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
           Icon={Languages}
           onClick={() => setShowLanguageSettings(true)}
         />
+
+        <label className="flex w-full items-center gap-4 py-4">
+          <MessageCircle className="size-5 text-[#AAB6C8]" />
+          <span className="flex-1">
+            <span className="block text-body font-medium text-white">WhatsApp Alerts</span>
+            <span className="mt-0.5 block text-caption text-[#6F7B8E]">
+              {whatsappAlertsError || (whatsappAlertsLoading ? "Loading preference..." : "Alerts, updates & reminders")}
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={whatsappAlertsEnabled}
+            disabled={whatsappAlertsLoading || whatsappAlertsSaving}
+            onChange={(event) => updateWhatsappAlertsPreference(event.target.checked)}
+            className="size-5 accent-[#2DB094] disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        </label>
 
         <ProfileOption
           title="Logout"
@@ -2974,6 +3038,50 @@ async function loadNotifications(token: string) {
     notifications: result.status === "success" ? result.data?.notifications ?? [] : [],
     unreadCount: result.status === "success" ? result.data?.unreadCount ?? 0 : 0,
   };
+}
+
+async function getNotificationPreferences(token: string) {
+  const response = await apiRequest("/api/users/notification-preferences", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to load notification preferences.");
+  }
+
+  const result = (await response.json()) as {
+    data?: {
+      whatsappAlertsEnabled?: boolean;
+    };
+  };
+
+  return Boolean(result.data?.whatsappAlertsEnabled);
+}
+
+async function updateNotificationPreferences(token: string, whatsappAlertsEnabled: boolean) {
+  const response = await apiRequest("/api/users/notification-preferences", {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: {
+      whatsappAlertsEnabled,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to update notification preferences.");
+  }
+
+  const result = (await response.json()) as {
+    data?: {
+      whatsappAlertsEnabled?: boolean;
+    };
+  };
+
+  return Boolean(result.data?.whatsappAlertsEnabled);
 }
 
 async function loadActiveDisputes(token: string) {

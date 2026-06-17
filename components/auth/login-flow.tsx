@@ -39,18 +39,18 @@ type CibilPayload = {
 const defaultLegalContent: LegalContent = {
   termsAndConditions: `
     <h2>Terms and Conditions</h2>
-    <p>ScoreCare provides credit score access, credit report summaries, report analysis, repayment reminders, dispute support, and credit improvement workflows for personal financial awareness.</p>
+    <p>Scorecare provides credit score access, credit report summaries, report analysis, repayment reminders, dispute support, and credit improvement workflows for personal financial awareness.</p>
     <ul>
       <li>You must provide accurate, complete, and current information, including your mobile number, PAN, name, email, and date of birth wherever required.</li>
-      <li>You authorize ScoreCare and its service providers to verify your identity and request credit information from authorized credit bureaus or report providers when you give consent.</li>
-      <li>ScoreCare insights are informational and do not guarantee loan approval, credit card approval, score improvement, bureau correction, or any lender decision.</li>
+      <li>You authorize Scorecare and its service providers to verify your identity and request credit information from authorized credit bureaus or report providers when you give consent.</li>
+      <li>Scorecare insights are informational and do not guarantee loan approval, credit card approval, score improvement, bureau correction, or any lender decision.</li>
       <li>You are responsible for keeping your device, OTPs, and account access secure.</li>
       <li>Paid services are governed by the plan details and refund terms shown at the time of purchase.</li>
     </ul>
   `,
   privacyPolicy: `
     <h2>Privacy Policy</h2>
-    <p>ScoreCare collects and uses personal and credit information only to provide, secure, support, and improve credit-related services.</p>
+    <p>Scorecare collects and uses personal and credit information only to provide, secure, support, and improve credit-related services.</p>
     <ul>
       <li>We may collect your name, mobile number, email address, date of birth, PAN, login data, payment status, support data, device data, and consent-based credit report information.</li>
       <li>We use this information to verify identity, fetch or display credit information, provide report analysis, generate insights, manage subscriptions, send service messages, prevent fraud, and meet legal obligations.</li>
@@ -61,13 +61,13 @@ const defaultLegalContent: LegalContent = {
   `,
   consent: `
     <h2>PAN and Credit Report Consent</h2>
-    <p>By continuing, I voluntarily authorize ScoreCare and its authorized service providers to use my PAN, name, date of birth, mobile number, email address, and other submitted details to verify my identity and fetch, access, process, store, and display my credit score, credit report, and related credit information from authorized credit bureaus or report providers.</p>
+    <p>By continuing, I voluntarily authorize Scorecare and its authorized service providers to use my PAN, name, date of birth, mobile number, email address, and other submitted details to verify my identity and fetch, access, process, store, and display my credit score, credit report, and related credit information from authorized credit bureaus or report providers.</p>
     <ul>
       <li>I understand that this consent is required to provide credit score checks, report summaries, score insights, eligibility indicators, dispute support, and credit improvement recommendations.</li>
       <li>I confirm that the PAN and personal details submitted belong to me and are accurate.</li>
-      <li>I understand that ScoreCare does not guarantee any loan, credit card, financial product approval, score increase, or bureau correction.</li>
+      <li>I understand that Scorecare does not guarantee any loan, credit card, financial product approval, score increase, or bureau correction.</li>
       <li>I may withdraw this consent by contacting care@scorecare.in, but withdrawal may stop or limit credit report refreshes and related services.</li>
-      <li>I authorize ScoreCare to retain consent records and related data as required for service delivery, audit, fraud prevention, dispute resolution, and legal compliance.</li>
+      <li>I authorize Scorecare to retain consent records and related data as required for service delivery, audit, fraud prevention, dispute resolution, and legal compliance.</li>
     </ul>
   `,
 };
@@ -332,7 +332,7 @@ export function LoginFlow() {
   const legalMeta = {
     terms: {
       title: "Terms & Conditions",
-      eyebrow: "ScoreCare Terms",
+      eyebrow: "Scorecare Terms",
       key: "termsAndConditions",
     },
     privacy: {
@@ -665,7 +665,7 @@ export function LoginFlow() {
             {/* <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 shadow-[0_10px_25px_rgba(0,0,0,0.22)]">
               <ShieldCheck className="size-4 text-[#22F2C2]" />
               <span className="text-caption font-semibold uppercase tracking-[0.18em] text-[#B8FFF0]">
-                ScoreCare
+                Scorecare
               </span>
             </div> */}
 
@@ -818,7 +818,7 @@ export function LoginFlow() {
                       {legalMeta[legalPopup].title}
                     </h2>
                     {/* <p className="mt-3 text-body-sm font-medium leading-6 text-[#AAB6C8] sm:text-sm">
-                      Please review the details below before continuing with ScoreCare.
+                      Please review the details below before continuing with Scorecare.
                     </p> */}
                   </div>
 
