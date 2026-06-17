@@ -51,7 +51,7 @@ import { DashboardHeaderHomeControl, PortalShell } from "@/components/dashboard/
 import { SupportDrawer } from "@/components/dashboard/topbar-actions";
 import { SubscribePromptOverlay, getSubscriptionPlans, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CibilDisplayDataError, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
+import { CibilDisplayDataError, clearCachedCibilDisplayData, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired, logoutScorecareSession } from "@/lib/auth-session";
 import { initializePushNotifications, type PushNotificationInitState } from "@/src/lib/pushNotifications";
@@ -230,11 +230,12 @@ export function HomeDashboard() {
   const [homepageBackgroundImages, setHomepageBackgroundImages] = useState<string[]>([dashboardBg.src]);
   const [homepageBackgroundIndex, setHomepageBackgroundIndex] = useState(0);
   const isDashboardLoadingRef = useRef(false);
+  const subscriptionSuccessReloadedRef = useRef(false);
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
   const loadDashboard = useCallback(async (showLoading = true) => {
     if (isDashboardLoadingRef.current) {
-      return;
+      return null;
     }
 
     isDashboardLoadingRef.current = true;
@@ -245,7 +246,7 @@ export function HomeDashboard() {
       isDashboardLoadingRef.current = false;
       clearScorecareSession();
       window.location.replace("/login");
-      return;
+      return null;
     }
 
     try {
@@ -256,34 +257,40 @@ export function HomeDashboard() {
       setIsLanguageLoading(readStoredLanguage() !== "en");
       setError("");
 
-      const profile = await loadProfile(token);
-      const shouldWaitForLanguage = applyProfileLanguage(profile);
+      const [profile, subscriptionStatus] = await Promise.all([
+        loadProfile(token),
+        loadSubscriptionStatus(token).catch(() => null),
+      ]);
+      const profileWithSubscription = applySubscriptionStatus(profile, subscriptionStatus);
+      const shouldWaitForLanguage = applyProfileLanguage(profileWithSubscription);
       setIsLanguageLoading(shouldWaitForLanguage);
-      const freeTier = isFreeTierProfile(profile);
-      const displayData = freeTier ? await loadBasicCibilScoreData(token, profile) : await loadCibilData(token, profile);
+      const freeTier = isFreeTierProfile(profileWithSubscription);
+      const displayData = freeTier ? await loadBasicCibilScoreData(token, profileWithSubscription) : await loadCibilData(token, profileWithSubscription);
       const activeDisputes = freeTier ? 0 : await loadActiveDisputes(token);
       const notifications = await loadNotifications(token);
 
-      setName(profile?.fullName?.trim() || readDisplayName(displayData) || "there");
-      setProfile(profile);
+      setName(profileWithSubscription?.fullName?.trim() || readDisplayName(displayData) || "there");
+      setProfile(profileWithSubscription);
       setIsFreeTier(freeTier);
       setNotificationUnreadCount(notifications.unreadCount);
-      setDashboard(freeTier ? buildFreeTierDashboard(displayData) : buildDashboardData(displayData, profile, activeDisputes));
+      setDashboard(freeTier ? buildFreeTierDashboard(displayData) : buildDashboardData(displayData, profileWithSubscription, activeDisputes));
       if (shouldWaitForLanguage) {
         await waitForLanguageApply();
       }
       setIsLanguageLoading(false);
+      return { freeTier };
     } catch (loadError) {
       if (loadError instanceof CibilDisplayDataError && (loadError.status === 401 || loadError.status === 403)) {
         clearScorecareSession();
         window.location.replace("/login");
-        return;
+        return null;
       }
 
       setName(localStorage.getItem("scorecare_full_name")?.trim() || "there");
       setDashboard(createEmptyDashboard());
       setError("Score data is unavailable right now.");
       setIsLanguageLoading(false);
+      return null;
     } finally {
       isDashboardLoadingRef.current = false;
       if (showLoading) {
@@ -297,6 +304,23 @@ export function HomeDashboard() {
   }, [loadDashboard]);
 
   useEffect(() => {
+    if (!window.location.search.includes("subscription=success")) {
+      return;
+    }
+
+    clearSubscriptionDashboardCache();
+    const timer = window.setTimeout(() => void loadDashboard(true).then((result) => {
+      if (result?.freeTier && !subscriptionSuccessReloadedRef.current && !hasReloadedSubscriptionSuccess()) {
+        subscriptionSuccessReloadedRef.current = true;
+        markSubscriptionSuccessReloaded();
+        window.location.reload();
+      }
+    }), 700);
+
+    return () => window.clearTimeout(timer);
+  }, [loadDashboard]);
+
+  useEffect(() => {
     function refreshDashboard() {
       void loadDashboard(false);
     }
@@ -304,6 +328,23 @@ export function HomeDashboard() {
     window.addEventListener("scorecare:app-refresh", refreshDashboard);
 
     return () => window.removeEventListener("scorecare:app-refresh", refreshDashboard);
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    function refreshAfterSubscriptionSuccess() {
+      clearSubscriptionDashboardCache();
+      void loadDashboard(true).then((result) => {
+        if (result?.freeTier && !subscriptionSuccessReloadedRef.current && !hasReloadedSubscriptionSuccess()) {
+          subscriptionSuccessReloadedRef.current = true;
+          markSubscriptionSuccessReloaded();
+          routerReplaceDashboardSuccess();
+        }
+      });
+    }
+
+    window.addEventListener("scorecare:subscription-activated", refreshAfterSubscriptionSuccess);
+
+    return () => window.removeEventListener("scorecare:subscription-activated", refreshAfterSubscriptionSuccess);
   }, [loadDashboard]);
 
   useEffect(() => {
@@ -366,18 +407,22 @@ export function HomeDashboard() {
       }
 
       const displayData = (event as CustomEvent<unknown>).detail;
-      const latestProfile = profile ?? await loadProfile(token).catch(() => profile);
-      const freeTier = isFreeTierProfile(latestProfile);
+      const [latestProfile, subscriptionStatus] = await Promise.all([
+        profile ? Promise.resolve(profile) : loadProfile(token).catch(() => profile),
+        loadSubscriptionStatus(token).catch(() => null),
+      ]);
+      const profileWithSubscription = applySubscriptionStatus(latestProfile, subscriptionStatus);
+      const freeTier = isFreeTierProfile(profileWithSubscription);
       const activeDisputes = freeTier ? 0 : await loadActiveDisputes(token);
 
       if (!isMounted) {
         return;
       }
 
-      setName(latestProfile?.fullName?.trim() || readDisplayName(displayData) || "there");
-      setProfile(latestProfile);
+      setName(profileWithSubscription?.fullName?.trim() || readDisplayName(displayData) || "there");
+      setProfile(profileWithSubscription);
       setIsFreeTier(freeTier);
-      setDashboard(freeTier ? buildFreeTierDashboard(displayData) : buildDashboardData(displayData, latestProfile, activeDisputes));
+      setDashboard(freeTier ? buildFreeTierDashboard(displayData) : buildDashboardData(displayData, profileWithSubscription, activeDisputes));
       setError("");
     }
 
@@ -2947,6 +2992,30 @@ async function updateUserLanguage(token: string, selectedLanguageLabel: string) 
   }
 }
 
+async function loadSubscriptionStatus(token: string) {
+  const response = await apiRequest("/api/subscription-plans/status", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.ok) {
+    return response.json();
+  }
+
+  const fallbackResponse = await apiRequest("/subscription-plans/status", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!fallbackResponse.ok) {
+    throw new Error("Unable to load subscription status.");
+  }
+
+  return fallbackResponse.json();
+}
+
 function readProfile(result: unknown) {
   if (!result || typeof result !== "object") {
     return null;
@@ -2965,6 +3034,53 @@ function readProfile(result: unknown) {
   const profile = response.data?.user ?? response.data?.profile ?? response.user ?? response.profile ?? (response.data?.accessType ? response.data : result);
 
   return profile && typeof profile === "object" ? profile as UserProfile : null;
+}
+
+function applySubscriptionStatus(profile: UserProfile | null, result: unknown) {
+  const subscription = readSubscriptionStatus(result);
+
+  if (!subscription) {
+    return profile;
+  }
+
+  const status = normalizeStatus(subscription.status ?? subscription.subscriptionStatus ?? subscription.planStatus ?? subscription.accessType);
+  const accessType = isPaidSubscriptionStatus(status) ? "paid" : subscription.accessType ?? profile?.accessType;
+
+  return {
+    ...profile,
+    accessType,
+    planStatus: subscription.planStatus ?? subscription.status ?? profile?.planStatus,
+    subscriptionStatus: subscription.subscriptionStatus ?? subscription.status ?? profile?.subscriptionStatus,
+    subscription: {
+      ...profile?.subscription,
+      ...subscription,
+      accessType,
+      status: subscription.status ?? subscription.subscriptionStatus ?? profile?.subscription?.status,
+    },
+  } as UserProfile;
+}
+
+function readSubscriptionStatus(result: unknown) {
+  if (!result || typeof result !== "object") {
+    return null;
+  }
+
+  const response = result as {
+    data?: {
+      subscription?: unknown;
+      status?: unknown;
+    };
+    subscription?: unknown;
+    status?: unknown;
+  };
+  const subscription = response.subscription ?? response.data?.subscription ?? response.data ?? response;
+
+  return subscription && typeof subscription === "object" ? subscription as {
+    accessType?: string | null;
+    planStatus?: string | null;
+    status?: string | null;
+    subscriptionStatus?: string | null;
+  } : null;
 }
 
 async function loadCibilData(token: string, profile: UserProfile | null) {
@@ -3203,12 +3319,39 @@ function buildFreeTierDashboard(result: unknown): DashboardData {
 
 function isFreeTierProfile(profile: UserProfile | null) {
   const accessType = normalizeStatus(profile?.accessType ?? profile?.subscription?.accessType);
+  const subscriptionStatus = normalizeStatus(profile?.subscriptionStatus ?? profile?.subscription?.subscriptionStatus);
+  const planStatus = normalizeStatus(profile?.planStatus ?? profile?.subscription?.planStatus);
+  const status = normalizeStatus(profile?.subscription?.status);
 
-  return accessType !== "paid";
+  return ![accessType, subscriptionStatus, planStatus, status].some(isPaidSubscriptionStatus);
+}
+
+function isPaidSubscriptionStatus(value: string) {
+  return value === "paid" || value === "active";
 }
 
 function normalizeStatus(value: unknown) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function clearSubscriptionDashboardCache() {
+  localStorage.removeItem("subscriptionStatus");
+  localStorage.removeItem("dashboardData");
+  sessionStorage.removeItem("subscriptionStatus");
+  sessionStorage.removeItem("dashboardData");
+  clearCachedCibilDisplayData();
+}
+
+function hasReloadedSubscriptionSuccess() {
+  return sessionStorage.getItem("scorecare_subscription_success_reloaded") === "true";
+}
+
+function markSubscriptionSuccessReloaded() {
+  sessionStorage.setItem("scorecare_subscription_success_reloaded", "true");
+}
+
+function routerReplaceDashboardSuccess() {
+  window.location.replace("/dashboard?subscription=success");
 }
 
 function createEmptyDashboard(message = "Score data is unavailable right now."): DashboardData {

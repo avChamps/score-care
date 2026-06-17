@@ -8,7 +8,7 @@ import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
-import { getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
+import { clearCachedCibilDisplayData, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
 
 export type SubscriptionPlan = {
   id: string;
@@ -287,12 +287,21 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
               return;
             }
 
-            if (!confirmResponse.ok) {
+            const confirmResult = await confirmResponse.json();
+
+            if (!confirmResponse.ok || confirmResult?.status !== "success") {
               throw new Error("Unable to confirm subscription.");
             }
 
+            clearSubscriptionPaymentCache();
+            await Promise.allSettled([
+              fetchSubscriptionStatus(token),
+              getRazorpayPrefill(token),
+              getCachedCibilDisplayData(token, { forceRefresh: true }),
+            ]);
+            window.dispatchEvent(new CustomEvent("scorecare:subscription-activated", { detail: confirmResult?.subscription ?? confirmResult?.data?.subscription ?? null }));
             onClose();
-            void getCachedCibilDisplayData(token, { forceRefresh: true }).catch(() => {});
+            router.replace("/dashboard?subscription=success");
           } catch (error) {
             setPaymentMessage(error instanceof Error ? error.message : "Unable to confirm subscription.");
           } finally {
@@ -546,6 +555,35 @@ function loadRazorpayCheckout() {
     script.onerror = () => reject(new Error("Unable to load payment gateway."));
     document.body.appendChild(script);
   });
+}
+
+function clearSubscriptionPaymentCache() {
+  localStorage.removeItem("subscriptionStatus");
+  localStorage.removeItem("dashboardData");
+  sessionStorage.removeItem("subscriptionStatus");
+  sessionStorage.removeItem("dashboardData");
+  sessionStorage.removeItem("scorecare_subscription_success_reloaded");
+  clearCachedCibilDisplayData();
+}
+
+async function fetchSubscriptionStatus(token: string) {
+  const response = await apiRequest("/api/subscription-plans/status", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (response.ok) {
+    return response.json();
+  }
+
+  const fallbackResponse = await apiRequest("/subscription-plans/status", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!fallbackResponse.ok) {
+    throw new Error("Unable to load subscription status.");
+  }
+
+  return fallbackResponse.json();
 }
 
 function formatBillingCycle(billingCycle?: string) {
