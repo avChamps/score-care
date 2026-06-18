@@ -12,6 +12,13 @@
     "apk:debug": "npm run android:sync && cd android && gradlew assembleDebug",
     "android:apk": "npm run android:sync && cd android && gradlew assembleRelease",
     "android:aab": "npm run android:sync && cd android && gradlew bundleRelease",
+
+    "apk:debug:linux": "npm run android:sync && cd android && chmod +x gradlew && ./gradlew assembleDebug",
+
+"android:apk:linux": "npm run android:sync && cd android && chmod +x gradlew && ./gradlew assembleRelease",
+
+"android:aab:linux": "npm run android:sync && cd android && chmod +x gradlew && ./gradlew bundleRelease",
+
     "start": "next start",
     "lint": "eslint"
   },

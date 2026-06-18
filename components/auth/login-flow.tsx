@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, BadgeCheck, ShieldCheck, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type ClipboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import panDetailsImage from "@/assets/pan-details.png";
 import { ButtonLoader } from "@/components/auth/button-loader";
 import { apiRequest } from "@/lib/api";
@@ -94,6 +94,7 @@ export function LoginFlow() {
   const [legalContent, setLegalContent] = useState<LegalContent | null>(null);
   const [isLoadingLegalContent, setIsLoadingLegalContent] = useState(false);
   const [legalContentError, setLegalContentError] = useState("");
+  const otpInputRef = useRef<HTMLInputElement>(null);
 
   const cleanMobile = mobile.replace(/\D/g, "").slice(0, 10);
   const cleanOtp = otpDigits.join("");
@@ -145,6 +146,14 @@ export function LoginFlow() {
       .catch(() => {});
 
     return () => abortController.abort();
+  }, [step]);
+
+  useEffect(() => {
+    if (step !== "otp") return;
+
+    const focusTimer = window.setTimeout(() => otpInputRef.current?.focus(), 250);
+
+    return () => window.clearTimeout(focusTimer);
   }, [step]);
 
   function goToDashboard() {
@@ -290,45 +299,16 @@ export function LoginFlow() {
     }
   }
 
-  function updateOtpDigit(index: number, value: string) {
+  function updateOtpValue(value: string) {
     setOtpError("");
     const digits = value.replace(/\D/g, "").slice(0, 6).split("");
+    const nextDigits = ["", "", "", "", "", ""];
 
-    if (digits.length > 1) {
-      const nextDigits = [...otpDigits];
+    digits.forEach((digit, index) => {
+      nextDigits[index] = digit;
+    });
 
-      digits.forEach((digit, offset) => {
-        if (index + offset < nextDigits.length) {
-          nextDigits[index + offset] = digit;
-        }
-      });
-
-      setOtpDigits(nextDigits);
-      document.getElementById(`otp-${Math.min(index + digits.length, 5)}`)?.focus();
-      return;
-    }
-
-    const nextDigits = [...otpDigits];
-    nextDigits[index] = digits[0] ?? "";
     setOtpDigits(nextDigits);
-
-    if (digits[0] && index < 5) {
-      document.getElementById(`otp-${index + 1}`)?.focus();
-    }
-  }
-
-  function handleOtpKeyDown(index: number, key: string) {
-    if (key !== "Backspace" || otpDigits[index]) return;
-    document.getElementById(`otp-${Math.max(index - 1, 0)}`)?.focus();
-  }
-
-  function handleOtpPaste(index: number, event: ClipboardEvent<HTMLInputElement>) {
-    const pastedOtp = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-
-    if (pastedOtp.length <= 1) return;
-
-    event.preventDefault();
-    updateOtpDigit(index, pastedOtp);
   }
 
   const primaryButton =
@@ -596,25 +576,33 @@ export function LoginFlow() {
 
               <div className="mt-9 text-body-sm font-semibold uppercase tracking-[0.14em] text-[#8F9BAA]">
                 Verification code
-                <div className="mt-3 grid grid-cols-6 gap-2">
+                <div className="relative mt-3 grid grid-cols-6 gap-2">
+                  <input
+                    ref={otpInputRef}
+                    value={cleanOtp}
+                    onChange={(event) => updateOtpValue(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") void verifyOtp();
+                    }}
+                    className="absolute inset-0 z-10 h-full w-full rounded-2xl bg-transparent text-transparent caret-transparent outline-none"
+                    autoComplete="one-time-code"
+                    enterKeyHint="done"
+                    inputMode="numeric"
+                    name="one-time-code"
+                    pattern="[0-9]*"
+                    type="tel"
+                    maxLength={6}
+                    aria-label="OTP verification code"
+                  />
                   {otpDigits.map((digit, index) => (
-                    <input
+                    <div
                       key={index}
                       id={`otp-${index}`}
-                      value={digit}
-                      onChange={(event) => updateOtpDigit(index, event.target.value)}
-                      onKeyDown={(event) => handleOtpKeyDown(index, event.key)}
-                      onPaste={(event) => handleOtpPaste(index, event)}
-                      className="aspect-square w-full rounded-2xl border border-white/10 bg-[#071626] text-center text-heading font-semibold text-white outline-none transition placeholder:text-[#64748B] focus:border-[#22F2C2] focus:ring-2 focus:ring-[#22F2C2]/20"
-                      autoComplete={index === 0 ? "one-time-code" : "off"}
-                      enterKeyHint="done"
-                      inputMode="numeric"
-                      name={index === 0 ? "one-time-code" : `otp-${index + 1}`}
-                      pattern="[0-9]*"
-                      type="tel"
-                      maxLength={1}
-                      aria-label={`OTP digit ${index + 1}`}
-                    />
+                      className="flex aspect-square w-full items-center justify-center rounded-2xl border border-white/10 bg-[#071626] text-center text-heading font-semibold text-white outline-none transition"
+                      aria-hidden="true"
+                    >
+                      {digit}
+                    </div>
                   ))}
                 </div>
               </div>
