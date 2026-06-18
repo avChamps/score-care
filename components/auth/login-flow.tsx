@@ -377,7 +377,7 @@ export function LoginFlow() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -24 }}
           transition={{ duration: 0.28, ease: "easeOut" }}
-          className="flex min-h-dvh flex-col bg-[#020B18] px-5 py-5 text-white"
+          className="flex min-h-dvh flex-col bg-[#020B18] px-5 pb-5 pt-[calc(var(--native-status-offset,0px)+1.25rem)] text-white"
         >
           <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,#183A5A_0%,transparent_38%),radial-gradient(circle_at_80%_10%,rgba(34,242,194,0.16),transparent_28%)]" />
 
@@ -543,7 +543,7 @@ export function LoginFlow() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -24 }}
           transition={{ duration: 0.28, ease: "easeOut" }}
-          className="flex min-h-dvh flex-col bg-[#020B18] px-5 py-5 text-white"
+          className="flex min-h-dvh flex-col bg-[#020B18] px-5 pb-5 pt-[calc(var(--native-status-offset,0px)+1.25rem)] text-white"
         >
           <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,#183A5A_0%,transparent_38%),radial-gradient(circle_at_80%_10%,rgba(34,242,194,0.16),transparent_28%)]" />
 
@@ -661,7 +661,7 @@ export function LoginFlow() {
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 24 }}
         transition={{ duration: 0.28, ease: "easeOut" }}
-        className="flex min-h-dvh flex-col bg-[#020B18] px-5 py-5 text-white"
+        className="flex min-h-dvh flex-col bg-[#020B18] px-5 pb-5 pt-[calc(var(--native-status-offset,0px)+1.25rem)] text-white"
       >
         <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,#183A5A_0%,transparent_38%),radial-gradient(circle_at_80%_10%,rgba(34,242,194,0.16),transparent_28%)]" />
 

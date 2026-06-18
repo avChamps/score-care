@@ -411,6 +411,10 @@ export function HomeDashboard() {
     let isMounted = true;
 
     async function handleDisplayUpdate(event: Event) {
+      if (isDashboardLoadingRef.current) {
+        return;
+      }
+
       const token = localStorage.getItem("scorecare_token");
 
       if (!token || isTokenExpired(token)) {
@@ -521,7 +525,7 @@ export function HomeDashboard() {
   const lowScore = hasJourneyMonths ? Math.min(...visibleDashboard.trend) : "-";
   const lowIndex = visibleDashboard.trend.indexOf(Number(lowScore));
   const currentTrendMonth = visibleDashboard.trendMonths[visibleDashboard.trendMonths.length - 1] ?? "--";
-  const targetScore = 750;
+  const targetScore = visibleDashboard.targetScore;
   const journeyChart = useMemo(() => {
     if (!hasJourneyMonths) {
       return { areaPath: "", linePath: "", points: [], yLabels: [] };
@@ -2099,8 +2103,8 @@ function DownloadReportsPopup({ onClose }: { onClose: () => void }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
-      <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+    <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] backdrop-blur-sm">
+      <section className="mx-auto flex max-h-[calc(100dvh-var(--native-status-offset,0px)-1rem)] w-full max-w-md flex-col overflow-hidden rounded-[30px] bg-[#0D131C] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-title font-bold text-white">Download Reports</h2>
           <button className="grid size-9 place-items-center rounded-full bg-white/10 text-white" type="button" aria-label="Close download reports" onClick={onClose}>
@@ -2108,42 +2112,44 @@ function DownloadReportsPopup({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        {loading ? (
-          <div className="mt-5 space-y-3">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="rounded-[18px] bg-white/[0.06] px-4 py-3">
-                <div className="h-3 w-2/5 animate-pulse rounded-full bg-white/10" />
-                <div className="mt-3 h-2.5 w-3/5 animate-pulse rounded-full bg-white/10" />
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          <p className="mt-5 rounded-[18px] bg-[#FF5C8A]/10 px-4 py-3 text-caption font-medium text-[#FF8AAB]">{error}</p>
-        ) : downloads.length ? (
-          <div className="mt-5 space-y-3">
-            {downloads.map((download) => (
-              <div key={download.id} className="rounded-[18px] bg-white/[0.06] px-4 py-3">
-                <p className="text-body-sm font-semibold text-white">{formatReportType(download.reportType)}</p>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-caption text-[#AAB6C8]">
-                  <p>Provider: <span className="font-semibold text-white">{download.provider || "--"}</span></p>
-                  <p>Score: <span className="font-semibold text-white">{download.creditScore ?? "--"}</span></p>
-                  <p className="col-span-2">Fetched: <span className="font-semibold text-white">{formatOptionalDownloadDate(download.reportFetchedAt)}</span></p>
-                  <p className="col-span-2">Downloaded: <span className="font-semibold text-white">{formatOptionalDownloadDate(download.downloadedAt)}</span></p>
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          {loading ? (
+            <div className="mt-5 space-y-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="rounded-[18px] bg-white/[0.06] px-4 py-3">
+                  <div className="h-3 w-2/5 animate-pulse rounded-full bg-white/10" />
+                  <div className="mt-3 h-2.5 w-3/5 animate-pulse rounded-full bg-white/10" />
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <p className="mt-5 rounded-[18px] bg-[#FF5C8A]/10 px-4 py-3 text-caption font-medium text-[#FF8AAB]">{error}</p>
+          ) : downloads.length ? (
+            <div className="mt-5 space-y-3">
+              {downloads.map((download) => (
+                <div key={download.id} className="rounded-[18px] bg-white/[0.06] px-4 py-3">
+                  {/* <p className="text-body-sm font-semibold text-white">{formatReportType(download.reportType)}</p> */}
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-caption text-[#AAB6C8]">
+                    {/* <p>Provider: <span className="font-semibold text-white">{download.provider || "--"}</span></p> */}
+                    <p>Score: <span className="font-semibold text-white">{download.creditScore ?? "--"}</span></p>
+                    <p className="col-span-2">Fetched: <span className="font-semibold text-white">{formatOptionalDownloadDate(download.reportFetchedAt)}</span></p>
+                    <p className="col-span-2">Downloaded: <span className="font-semibold text-white">{formatOptionalDownloadDate(download.downloadedAt)}</span></p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-10 text-center">
+              <div className="mx-auto grid size-20 place-items-center rounded-full bg-white/[0.06]">
+                <div className="grid size-14 animate-pulse place-items-center rounded-full bg-[#5EF2C2]/12 text-[#5EF2C2]">
+                  <FileText className="size-7" strokeWidth={1.8} />
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="py-10 text-center">
-            <div className="mx-auto grid size-20 place-items-center rounded-full bg-white/[0.06]">
-              <div className="grid size-14 animate-pulse place-items-center rounded-full bg-[#5EF2C2]/12 text-[#5EF2C2]">
-                <FileText className="size-7" strokeWidth={1.8} />
-              </div>
+              <p className="mt-5 text-base font-semibold text-white">No records found</p>
+              <p className="mt-2 text-caption leading-5 text-[#AAB6C8]">Downloaded reports will appear here.</p>
             </div>
-            <p className="mt-5 text-base font-semibold text-white">No records found</p>
-            <p className="mt-2 text-caption leading-5 text-[#AAB6C8]">Downloaded reports will appear here.</p>
-          </div>
-        )}
+          )}
+        </div>
       </section>
     </div>
   );
@@ -2968,21 +2974,11 @@ async function loadSubscriptionStatus(token: string) {
     },
   });
 
-  if (response.ok) {
-    return response.json();
-  }
-
-  const fallbackResponse = await apiRequest("/subscription-plans/status", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!fallbackResponse.ok) {
+  if (!response.ok) {
     throw new Error("Unable to load subscription status.");
   }
 
-  return fallbackResponse.json();
+  return response.json();
 }
 
 function readProfile(result: unknown) {

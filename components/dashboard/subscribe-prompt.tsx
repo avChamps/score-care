@@ -845,19 +845,11 @@ async function fetchSubscriptionStatus(token: string) {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  if (response.ok) {
-    return response.json();
-  }
-
-  const fallbackResponse = await apiRequest("/subscription-plans/status", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  if (!fallbackResponse.ok) {
+  if (!response.ok) {
     throw new Error("Unable to load subscription status.");
   }
 
-  return fallbackResponse.json();
+  return response.json();
 }
 
 export function formatBillingCycle(billingCycle?: string) {

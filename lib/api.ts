@@ -138,20 +138,39 @@ async function sendApiRequest(path: string, options: ApiRequestOptions, method: 
     };
     const response = await CapacitorHttp.request(nativeOptions);
 
-    return {
-      ok: response.status >= 200 && response.status < 300,
-      status: response.status,
-      json: async () => response.data,
-    };
+    return createApiResponse(response.status, response.data);
   }
 
-  return apiFetch(path, {
+  const response = await apiFetch(path, {
     method,
     headers,
     body: requestBody,
     timeoutMs: options.timeoutMs,
     retry: 0,
   });
+
+  return createFetchApiResponse(response);
+}
+
+function createApiResponse(status: number, data: unknown): ApiResponse {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => data,
+  };
+}
+
+function createFetchApiResponse(response: Response): ApiResponse {
+  let jsonPromise: Promise<unknown> | null = null;
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    json: async () => {
+      jsonPromise ??= response.clone().json();
+      return jsonPromise;
+    },
+  };
 }
 
 async function sendApiFetch(path: string, options: ApiFetchOptions) {
