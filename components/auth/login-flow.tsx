@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, BadgeCheck, ShieldCheck, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -28,6 +29,13 @@ type WebOtpCredential = Credential & {
 type WebOtpRequestOptions = CredentialRequestOptions & {
   otp: { transport: string[] };
 };
+
+type NativeOtpReaderPlugin = {
+  startSmsUserConsent: () => Promise<{ otp?: string }>;
+  stopSmsUserConsent: () => Promise<void>;
+};
+
+const nativeOtpReader = registerPlugin<NativeOtpReaderPlugin>("NativeOtpReader");
 
 type CibilPayload = {
   pan: string;
@@ -126,7 +134,29 @@ export function LoginFlow() {
   }, [otpSeconds, step]);
 
   useEffect(() => {
-    if (step !== "otp" || !("OTPCredential" in window) || !navigator.credentials) return;
+    if (step !== "otp") return;
+
+    if (Capacitor.isNativePlatform()) {
+      let isActive = true;
+
+      nativeOtpReader.startSmsUserConsent()
+        .then((result) => {
+          const otp = result.otp?.replace(/\D/g, "").slice(0, 6);
+
+          if (isActive && otp?.length === 6) {
+            setOtpDigits(otp.split(""));
+            void verifyOtp(otp);
+          }
+        })
+        .catch(() => {});
+
+      return () => {
+        isActive = false;
+        void nativeOtpReader.stopSmsUserConsent().catch(() => undefined);
+      };
+    }
+
+    if (!("OTPCredential" in window) || !navigator.credentials) return;
 
     const abortController = new AbortController();
 
