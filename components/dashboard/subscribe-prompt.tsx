@@ -417,7 +417,19 @@ export function PremiumBenefitsIntro({ ctaLabel = "View subscription", loading =
   );
 }
 
-export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void; show: boolean }) {
+export function SubscribePromptOverlay({
+  onClose,
+  onPaymentFlowStart,
+  onPaymentLoadingChange,
+  paymentTrigger = 0,
+  show,
+}: {
+  onClose: () => void;
+  onPaymentFlowStart?: () => void;
+  onPaymentLoadingChange?: (loading: boolean) => void;
+  paymentTrigger?: number;
+  show: boolean;
+}) {
   const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState(subscriptionPlans[0].id);
   const [showPlans, setShowPlans] = useState(false);
@@ -426,6 +438,22 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState("");
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) ?? plans[0];
+
+  async function loadSubscriptionPlans() {
+    try {
+      const apiPlans = await getSubscriptionPlans();
+      const nextPlans = apiPlans.length ? apiPlans : subscriptionPlans;
+
+      setPlans(nextPlans);
+      setSelectedPlanId(nextPlans[0].id);
+
+      return nextPlans;
+    } catch {
+      setPlans(subscriptionPlans);
+
+      return subscriptionPlans;
+    }
+  }
 
   useEffect(() => {
     if (!show) {
@@ -438,23 +466,32 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
       setPaymentMessage("");
     }, 0);
 
-    async function loadSubscriptionPlans() {
-      try {
-        const apiPlans = await getSubscriptionPlans();
-
-        if (apiPlans.length) {
-          setPlans(apiPlans);
-          setSelectedPlanId(apiPlans[0].id);
-        }
-      } catch {
-        setPlans(subscriptionPlans);
-      }
-    }
-
     void loadSubscriptionPlans();
 
     return () => window.clearTimeout(resetTimer);
   }, [show]);
+
+  useEffect(() => {
+    onPaymentLoadingChange?.(paymentLoading);
+  }, [onPaymentLoadingChange, paymentLoading]);
+
+  useEffect(() => {
+    if (!paymentTrigger) {
+      return;
+    }
+
+    let isActive = true;
+
+    void loadSubscriptionPlans().then((nextPlans) => {
+      if (isActive) {
+        void handleSubscriptionPayment(nextPlans[0]);
+      }
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [paymentTrigger]);
 
   useEffect(() => {
     if (!show || !showPlans || !selectedPlan) {
@@ -472,8 +509,8 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
     setShowSkipMessage(true);
   }
 
-  async function handleSubscriptionPayment() {
-    if (!selectedPlan || paymentLoading) return;
+  async function handleSubscriptionPayment(paymentPlan = selectedPlan) {
+    if (!paymentPlan || paymentLoading) return;
 
     const token = localStorage.getItem("scorecare_token");
 
@@ -484,10 +521,15 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
     }
 
     const authToken = token;
-    const planPublicId = selectedPlan.publicId || selectedPlan.id;
-    const selectedPlanPayableAmount = calculatePlanPayableAmount(selectedPlan, selectedPlan);
-    const selectedPlanGstAmount = calculatePlanGstAmount(selectedPlan, selectedPlan);
+    const planPublicId = paymentPlan.publicId || paymentPlan.id;
+    const selectedPlanPayableAmount = calculatePlanPayableAmount(paymentPlan, paymentPlan);
+    const selectedPlanGstAmount = calculatePlanGstAmount(paymentPlan, paymentPlan);
     const selectedPlanRazorpayAmount = toRazorpayAmount(selectedPlanPayableAmount);
+
+    if (!Number.isFinite(selectedPlanPayableAmount) || !Number.isFinite(selectedPlanRazorpayAmount)) {
+      setPaymentMessage("Unable to load subscription amount. Please try again.");
+      return;
+    }
 
     setPaymentLoading(true);
     setPaymentMessage("");
@@ -509,10 +551,10 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
         body: {
           amount: selectedPlanPayableAmount,
           amountInPaise: selectedPlanRazorpayAmount,
-          baseAmount: selectedPlan.amount,
+          baseAmount: paymentPlan.amount,
           finalAmount: selectedPlanPayableAmount,
           gstAmount: selectedPlanGstAmount,
-          gstPercentage: selectedPlan.gstPercentage ?? 0,
+          gstPercentage: paymentPlan.gstPercentage ?? 0,
           payableAmount: selectedPlanPayableAmount,
           payableAmountInPaise: selectedPlanRazorpayAmount,
           razorpayAmount: selectedPlanRazorpayAmount,
@@ -532,10 +574,10 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
       const subscriptionResult = await subscriptionResponse.json();
       const data = subscriptionResult?.data ?? subscriptionResult;
       const order = data?.order;
-      const plan = data?.plan ?? selectedPlan;
+      const plan = data?.plan ?? paymentPlan;
       const prefill = await getRazorpayPrefill(authToken, data?.prefill);
-      const payableAmount = calculatePlanPayableAmount(plan, selectedPlan);
-      const gstAmount = calculatePlanGstAmount(plan, selectedPlan);
+      const payableAmount = calculatePlanPayableAmount(plan, paymentPlan);
+      const gstAmount = calculatePlanGstAmount(plan, paymentPlan);
 
       if (!subscriptionResponse.ok || !data?.keyId || !order?.id || !data?.customerId || data?.recurring !== "1" || (!Capacitor.isNativePlatform() && !window.Razorpay)) {
         throw new Error("Unable to create subscription.");
@@ -551,11 +593,11 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
               razorpayOrderId: response.razorpay_order_id ?? order?.id,
               razorpaySignature: response.razorpay_signature,
               amount: payableAmount,
-              baseAmount: Number(plan.amount ?? selectedPlan.amount),
-              currency: plan.currency ?? selectedPlan.currency ?? "INR",
+              baseAmount: Number(plan.amount ?? paymentPlan.amount),
+              currency: plan.currency ?? paymentPlan.currency ?? "INR",
               finalAmount: payableAmount,
               gstAmount,
-              gstPercentage: Number(plan.gstPercentage ?? selectedPlan.gstPercentage ?? 0),
+              gstPercentage: Number(plan.gstPercentage ?? paymentPlan.gstPercentage ?? 0),
               payableAmount,
               totalAmount: payableAmount,
             },
@@ -607,11 +649,12 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
       }
 
       if (Capacitor.isNativePlatform()) {
+        onPaymentFlowStart?.();
         const paymentResponse = await nativeRazorpay.open({
           amount: toRazorpayAmount(payableAmount),
-          currency: order.currency ?? plan.currency ?? selectedPlan.currency ?? "INR",
+          currency: order.currency ?? plan.currency ?? paymentPlan.currency ?? "INR",
           customerId: data.customerId,
-          description: plan.planName ?? selectedPlan.planName,
+          description: plan.planName ?? paymentPlan.planName,
           key: data.keyId,
           name: "ScoreCare",
           orderId: order.id,
@@ -636,7 +679,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
         customer_id: data.customerId,
         recurring: data.recurring,
         name: "ScoreCare",
-        description: plan.planName ?? selectedPlan.planName,
+        description: plan.planName ?? paymentPlan.planName,
         prefill,
         method: {
           card: true,
@@ -680,6 +723,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
       });
 
       checkout.open();
+      onPaymentFlowStart?.();
     } catch (error) {
       void trackEvent("razorpay_payment_failed", {
         page_name: "subscription",
@@ -746,7 +790,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
 
                 <div className="relative border-t border-white/8 bg-[#0D131C] px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6">
                   {paymentMessage ? <p className="mx-auto mb-3 max-w-md text-center text-caption font-semibold text-red-400">{paymentMessage}</p> : null}
-                  <button className="mx-auto block h-[3.25rem] w-full max-w-md rounded-2xl bg-[linear-gradient(135deg,#FF7A00,#FFD34D)] text-sm font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)] transition disabled:opacity-60" disabled={!selectedPlanId || paymentLoading} type="button" onClick={handleSubscriptionPayment}>
+                  <button className="mx-auto block h-[3.25rem] w-full max-w-md rounded-2xl bg-[linear-gradient(135deg,#FF7A00,#FFD34D)] text-sm font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)] transition disabled:opacity-60" disabled={!selectedPlanId || paymentLoading} type="button" onClick={() => void handleSubscriptionPayment()}>
                     {paymentLoading ? "Processing..." : selectedPlan.buttonLabel ?? "Subscribe"}
                   </button>
                   <button className="mx-auto mt-3 block text-xs font-semibold text-[#AAB6C8] transition hover:text-white" onClick={closePrompt} type="button">
@@ -756,7 +800,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
               </>
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto">
-                <PremiumBenefitsIntro ctaLabel={`Pay ${formatPlanAmount(selectedPlan)} ${formatBillingCycle(selectedPlan.billingCycle)}`} loading={paymentLoading} onClose={() => setShowSkipMessage(true)} onSubscribe={handleSubscriptionPayment} />
+                <PremiumBenefitsIntro ctaLabel={`Pay ${formatPlanAmount(selectedPlan)} ${formatBillingCycle(selectedPlan.billingCycle)}`} loading={paymentLoading} onClose={() => setShowSkipMessage(true)} onSubscribe={() => void handleSubscriptionPayment()} />
               </div>
             )}
             {showSkipMessage ? (

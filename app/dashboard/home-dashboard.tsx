@@ -50,7 +50,7 @@ import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardHeaderHomeControl, PortalShell } from "@/components/dashboard/portal-ui";
 import { SupportDrawer } from "@/components/dashboard/topbar-actions";
-import { PremiumBenefitsIntro, ProBenefitsComparisonSheet, SubscribePromptOverlay, formatBillingCycle, formatPlanAmount, getSubscriptionPlans, useSubscribePrompt, type ComparisonBenefitRow, type SubscriptionPlan } from "@/components/dashboard/subscribe-prompt";
+import { PremiumBenefitsIntro, ProBenefitsComparisonSheet, SubscribePromptOverlay, formatBillingCycle, formatPlanAmount, getSubscriptionPlans, type ComparisonBenefitRow, type SubscriptionPlan } from "@/components/dashboard/subscribe-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CibilDisplayDataError, clearCachedCibilDisplayData, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { apiRequest, apiUrl } from "@/lib/api";
@@ -220,6 +220,8 @@ export function HomeDashboard() {
   const [error, setError] = useState("");
   const [isFreeTier, setIsFreeTier] = useState(false);
   const [showBenefitsPrompt, setShowBenefitsPrompt] = useState(false);
+  const [benefitsPaymentLoading, setBenefitsPaymentLoading] = useState(false);
+  const [benefitsPaymentTrigger, setBenefitsPaymentTrigger] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
   const [showAiChat, setShowAiChat] = useState(false);
   const [showActionPlan, setShowActionPlan] = useState(false);
@@ -236,7 +238,6 @@ export function HomeDashboard() {
   const [homepageBackgroundIndex, setHomepageBackgroundIndex] = useState(0);
   const isDashboardLoadingRef = useRef(false);
   const subscriptionSuccessReloadedRef = useRef(false);
-  const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
 
   const loadDashboard = useCallback(async (showLoading = true) => {
     if (isDashboardLoadingRef.current) {
@@ -596,7 +597,7 @@ export function HomeDashboard() {
                   aria-label="Premium benefits"
                   className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl sm:size-16"
                   type="button"
-                  onClick={promptSubscribe}
+                  onClick={() => setShowBenefitsPrompt(true)}
                 >
                   <Crown className="size-6 fill-[#FFD34D]/20" strokeWidth={1.8} />
                 </button>
@@ -885,15 +886,19 @@ export function HomeDashboard() {
       ) : null}
       {showBenefitsPrompt ? (
         <BenefitsPrompt
+          loading={benefitsPaymentLoading}
           onClose={() => setShowBenefitsPrompt(false)}
-          onSubscribe={() => {
-            setShowBenefitsPrompt(false);
-            promptSubscribe();
-          }}
+          onSubscribe={() => setBenefitsPaymentTrigger((value) => value + 1)}
         />
       ) : null}
       {showActionPlan ? <ActionPlanPopup dashboard={visibleDashboard} onClose={() => setShowActionPlan(false)} /> : null}
-      <SubscribePromptOverlay show={showSubscribePrompt} onClose={closeSubscribePrompt} />
+      <SubscribePromptOverlay
+        show={false}
+        onClose={() => undefined}
+        onPaymentFlowStart={() => setShowBenefitsPrompt(false)}
+        onPaymentLoadingChange={setBenefitsPaymentLoading}
+        paymentTrigger={benefitsPaymentTrigger}
+      />
     </div>
     </PortalShell>
   );
@@ -2031,7 +2036,7 @@ function buildActionPlanPoints(dashboard: DashboardData) {
   ];
 }
 
-function BenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubscribe: () => void }) {
+function BenefitsPrompt({ loading = false, onClose, onSubscribe }: { loading?: boolean; onClose: () => void; onSubscribe: () => void }) {
   const [showLeavingMessage, setShowLeavingMessage] = useState(false);
   const [comparisonBenefits, setComparisonBenefits] = useState<ComparisonBenefitRow[]>([]);
   const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan | null>(null);
@@ -2064,12 +2069,12 @@ function BenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubsc
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
-      <section className="mx-auto h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
-        <PremiumBenefitsIntro ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} onClose={() => setShowLeavingMessage(true)} onSubscribe={onSubscribe} />
+    <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(var(--native-status-offset,0px)+0.75rem)] backdrop-blur-sm">
+      <section className="mx-auto h-[calc(100dvh-var(--native-status-offset,0px)-1.75rem-env(safe-area-inset-bottom,0px))] w-full max-w-md overflow-y-auto rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+        <PremiumBenefitsIntro ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={() => setShowLeavingMessage(true)} onSubscribe={onSubscribe} />
       </section>
       {showLeavingMessage ? (
-        <ProBenefitsComparisonSheet comparisonBenefits={comparisonBenefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} onClose={onClose} onSubscribe={onSubscribe} zIndex="z-[70]" />
+        <ProBenefitsComparisonSheet comparisonBenefits={comparisonBenefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={onClose} onSubscribe={onSubscribe} zIndex="z-[70]" />
       ) : null}
     </div>
   );

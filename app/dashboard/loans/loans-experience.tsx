@@ -30,7 +30,7 @@ import {
   PortalTopBar,
   PrimaryPortalButton,
 } from "@/components/dashboard/portal-ui";
-import { PremiumBenefitsIntro, ProBenefitsComparisonSheet, SubscribePromptOverlay, formatBillingCycle, formatPlanAmount, getSubscriptionPlans, useSubscribePrompt, type ComparisonBenefitRow, type SubscriptionPlan } from "@/components/dashboard/subscribe-prompt";
+import { PremiumBenefitsIntro, ProBenefitsComparisonSheet, SubscribePromptOverlay, formatBillingCycle, formatPlanAmount, getSubscriptionPlans, type ComparisonBenefitRow, type SubscriptionPlan } from "@/components/dashboard/subscribe-prompt";
 import { apiFetch, apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
@@ -227,10 +227,11 @@ export function LoansExperience() {
   const [showProfile, setShowProfile] = useState(false);
   const [, setIsLanguageLoading] = useState(false);
   const [showBenefitsPrompt, setShowBenefitsPrompt] = useState(false);
+  const [benefitsPaymentLoading, setBenefitsPaymentLoading] = useState(false);
+  const [benefitsPaymentTrigger, setBenefitsPaymentTrigger] = useState(0);
   const [toast, setToast] = useState<LoanToast | null>(null);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
-  const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
   const isMountedRef = useRef(true);
   const loansRequestIdRef = useRef(0);
   const applicationRequestIdRef = useRef(0);
@@ -491,7 +492,7 @@ export function LoansExperience() {
               onLoanStatusFilterChange={setLoanStatusFilter}
               isFreeTier={isFreeTier}
               notificationUnreadCount={notificationUnreadCount}
-              onPremiumClick={promptSubscribe}
+              onPremiumClick={openBenefitsPrompt}
               onProfileOpen={() => setShowProfile(true)}
               score={score}
               summary={summary}
@@ -512,14 +513,18 @@ export function LoansExperience() {
       ) : null}
       {showBenefitsPrompt ? (
         <LoanBenefitsPrompt
+          loading={benefitsPaymentLoading}
           onClose={() => setShowBenefitsPrompt(false)}
-          onSubscribe={() => {
-            setShowBenefitsPrompt(false);
-            promptSubscribe();
-          }}
+          onSubscribe={() => setBenefitsPaymentTrigger((value) => value + 1)}
         />
       ) : null}
-      <SubscribePromptOverlay onClose={closeSubscribePrompt} show={showSubscribePrompt} />
+      <SubscribePromptOverlay
+        onClose={() => undefined}
+        show={false}
+        onPaymentFlowStart={() => setShowBenefitsPrompt(false)}
+        onPaymentLoadingChange={setBenefitsPaymentLoading}
+        paymentTrigger={benefitsPaymentTrigger}
+      />
       {applyOpen ? (
         <ApplyLoanDialog
           employmentType={employmentType}
@@ -803,7 +808,7 @@ function LoanSuccessToast({ message, onClose, title }: { message: string; onClos
   );
 }
 
-function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onSubscribe: () => void }) {
+function LoanBenefitsPrompt({ loading = false, onClose, onSubscribe }: { loading?: boolean; onClose: () => void; onSubscribe: () => void }) {
   const [showLeavingMessage, setShowLeavingMessage] = useState(false);
   const [comparisonBenefits, setComparisonBenefits] = useState<ComparisonBenefitRow[]>([]);
   const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan | null>(null);
@@ -836,13 +841,13 @@ function LoanBenefitsPrompt({ onClose, onSubscribe }: { onClose: () => void; onS
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
-      <section className="mx-auto h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
-        <PremiumBenefitsIntro ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} onClose={() => setShowLeavingMessage(true)} onSubscribe={onSubscribe} />
+    <div className="fixed inset-0 z-[110] flex items-end bg-black/60 px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(var(--native-status-offset,0px)+0.75rem)] backdrop-blur-sm">
+      <section className="mx-auto h-[calc(100dvh-var(--native-status-offset,0px)-1.75rem-env(safe-area-inset-bottom,0px))] w-full max-w-md overflow-y-auto rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+        <PremiumBenefitsIntro ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={() => setShowLeavingMessage(true)} onSubscribe={onSubscribe} />
       </section>
 
       {showLeavingMessage ? (
-        <ProBenefitsComparisonSheet comparisonBenefits={comparisonBenefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} onClose={onClose} onSubscribe={onSubscribe} />
+        <ProBenefitsComparisonSheet comparisonBenefits={comparisonBenefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={onClose} onSubscribe={onSubscribe} />
       ) : null}
     </div>
   );
