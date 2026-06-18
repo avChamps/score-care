@@ -725,7 +725,7 @@ export function SupportDrawer({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="border-t border-white/[0.08] bg-[#070B12] px-4 py-4 shadow-[0_-12px_28px_rgba(0,0,0,0.22)]">
+        <div className="border-t border-white/[0.08] bg-[#070B12] px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-4 shadow-[0_-12px_28px_rgba(0,0,0,0.22)]">
           <div className="drawer-scroll mb-3 flex gap-2 overflow-x-auto pb-1">
             {quickActions.map(({ Icon, label }) => (
               <button

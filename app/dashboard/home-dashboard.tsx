@@ -876,7 +876,7 @@ export function HomeDashboard() {
       {showAiChat ? (
         <div className="portal-theme fixed inset-0 z-[90] bg-[rgba(23,32,51,0.42)] backdrop-blur-sm" onClick={() => setShowAiChat(false)}>
           <aside
-            className="ml-auto flex h-dvh w-full max-w-md flex-col border-l border-white/[0.08] bg-[#050912] shadow-[0_8px_24px_rgba(0,0,0,0.32)]"
+            className="ml-auto flex h-[calc(100dvh-var(--native-status-offset,0px))] w-full max-w-md flex-col border-l border-white/[0.08] bg-[#050912] shadow-[0_8px_24px_rgba(0,0,0,0.32)]"
             onClick={(event) => event.stopPropagation()}
           >
             <SupportDrawer onClose={() => setShowAiChat(false)} />
@@ -2104,9 +2104,9 @@ function DownloadReportsPopup({ onClose }: { onClose: () => void }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] backdrop-blur-sm">
-      <section className="mx-auto flex max-h-[calc(100dvh-var(--native-status-offset,0px)-1rem)] w-full max-w-md flex-col overflow-hidden rounded-[30px] bg-[#0D131C] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
-        <div className="flex items-center justify-between gap-3">
+    <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(var(--native-status-offset,0px)+1rem)] backdrop-blur-sm">
+      <section className="mx-auto flex max-h-full w-full max-w-md flex-col overflow-hidden rounded-[30px] bg-[#0D131C] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+        <div className="shrink-0 flex items-center justify-between gap-3">
           <h2 className="text-title font-bold text-white">Download Reports</h2>
           <button className="grid size-9 place-items-center rounded-full bg-white/10 text-white" type="button" aria-label="Close download reports" onClick={onClose}>
             <X className="size-5" />
