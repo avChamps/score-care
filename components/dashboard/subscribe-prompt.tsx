@@ -6,6 +6,7 @@ import Image from "next/image";
 import subscriptionBenefitsImage from "@/assets/subscription-benefits.png";
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { ArrowLeft, Check, CreditCard, FileWarning, PlaySquare, TrendingUp, Trophy, X, Bot } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api";
@@ -54,11 +55,27 @@ type RazorpayPrefill = {
   contact: string;
 };
 
+type NativeRazorpayPlugin = {
+  open: (options: {
+    amount?: number;
+    currency?: string;
+    customerId?: string;
+    description?: string;
+    key: string;
+    name?: string;
+    orderId: string;
+    prefill?: RazorpayPrefill;
+    recurring?: string;
+  }) => Promise<RazorpaySubscriptionResponse>;
+};
+
 declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
   }
 }
+
+const nativeRazorpay = registerPlugin<NativeRazorpayPlugin>("NativeRazorpay");
 
 const subscriptionPlanThemes: Array<SubscriptionPlan["theme"]> = ["blue", "purple", "green", "orange", "pink", "cyan"];
 const subscriptionPlanThemeStyles: Record<SubscriptionPlan["theme"], { accent: string; header: string; selectedRing: string }> = {
@@ -465,6 +482,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
       return;
     }
 
+    const authToken = token;
     const planPublicId = selectedPlan.publicId || selectedPlan.id;
 
     setPaymentLoading(true);
@@ -477,11 +495,13 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
     void logCrashlyticsMessage("Payment started");
 
     try {
-      await loadRazorpayCheckout();
+      if (!Capacitor.isNativePlatform()) {
+        await loadRazorpayCheckout();
+      }
 
       const subscriptionResponse = await apiRequest(`/subscription-plans/${encodeURIComponent(planPublicId)}/razorpay-subscription`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${authToken}` },
         body: {
           totalCount: 36,
           customerNotify: true,
@@ -498,13 +518,95 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
       const data = subscriptionResult?.data ?? subscriptionResult;
       const order = data?.order;
       const plan = data?.plan ?? selectedPlan;
-      const prefill = await getRazorpayPrefill(token, data?.prefill);
+      const prefill = await getRazorpayPrefill(authToken, data?.prefill);
 
-      if (!subscriptionResponse.ok || !data?.keyId || !order?.id || !data?.customerId || data?.recurring !== "1" || !window.Razorpay) {
+      if (!subscriptionResponse.ok || !data?.keyId || !order?.id || !data?.customerId || data?.recurring !== "1" || (!Capacitor.isNativePlatform() && !window.Razorpay)) {
         throw new Error("Unable to create subscription.");
       }
 
-      const checkout = new window.Razorpay({
+      async function confirmSubscription(response: RazorpaySubscriptionResponse) {
+        try {
+          const confirmResponse = await apiRequest("/subscription-plans/razorpay/confirm", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${authToken}` },
+            body: {
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpayOrderId: response.razorpay_order_id ?? order?.id,
+              razorpaySignature: response.razorpay_signature,
+              amount: Number(plan.amount ?? selectedPlan.amount),
+              currency: plan.currency ?? selectedPlan.currency ?? "INR",
+            },
+          });
+
+          if (confirmResponse.status === 401 || confirmResponse.status === 403) {
+            clearScorecareSession();
+            router.replace("/login");
+            return;
+          }
+
+          const confirmResult = await confirmResponse.json();
+
+          if (!confirmResponse.ok || confirmResult?.status !== "success") {
+            throw new Error("Unable to confirm subscription.");
+          }
+
+          void trackEvent("razorpay_payment_success", {
+            page_name: "subscription",
+            payment_status: "success",
+            plan_public_id: planPublicId,
+          });
+          void trackEvent("subscription_activated", {
+            page_name: "subscription",
+            subscription_status: "active",
+            plan_public_id: planPublicId,
+          });
+          void logCrashlyticsMessage("Payment confirm API success");
+          clearSubscriptionPaymentCache();
+          await Promise.allSettled([
+            fetchSubscriptionStatus(authToken),
+            getRazorpayPrefill(authToken),
+            getCachedCibilDisplayData(authToken, { forceRefresh: true }),
+          ]);
+          window.dispatchEvent(new CustomEvent("scorecare:subscription-activated", { detail: confirmResult?.subscription ?? confirmResult?.data?.subscription ?? null }));
+          onClose();
+          router.replace("/dashboard?subscription=success");
+        } catch (error) {
+          void trackEvent("razorpay_payment_failed", {
+            page_name: "subscription",
+            payment_status: "confirm_failed",
+            plan_public_id: planPublicId,
+          });
+          void logCrashlyticsMessage("Payment confirm API failure");
+          setPaymentMessage(error instanceof Error ? error.message : "Unable to confirm subscription.");
+        } finally {
+          setPaymentLoading(false);
+        }
+      }
+
+      if (Capacitor.isNativePlatform()) {
+        const paymentResponse = await nativeRazorpay.open({
+          amount: Number(order.amount ?? plan.amount ?? selectedPlan.amount),
+          currency: order.currency ?? plan.currency ?? selectedPlan.currency ?? "INR",
+          customerId: data.customerId,
+          description: plan.planName ?? selectedPlan.planName,
+          key: data.keyId,
+          name: "ScoreCare",
+          orderId: order.id,
+          prefill,
+          recurring: data.recurring,
+        });
+
+        await confirmSubscription(paymentResponse);
+        return;
+      }
+
+      const RazorpayCheckout = window.Razorpay;
+
+      if (!RazorpayCheckout) {
+        throw new Error("Payment gateway is unavailable.");
+      }
+
+      const checkout = new RazorpayCheckout({
         key: data.keyId,
         order_id: order.id,
         customer_id: data.customerId,
@@ -540,64 +642,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
             },
           },
         },
-        handler: async (response: RazorpaySubscriptionResponse) => {
-          try {
-            const confirmResponse = await apiRequest("/subscription-plans/razorpay/confirm", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${token}` },
-              body: {
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpayOrderId: response.razorpay_order_id ?? order?.id,
-                razorpaySignature: response.razorpay_signature,
-                amount: Number(plan.amount ?? selectedPlan.amount),
-                currency: plan.currency ?? selectedPlan.currency ?? "INR",
-              },
-            });
-
-            if (confirmResponse.status === 401 || confirmResponse.status === 403) {
-              clearScorecareSession();
-              router.replace("/login");
-              return;
-            }
-
-            const confirmResult = await confirmResponse.json();
-
-            if (!confirmResponse.ok || confirmResult?.status !== "success") {
-              throw new Error("Unable to confirm subscription.");
-            }
-
-            void trackEvent("razorpay_payment_success", {
-              page_name: "subscription",
-              payment_status: "success",
-              plan_public_id: planPublicId,
-            });
-            void trackEvent("subscription_activated", {
-              page_name: "subscription",
-              subscription_status: "active",
-              plan_public_id: planPublicId,
-            });
-            void logCrashlyticsMessage("Payment confirm API success");
-            clearSubscriptionPaymentCache();
-            await Promise.allSettled([
-              fetchSubscriptionStatus(token),
-              getRazorpayPrefill(token),
-              getCachedCibilDisplayData(token, { forceRefresh: true }),
-            ]);
-            window.dispatchEvent(new CustomEvent("scorecare:subscription-activated", { detail: confirmResult?.subscription ?? confirmResult?.data?.subscription ?? null }));
-            onClose();
-            router.replace("/dashboard?subscription=success");
-          } catch (error) {
-            void trackEvent("razorpay_payment_failed", {
-              page_name: "subscription",
-              payment_status: "confirm_failed",
-              plan_public_id: planPublicId,
-            });
-            void logCrashlyticsMessage("Payment confirm API failure");
-            setPaymentMessage(error instanceof Error ? error.message : "Unable to confirm subscription.");
-          } finally {
-            setPaymentLoading(false);
-          }
-        },
+        handler: confirmSubscription,
         modal: {
           ondismiss: () => {
             void trackEvent("razorpay_payment_failed", {
