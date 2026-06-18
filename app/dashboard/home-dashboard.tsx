@@ -163,6 +163,7 @@ const freeTierAppTiles = [
   { href: "/dashboard/offers", Icon: CreditCard, title: "Get Offers", value: "-", meta: "-", offer: true },
 ];
 const notificationsPageSize = 10;
+const scorecarePlayStoreUrl = "https://play.google.com/apps/internaltest/4701307504694712853";
 const actionPlanAiCache = new Map<string, Promise<string>>();
 const languageOptions = [
   { code: "en", label: "English" },
@@ -2208,7 +2209,6 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
   const [ratingComment, setRatingComment] = useState("");
   const [ratingError, setRatingError] = useState("");
   const [ratingLoading, setRatingLoading] = useState(false);
-  const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
   const [selectedLanguage, setSelectedLanguage] = useState(() => normalizeLanguageCode(profile?.selectedLanguage) || readStoredLanguage());
   const [showRatingForm, setShowRatingForm] = useState(false);
@@ -2219,6 +2219,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
   const [whatsappAlertsError, setWhatsappAlertsError] = useState("");
   const [whatsappAlertsLoading, setWhatsappAlertsLoading] = useState(true);
   const [whatsappAlertsSaving, setWhatsappAlertsSaving] = useState(false);
+  const [toast, setToast] = useState({ msg: "", visible: false });
 
   useEffect(() => {
     void refreshProfileNotifications();
@@ -2248,18 +2249,10 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
     }
   }, [profile?.selectedLanguage]);
 
-  useEffect(() => {
-    if (!ratingSubmitted) return;
-
-    const timer = window.setTimeout(() => {
-      setShowRatingForm(false);
-      setRatingSubmitted(false);
-      setSelectedRating(0);
-      setRatingComment("");
-    }, 4000);
-
-    return () => window.clearTimeout(timer);
-  }, [ratingSubmitted]);
+  const showToast = (msg: string) => {
+    setToast({ msg, visible: true });
+    setTimeout(() => setToast((current) => ({ ...current, visible: false })), 2200);
+  };
 
   async function openNotifications() {
     const token = localStorage.getItem("scorecare_token");
@@ -2366,6 +2359,28 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
     }
   }
 
+  async function shareApp() {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "ScoreCare",
+          text: "Download ScoreCare",
+          url: scorecarePlayStoreUrl,
+        });
+        return;
+      } catch (shareError) {
+        if (shareError instanceof DOMException && shareError.name === "AbortError") {
+          return;
+        }
+
+        window.location.assign(scorecarePlayStoreUrl);
+        return;
+      }
+    }
+
+    window.location.assign(scorecarePlayStoreUrl);
+  }
+
   async function updateSelectedLanguage(language: string) {
     const token = localStorage.getItem("scorecare_token");
     const selectedLanguageLabel = languageOptions.find((item) => item.code === language)?.label;
@@ -2418,7 +2433,10 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
         setNotificationUnreadCount(result.unreadCount);
       }
 
-      setRatingSubmitted(true);
+      setShowRatingForm(false);
+      setSelectedRating(0);
+      setRatingComment("");
+      showToast("Thanks for your feedback.");
     } catch {
       setRatingError("Unable to submit feedback.");
     } finally {
@@ -2428,6 +2446,15 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#070B12] px-4 pb-28 pt-[calc(var(--native-status-offset,0px)+1.75rem)] text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
+      <div
+        className={cn(
+          "fixed left-1/2 top-[calc(var(--native-status-offset,0px)+1.5rem)] z-[9999] -translate-x-1/2 rounded-full bg-[#5EF2C2] px-5 py-2.5 text-caption font-semibold text-[#06221A] shadow-[0_14px_30px_rgba(94,242,194,0.22)] transition-transform",
+          toast.visible ? "translate-y-0" : "-translate-y-24"
+        )}
+      >
+        {toast.msg}
+      </div>
+
       <section className="relative mx-auto max-w-md overflow-hidden rounded-[30px] bg-[linear-gradient(160deg,#ebe7d9,#faf7ed_48%,#d9d0bd)] p-5 text-[#111827] shadow-[0_22px_46px_rgba(58,75,140,0.38)]">
         <button className="absolute left-5 top-5 grid size-8 place-items-center rounded-full bg-black/18 text-white backdrop-blur" type="button" aria-label="Close profile" onClick={onClose}>
           <X className="size-6" strokeWidth={1.6} />
@@ -2503,6 +2530,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
           title="Share App"
           subtitle="Invite Friends & Family"
           Icon={Share2}
+          onClick={() => void shareApp()}
         />
 
         <ProfileOption
@@ -2526,7 +2554,6 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
                     className="grid size-9 place-items-center rounded-full bg-white/[0.04] text-[#6F7B8E] transition hover:bg-[#5EF2C2]/10 hover:text-[#5EF2C2]"
                     onClick={() => {
                       setSelectedRating(value);
-                      setRatingSubmitted(false);
                     }}
                   >
                     <Star className={cn("size-5", selectedRating >= value && "fill-[#5EF2C2] text-[#5EF2C2]")} strokeWidth={1.8} />
@@ -2537,17 +2564,10 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
 
             <textarea
               value={ratingComment}
-              onChange={(event) => {
-                setRatingComment(event.target.value);
-                setRatingSubmitted(false);
-              }}
+              onChange={(event) => setRatingComment(event.target.value)}
               placeholder="Share your feedback"
               className="mt-4 min-h-24 w-full resize-none rounded-[18px] border border-white/[0.08] bg-[#111821] px-4 py-3 text-body-sm font-medium leading-5 text-white outline-none placeholder:text-[#AAB6C8]/60 focus:border-[#5EF2C2]/60 focus:ring-4 focus:ring-[#5EF2C2]/10"
             />
-
-            {ratingSubmitted ? (
-              <p className="mt-3 text-caption font-medium text-[#5EF2C2]">Thanks for your feedback.</p>
-            ) : null}
 
             {ratingError ? (
               <p className="mt-3 text-caption font-medium text-[#FF3B30]">{ratingError}</p>
