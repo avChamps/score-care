@@ -19,6 +19,7 @@ export type SubscriptionPlan = {
   publicId?: string;
   planName: string;
   amount: number;
+  gstPercentage?: number;
   billingCycle?: string;
   currency?: string;
   badge: string;
@@ -484,6 +485,9 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
 
     const authToken = token;
     const planPublicId = selectedPlan.publicId || selectedPlan.id;
+    const selectedPlanPayableAmount = calculatePlanPayableAmount(selectedPlan, selectedPlan);
+    const selectedPlanGstAmount = calculatePlanGstAmount(selectedPlan, selectedPlan);
+    const selectedPlanRazorpayAmount = toRazorpayAmount(selectedPlanPayableAmount);
 
     setPaymentLoading(true);
     setPaymentMessage("");
@@ -503,6 +507,17 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
         method: "POST",
         headers: { Authorization: `Bearer ${authToken}` },
         body: {
+          amount: selectedPlanPayableAmount,
+          amountInPaise: selectedPlanRazorpayAmount,
+          baseAmount: selectedPlan.amount,
+          finalAmount: selectedPlanPayableAmount,
+          gstAmount: selectedPlanGstAmount,
+          gstPercentage: selectedPlan.gstPercentage ?? 0,
+          payableAmount: selectedPlanPayableAmount,
+          payableAmountInPaise: selectedPlanRazorpayAmount,
+          razorpayAmount: selectedPlanRazorpayAmount,
+          totalAmount: selectedPlanPayableAmount,
+          totalAmountInPaise: selectedPlanRazorpayAmount,
           totalCount: 36,
           customerNotify: true,
         },
@@ -519,6 +534,8 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
       const order = data?.order;
       const plan = data?.plan ?? selectedPlan;
       const prefill = await getRazorpayPrefill(authToken, data?.prefill);
+      const payableAmount = calculatePlanPayableAmount(plan, selectedPlan);
+      const gstAmount = calculatePlanGstAmount(plan, selectedPlan);
 
       if (!subscriptionResponse.ok || !data?.keyId || !order?.id || !data?.customerId || data?.recurring !== "1" || (!Capacitor.isNativePlatform() && !window.Razorpay)) {
         throw new Error("Unable to create subscription.");
@@ -533,8 +550,14 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
               razorpayPaymentId: response.razorpay_payment_id,
               razorpayOrderId: response.razorpay_order_id ?? order?.id,
               razorpaySignature: response.razorpay_signature,
-              amount: Number(plan.amount ?? selectedPlan.amount),
+              amount: payableAmount,
+              baseAmount: Number(plan.amount ?? selectedPlan.amount),
               currency: plan.currency ?? selectedPlan.currency ?? "INR",
+              finalAmount: payableAmount,
+              gstAmount,
+              gstPercentage: Number(plan.gstPercentage ?? selectedPlan.gstPercentage ?? 0),
+              payableAmount,
+              totalAmount: payableAmount,
             },
           });
 
@@ -585,7 +608,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
 
       if (Capacitor.isNativePlatform()) {
         const paymentResponse = await nativeRazorpay.open({
-          amount: Number(order.amount ?? plan.amount ?? selectedPlan.amount),
+          amount: toRazorpayAmount(payableAmount),
           currency: order.currency ?? plan.currency ?? selectedPlan.currency ?? "INR",
           customerId: data.customerId,
           description: plan.planName ?? selectedPlan.planName,
@@ -608,6 +631,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
 
       const checkout = new RazorpayCheckout({
         key: data.keyId,
+        amount: toRazorpayAmount(payableAmount),
         order_id: order.id,
         customer_id: data.customerId,
         recurring: data.recurring,
@@ -806,10 +830,11 @@ export function readSubscriptionPlans(result: unknown): SubscriptionPlan[] {
   const normalizedPlans: SubscriptionPlan[] = [];
 
   plans.forEach((plan, index) => {
-    const item = plan as Partial<SubscriptionPlan> & { comparisonBenefits?: unknown; name?: string; offerTag?: string; price?: number; monthlyPrice?: number };
+    const item = plan as Partial<SubscriptionPlan> & { comparisonBenefits?: unknown; gst?: number; gst_percentage?: number; name?: string; offerTag?: string; price?: number; monthlyPrice?: number };
     const id = String(item.publicId ?? item.id ?? item.planName ?? item.name ?? index);
     const planName = String(item.planName ?? item.name ?? "");
     const amount = Number(item.amount ?? item.price ?? item.monthlyPrice ?? 0);
+    const gstPercentage = Number(item.gstPercentage ?? item.gst_percentage ?? item.gst ?? 0);
 
     if (!planName || !amount) {
       return;
@@ -820,6 +845,7 @@ export function readSubscriptionPlans(result: unknown): SubscriptionPlan[] {
       publicId: item.publicId,
       planName,
       amount,
+      gstPercentage: Number.isFinite(gstPercentage) ? gstPercentage : 0,
       billingCycle: item.billingCycle,
       currency: item.currency,
       badge: item.badge ?? item.offerTag ?? (index === 0 ? "Most Popular" : "Best Value"),
@@ -879,6 +905,25 @@ export function formatPlanAmount(plan: SubscriptionPlan) {
   }
 
   return `${plan.currency} ${plan.amount}`;
+}
+
+function calculatePlanPayableAmount(plan: Partial<SubscriptionPlan>, fallback: SubscriptionPlan) {
+  const amount = Number(plan.amount ?? fallback.amount);
+  const gstPercentage = Number(plan.gstPercentage ?? fallback.gstPercentage ?? 0);
+  const payableAmount = amount + (amount * gstPercentage) / 100;
+
+  return Math.round(payableAmount * 100) / 100;
+}
+
+function calculatePlanGstAmount(plan: Partial<SubscriptionPlan>, fallback: SubscriptionPlan) {
+  const amount = Number(plan.amount ?? fallback.amount);
+  const gstPercentage = Number(plan.gstPercentage ?? fallback.gstPercentage ?? 0);
+
+  return Math.round(((amount * gstPercentage) / 100) * 100) / 100;
+}
+
+function toRazorpayAmount(amount: number) {
+  return Math.round(amount * 100);
 }
 
 function loadRazorpayCheckout() {
