@@ -335,14 +335,14 @@ function TwelveHourTimer({ className = "" }: { className?: string }) {
 export function PremiumBenefitsIntro({ ctaLabel = "View subscription", loading = false, onClose, onSubscribe }: { ctaLabel?: string; loading?: boolean; onClose: () => void; onSubscribe: () => void }) {
   return (
     <div className="flex min-h-full flex-col bg-[#0D131C]">
-      <div className="flex h-11 shrink-0 items-center bg-[#0D131C] px-3">
-        <button className="grid size-8 place-items-center rounded-full bg-white/10 text-white backdrop-blur" type="button" aria-label="Back from benefits" onClick={onClose}>
-          <ArrowLeft className="size-4" />
+      <div className="flex h-14 shrink-0 items-center bg-[#0D131C] px-4">
+        <button className="grid size-12 place-items-center rounded-full bg-white/10 text-white backdrop-blur" type="button" aria-label="Back from benefits" onClick={onClose}>
+          <ArrowLeft className="size-5" />
         </button>
       </div>
 
-      <div className="relative mx-3 shrink-0 overflow-hidden rounded-xl bg-[#F4F8FF]">
-        <div className="relative aspect-[580/269] min-h-[168px] w-full">
+      <div className="relative mx-4 shrink-0 overflow-hidden rounded-[16px] bg-[#F4F8FF]">
+        <div className="relative aspect-[1.82] w-full">
           <Image
             src={subscriptionBenefitsImage}
             alt="Boost your credit score to 750+"
@@ -354,22 +354,22 @@ export function PremiumBenefitsIntro({ ctaLabel = "View subscription", loading =
         </div>
       </div>
 
-     <div className="flex min-h-0 flex-1 flex-col bg-[#0D131C] px-2 pb-5 pt-4">
-  <div className="overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.06]">
+     <div className="flex min-h-0 flex-1 flex-col bg-[#0D131C] px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] pt-5">
+  <div className="overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.06]">
     {premiumPlanSteps.map((step, index) => {
       const Icon = step.icon;
 
       return (
         <div
           key={step.title}
-          className={`grid grid-cols-[3rem_1fr] items-center gap-3 px-3 py-3 ${
+          className={`grid grid-cols-[4.75rem_1fr] items-center gap-3 px-4 py-3.5 min-[390px]:py-4 ${
             index !== premiumPlanSteps.length - 1
               ? "border-b border-white/10"
               : ""
           }`}
         >
           <motion.span
-            className="grid size-10 place-items-center rounded-xl bg-[#111821] text-[#5EF2C2] shadow-[0_0_18px_rgba(94,242,194,0.18)]"
+            className="grid size-14 place-items-center rounded-[18px] bg-[#111821] text-[#5EF2C2] shadow-[0_0_18px_rgba(94,242,194,0.18)] min-[390px]:size-16"
             animate={{
               scale: [1, 1.08, 1],
               rotate: [0, -4, 4, 0],
@@ -382,15 +382,15 @@ export function PremiumBenefitsIntro({ ctaLabel = "View subscription", loading =
               delay: index * 0.18,
             }}
           >
-            <Icon className="size-4" strokeWidth={1.8} />
+            <Icon className="size-6" strokeWidth={1.8} />
           </motion.span>
 
           <div>
-            <p className="text-[12px] font-bold leading-4 text-white">
+            <p className="text-[15px] font-bold leading-5 text-white">
               {step.title}
             </p>
 
-            <p className="mt-1 text-[10px] font-medium leading-[14px] text-[#AAB6C8]">
+            <p className="mt-1.5 text-[12px] font-medium leading-[18px] text-[#AAB6C8]">
               {step.body}
             </p>
           </div>
@@ -399,13 +399,13 @@ export function PremiumBenefitsIntro({ ctaLabel = "View subscription", loading =
     })}
   </div>
 
-  <div className="mt-auto mb-1 flex justify-end pr-1 text-[10px] font-semibold text-[#AAB6C8]">
+  <div className="mt-auto mb-3 flex justify-end pr-1 pt-8 text-[12px] font-semibold text-[#AAB6C8]">
     <span>Offer closes in&nbsp;</span>
     <TwelveHourTimer className="font-bold text-[#FFD34D]" />
   </div>
 
   <button
-    className="h-11 w-full rounded-2xl bg-[#08DB69] text-[14px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+    className="h-16 w-full rounded-[24px] bg-[#08DB69] text-[20px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
     disabled={loading}
     type="button"
     onClick={onSubscribe}
@@ -696,7 +696,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
     <AnimatePresence>
       {show ? (
         <motion.div
-          className="fixed inset-0 z-[9999] flex items-end bg-[#050910]/70 px-3 backdrop-blur-[5px]"
+          className="fixed inset-0 z-[9999] flex items-end bg-[#050910]/70 px-3 pt-[calc(var(--native-status-offset,0px)+2rem)] backdrop-blur-[5px]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -704,7 +704,7 @@ export function SubscribePromptOverlay({ onClose, show }: { onClose: () => void;
           onClick={closePrompt}
         >
           <motion.div
-            className="relative mx-auto flex h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-[2rem] bg-[#0D131C] text-white shadow-[0_-24px_80px_rgba(0,0,0,0.42)]"
+            className="relative mx-auto flex h-[calc(100dvh-var(--native-status-offset,0px)-4rem)] w-full max-w-md flex-col overflow-hidden rounded-[2rem] bg-[#0D131C] text-white shadow-[0_-24px_80px_rgba(0,0,0,0.42)]"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
