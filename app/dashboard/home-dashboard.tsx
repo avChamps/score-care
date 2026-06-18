@@ -2449,6 +2449,10 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
     }
   }
 
+  function logoutUser() {
+    logoutScorecareSession(router.replace);
+  }
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#070B12] px-4 pb-28 pt-[calc(var(--native-status-offset,0px)+1.75rem)] text-white [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
       <div
@@ -3929,8 +3933,4 @@ function calculateProfileCompletion(profile: UserProfile | null) {
   const completed = fields.filter(Boolean).length;
 
   return Math.round((completed / fields.length) * 100);
-}
-
-function logoutUser() {
-  logoutScorecareSession();
 }

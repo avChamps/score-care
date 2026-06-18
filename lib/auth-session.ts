@@ -1,39 +1,25 @@
-const SCORECARE_SESSION_KEYS = [
-  "scorecare_token",
-  "scorecare_token_type",
-  "scorecare_mobile_number",
-  "scorecare_pan_number",
-  "scorecare_full_name",
-  "scorecare_email",
-  "scorecare_date_of_birth",
-  "scorecare_assistant_context",
-  "scorecare_assistant_messages",
-  "scorecare_cibil_display_data",
-  "scorecare_cibil_display_token",
-  "scorecare_cibil_score_check_data",
-  "scorecare_cibil_score_check_token",
-  "scorecare_cibil_score_check_payload",
-  "scorecare_registered_fcm_token",
-  "scorecare_android_device_id",
-  "scorecare_admin_view",
-  "scorecare_language",
-];
-
 export function clearScorecareSession() {
-  SCORECARE_SESSION_KEYS.forEach((key) => localStorage.removeItem(key));
+  if (typeof localStorage !== "undefined") {
+    localStorage.clear();
+  }
+
+  if (typeof sessionStorage !== "undefined") {
+    sessionStorage.clear();
+  }
+
   clearGoogleTranslateCookie();
 }
 
-export function logoutScorecareSession() {
+export function logoutScorecareSession(navigate?: (href: string) => void) {
   clearScorecareSession();
+
+  if (navigate) {
+    navigate("/login");
+    return;
+  }
 
   if (typeof window !== "undefined") {
     window.location.replace("/login");
-    window.setTimeout(() => {
-      if (window.location.pathname !== "/login") {
-        window.location.assign("/login");
-      }
-    }, 120);
   }
 }
 

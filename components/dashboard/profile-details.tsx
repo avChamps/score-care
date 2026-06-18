@@ -79,7 +79,7 @@ export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean 
   }, [router]);
 
   function logout() {
-    logoutScorecareSession();
+    logoutScorecareSession(router.replace);
   }
 
   function openAdminView() {
