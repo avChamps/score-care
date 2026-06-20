@@ -77,6 +77,11 @@ public class NativeRazorpayPlugin extends Plugin {
             options.put("prefill", new JSONObject(prefill.toString()));
         }
 
+        JSObject config = call.getObject("config");
+        if (config != null) {
+            options.put("config", new JSONObject(config.toString()));
+        }
+
         JSONObject method = new JSONObject();
         method.put("card", true);
         method.put("netbanking", true);

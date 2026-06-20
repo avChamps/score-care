@@ -42,6 +42,7 @@ type RazorpayPrefill = {
 type NativeRazorpayPlugin = {
   open: (options: {
     amount?: number;
+    config?: Record<string, unknown>;
     currency?: string;
     description?: string;
     key: string;
@@ -350,6 +351,18 @@ export default function CibilRepairSummaryPage() {
       if (Capacitor.isNativePlatform()) {
         const paymentResponse = await nativeRazorpay.open({
           amount: order.amount,
+          config: {
+            display: {
+              blocks: {
+                paymentOptions: {
+                  name: "All Payment Options",
+                  instruments: [{ method: "upi", flows: ["intent"] }],
+                },
+              },
+              sequence: ["block.paymentOptions"],
+              preferences: { show_default_blocks: false },
+            },
+          },
           currency: order.currency || currency,
           description: planName,
           key: razorpayKey,
@@ -385,8 +398,8 @@ export default function CibilRepairSummaryPage() {
         config: {
           display: {
             blocks: {
-              upiIntent: {
-                name: "Pay with mobile UPI apps",
+              paymentOptions: {
+                name: "All Payment Options",
                 instruments: [
                   {
                     method: "upi",
@@ -394,22 +407,10 @@ export default function CibilRepairSummaryPage() {
                   },
                 ],
               },
-              razorpayOptions: {
-                name: "Pay with Razorpay",
-                instruments: [
-                  { method: "card" },
-                  { method: "netbanking" },
-                  { method: "wallet" },
-                  {
-                    method: "upi",
-                    flows: ["collect"],
-                  },
-                ],
-              },
             },
-            sequence: ["block.upiIntent", "block.razorpayOptions"],
+            sequence: ["block.paymentOptions"],
             preferences: {
-              show_default_blocks: true,
+              show_default_blocks: false,
             },
           },
         },
