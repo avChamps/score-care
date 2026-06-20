@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
@@ -38,6 +39,18 @@ type RazorpayPrefill = {
   contact: string;
 };
 
+type NativeRazorpayPlugin = {
+  open: (options: {
+    amount?: number;
+    currency?: string;
+    description?: string;
+    key: string;
+    name?: string;
+    orderId: string;
+    prefill?: RazorpayPrefill;
+  }) => Promise<RazorpaySuccessResponse>;
+};
+
 declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
@@ -64,6 +77,7 @@ type RepairDocumentForm = {
 const reportCardClass =
   "border border-[#103A2B]/50 bg-[linear-gradient(135deg,#06120E_0%,#081712_50%,#091813_100%)] shadow-[0_20px_45px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]";
 const reportMiniCardClass = "border border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]";
+const nativeRazorpay = registerPlugin<NativeRazorpayPlugin>("NativeRazorpay");
 
 function cleanRazorpayContact(value: unknown) {
   const digits = String(value || "").replace(/\D/g, "");
@@ -267,7 +281,9 @@ export default function CibilRepairSummaryPage() {
     setPaymentMessage("");
 
     try {
-      await loadRazorpayCheckout();
+      if (!Capacitor.isNativePlatform()) {
+        await loadRazorpayCheckout();
+      }
 
       const orderResponse = await apiRequest("/cibil-repair-content/payments/orders", {
         method: "POST",
@@ -289,13 +305,71 @@ export default function CibilRepairSummaryPage() {
       const orderResult = await orderResponse.json();
       const order = orderResult?.data?.order;
       const prefill = await getRazorpayPrefill(token, orderResult?.data?.prefill);
+      const razorpayKey = orderResult?.data?.keyId || orderResult?.data?.razorpayKeyId || order?.key;
 
-      if (!orderResponse.ok || !order?.id || !window.Razorpay) {
+      if (!orderResponse.ok || !order?.id || !razorpayKey || (!Capacitor.isNativePlatform() && !window.Razorpay)) {
         throw new Error("Unable to create payment order.");
       }
 
-      const checkout = new window.Razorpay({
-        key: orderResult?.data?.keyId || orderResult?.data?.razorpayKeyId || order.key,
+      async function createRepairRequest(response: RazorpaySuccessResponse) {
+        try {
+          const requestResponse = await apiRequest("/cibil-repair-content/requests", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: {
+              planPublicId,
+              planName,
+              amount: payableAmount,
+              currency,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+              remarks: "",
+            },
+          });
+
+          if (requestResponse.status === 401 || requestResponse.status === 403) {
+            clearScorecareSession();
+            router.replace("/login");
+            return;
+          }
+
+          if (!requestResponse.ok) {
+            throw new Error("Unable to create repair request.");
+          }
+
+          const requestResult = await requestResponse.json();
+          setSuccessMessage(requestResult?.message || "CIBIL repair request submitted successfully.");
+        } catch (error) {
+          setPaymentMessage(error instanceof Error ? error.message : "Unable to create repair request.");
+        } finally {
+          setPaymentLoading(false);
+        }
+      }
+
+      if (Capacitor.isNativePlatform()) {
+        const paymentResponse = await nativeRazorpay.open({
+          amount: order.amount,
+          currency: order.currency || currency,
+          description: planName,
+          key: razorpayKey,
+          name: "ScoreCare",
+          orderId: order.id,
+          prefill,
+        });
+
+        await createRepairRequest(paymentResponse);
+        return;
+      }
+
+      const RazorpayCheckout = window.Razorpay;
+
+      if (!RazorpayCheckout) {
+        throw new Error("Payment gateway is unavailable.");
+      }
+
+      const checkout = new RazorpayCheckout({
+        key: razorpayKey,
         amount: order.amount,
         currency: order.currency || currency,
         name: "ScoreCare",
@@ -339,41 +413,7 @@ export default function CibilRepairSummaryPage() {
             },
           },
         },
-        handler: async (response: RazorpaySuccessResponse) => {
-          try {
-            const requestResponse = await apiRequest("/cibil-repair-content/requests", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${token}` },
-              body: {
-                planPublicId,
-                planName,
-                amount: payableAmount,
-                currency,
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
-                remarks: "",
-              },
-            });
-
-            if (requestResponse.status === 401 || requestResponse.status === 403) {
-              clearScorecareSession();
-              router.replace("/login");
-              return;
-            }
-
-            if (!requestResponse.ok) {
-              throw new Error("Unable to create repair request.");
-            }
-
-            const requestResult = await requestResponse.json();
-            setSuccessMessage(requestResult?.message || "CIBIL repair request submitted successfully.");
-          } catch (error) {
-            setPaymentMessage(error instanceof Error ? error.message : "Unable to create repair request.");
-          } finally {
-            setPaymentLoading(false);
-          }
-        },
+        handler: createRepairRequest,
         modal: {
           ondismiss: () => setPaymentLoading(false),
         },
