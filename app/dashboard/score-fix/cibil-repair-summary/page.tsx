@@ -318,6 +318,12 @@ export default function CibilRepairSummaryPage() {
             method: "POST",
             headers: { Authorization: `Bearer ${token}` },
             body: {
+              accounts: accounts.map((account) => ({
+                accountNumber: account.accountNumber,
+                accountType: account.accountType,
+                subscriberName: account.subscriberName,
+                issueType: account.issueType,
+              })),
               planPublicId,
               planName,
               amount: payableAmount,

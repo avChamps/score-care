@@ -65,6 +65,12 @@ type CibilRepairContent = {
 };
 
 type CibilRepairRequest = {
+  accounts?: Array<{
+    accountNumber?: string | null;
+    accountType?: string | null;
+    issueType?: string | null;
+    subscriberName?: string | null;
+  }>;
   accountNumber?: string | null;
   accountType?: string | null;
   bankName?: string | null;
@@ -809,8 +815,8 @@ function CreditImprovementPlan({
 
   function openRepairDocumentUpload(request?: CibilRepairRequest) {
     const storedAccounts = readSelectedCibilRepairAccounts();
-    const requestAccount = request ? readRepairRequestAccount(request) : null;
-    const nextAccounts = storedAccounts.length ? storedAccounts : requestAccount ? [requestAccount] : [];
+    const requestAccounts = request ? readRepairRequestAccounts(request) : [];
+    const nextAccounts = requestAccounts.length ? requestAccounts : storedAccounts;
 
     setUploadAccounts(nextAccounts);
     setUploadDialogOpen(true);
@@ -1300,24 +1306,29 @@ function isUploadDocumentStatus(status: string) {
   return status.toLowerCase().replace(/[\s-]+/g, "_") === "upload_document";
 }
 
-function readRepairRequestAccount(request: CibilRepairRequest): SelectedCibilRepairAccount | null {
-  const accountNumber = readString(request.accountNumber);
-  const accountType = readString(request.accountType) || "Loan";
-  const subscriberName = readString(request.bankName ?? request.lenderName);
+function readRepairRequestAccounts(request: CibilRepairRequest): SelectedCibilRepairAccount[] {
+  const accounts = request.accounts?.length ? request.accounts : [request];
 
-  if (!accountNumber || !subscriberName) return null;
+  return accounts.flatMap((account, index) => {
+    const accountNumber = readString(account.accountNumber);
+    const accountType = readString(account.accountType) || "Loan";
+    const subscriberName = readString("subscriberName" in account ? account.subscriberName : request.bankName ?? request.lenderName);
+    const issueType = readString(account.issueType);
 
-  return {
-    id: request.publicId || request.id || `${subscriberName.toLowerCase()}-${accountNumber}`,
-    accountNumber,
-    accountType,
-    accountStatus: readString(request.repairStatus ?? request.paymentStatus) || "--",
-    currentBalance: 0,
-    issueType: readString(request.issueType),
-    issueLabels: request.issueType ? [String(request.issueType)] : [],
-    rawAccount: {},
-    subscriberName,
-  };
+    if (!accountNumber || !subscriberName) return [];
+
+    return [{
+      id: `${request.publicId || request.id || "repair-request"}-${accountNumber}-${index}`,
+      accountNumber,
+      accountType,
+      accountStatus: readString(request.repairStatus ?? request.paymentStatus) || "--",
+      currentBalance: 0,
+      issueType,
+      issueLabels: issueType.split(",").map((label) => label.trim()).filter(Boolean),
+      rawAccount: {},
+      subscriberName,
+    }];
+  });
 }
 
 function isCreditCardAccount(accountType: string) {

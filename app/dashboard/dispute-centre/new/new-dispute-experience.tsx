@@ -12,9 +12,11 @@ import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
   Building2,
+  FileText,
   Landmark,
   ShieldCheck,
   BadgeCheck,
+  Upload,
   LucideIcon
 } from "lucide-react";
 
@@ -31,6 +33,9 @@ type DisputeAccount = {
   status: string;
 };
 
+type DisputeDocumentField = "closureCertificate" | "paymentReceipt" | "bankStatement" | "identityProof";
+type DisputeDocuments = Record<DisputeDocumentField, File | null>;
+
 const errorTypes = [
   "Account showing active after closure",
   "Wrong payment status (late/default)",
@@ -42,6 +47,12 @@ const errorTypes = [
   "Other",
 ];
 const bureauOptions = ["CIBIL", "Equifax", "Experian", "CRIF"];
+const disputeDocumentFields: Array<{ field: DisputeDocumentField; label: string; required?: boolean }> = [
+  { field: "closureCertificate", label: "Closure Certificate / NOC", required: true },
+  { field: "paymentReceipt", label: "Payment Receipt" },
+  { field: "bankStatement", label: "Bank Statement" },
+  { field: "identityProof", label: "Identity Proof" },
+];
 const reportCardClass =
   "border border-[#103A2B]/50 bg-[linear-gradient(135deg,#06120E_0%,#081712_50%,#091813_100%)] shadow-[0_20px_45px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]";
 const reportMiniCardClass = "border border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]";
@@ -56,6 +67,13 @@ export function NewDisputeExperience() {
   const [availableBureaus, setAvailableBureaus] = useState<string[]>([]);
   const [selectedBureaus, setSelectedBureaus] = useState<string[]>([]);
   const [details, setDetails] = useState("");
+  const [documents, setDocuments] = useState<DisputeDocuments>({
+    bankStatement: null,
+    closureCertificate: null,
+    identityProof: null,
+    paymentReceipt: null,
+  });
+  const [documentError, setDocumentError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -99,7 +117,14 @@ export function NewDisputeExperience() {
     (step === 1 && Boolean(selectedAccount)) ||
     (step === 2 && Boolean(errorType)) ||
     (step === 3 && selectedBureaus.length > 0) ||
-    step === 4;
+    (step === 4 && Boolean(documents.closureCertificate));
+
+  function updateDocument(field: DisputeDocumentField, file: File | null) {
+    const validationError = file ? validateDisputeDocument(file) : "";
+
+    setDocumentError(validationError);
+    setDocuments((current) => ({ ...current, [field]: validationError ? null : file }));
+  }
 
   async function submitDispute() {
     if (!selectedAccount || !canContinue || submitting) return;
@@ -123,6 +148,12 @@ export function NewDisputeExperience() {
     if (details.trim()) {
       payload.append("additionalDetails", details.trim());
     }
+
+    disputeDocumentFields.forEach(({ field }) => {
+      const file = documents[field];
+
+      if (file) payload.append(field, file);
+    });
 
     setSubmitting(true);
 
@@ -180,7 +211,7 @@ export function NewDisputeExperience() {
           {step === 1 ? <AccountStep accounts={visibleAccounts} hasDisputeEligibleAccounts={disputeEligibleAccounts.length > 0} selectedAccountId={selectedAccountId} onSelect={setSelectedAccountId} onViewAllAccounts={() => setShowAllAccounts(true)} /> : null}
           {step === 2 ? <OptionStep options={errorTypes} selected={errorType} onSelect={setErrorType} /> : null}
           {step === 3 ? <BureauStep bureaus={availableBureaus} details={details} selectedBureaus={selectedBureaus} onDetails={setDetails} onToggle={setSelectedBureaus} /> : null}
-          {step === 4 ? <EvidenceStep /> : null}
+          {step === 4 ? <EvidenceStep documents={documents} error={documentError} onChange={updateDocument} /> : null}
         </div>
 
        <div className="sticky bottom-24 z-20 py-2">
@@ -350,13 +381,49 @@ const bureauConfig: Record<
   );
 }
 
-function EvidenceStep() {
+function EvidenceStep({ documents, error, onChange }: { documents: DisputeDocuments; error: string; onChange: (field: DisputeDocumentField, file: File | null) => void }) {
   return (
-    <div className={cn("rounded-2xl p-4", reportMiniCardClass)}>
-      <p className="text-sm font-bold text-white">Document upload is on hold for now.</p>
-      <p className="mt-1 text-caption leading-5 text-[#9fb2c6]">You can submit this dispute without uploading files.</p>
+    <div className="space-y-3">
+      {disputeDocumentFields.map(({ field, label, required }) => {
+        const file = documents[field];
+
+        return (
+          <label className={cn("flex min-h-24 cursor-pointer items-center gap-3 rounded-2xl border border-dashed p-4", reportMiniCardClass)} key={field}>
+            <input
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              className="sr-only"
+              type="file"
+              onChange={(event) => onChange(field, event.target.files?.[0] ?? null)}
+            />
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-[#22F2C2]">
+              <FileText className="size-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-black text-white">{label}</span>
+              {required ? <span className="mt-1 block text-caption font-bold text-[#FF5C8A]">Required</span> : null}
+              {file ? <span className="mt-1 block truncate text-caption text-[#22F2C2]">{file.name}</span> : null}
+            </span>
+            <span className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-[#22F2C2]/12 px-3 text-caption font-black text-[#22F2C2]">
+              <Upload className="size-4" />
+              {file ? "Change" : "Upload"}
+            </span>
+          </label>
+        );
+      })}
+      {error ? <p className="rounded-2xl border border-[#FF5C8A]/25 bg-[#FF5C8A]/10 px-4 py-3 text-sm font-medium text-[#FF8AAB]">{error}</p> : null}
+      <p className="rounded-2xl border border-[#22F2C2]/25 bg-[#22F2C2]/10 px-4 py-3 text-caption leading-5 text-[#9fb2c6]">ScoreCare will file and track your dispute automatically.</p>
     </div>
   );
+}
+
+function validateDisputeDocument(file: File) {
+  const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+  const allowedExtension = /\.(pdf|jpe?g|png)$/i.test(file.name);
+
+  if (!allowedTypes.includes(file.type) && !allowedExtension) return "Only PDF, JPG, JPEG, or PNG files are allowed.";
+  if (file.size > 5 * 1024 * 1024) return "Each document must be 5MB or smaller.";
+
+  return "";
 }
 
 function readDisputeAccounts(displayData: unknown): DisputeAccount[] {
