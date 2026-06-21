@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
+import { ButtonLoader } from "@/components/auth/button-loader";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
 import { apiFetch } from "@/lib/api";
@@ -216,7 +217,8 @@ export function NewDisputeExperience() {
 
        <div className="sticky bottom-24 z-20 py-2">
     <button
-      className="h-12 w-full rounded-[18px] bg-[linear-gradient(135deg,#22F2C2,#18C79E)] text-sm font-bold text-white shadow-[0_10px_24px_rgba(34,242,194,0.28)] transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:border disabled:disabled:border-white/5 disabled:bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] disabled:text-[#6F7B8E] disabled:shadow-none"
+      aria-busy={submitting}
+      className="flex h-12 w-full items-center justify-center gap-2 rounded-[18px] bg-[linear-gradient(135deg,#22F2C2,#18C79E)] text-sm font-bold text-white shadow-[0_10px_24px_rgba(34,242,194,0.28)] transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:border disabled:disabled:border-white/5 disabled:bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] disabled:text-[#6F7B8E] disabled:shadow-none"
       data-dashboard-dispute="true"
       disabled={!canContinue || submitting}
       type="button"
@@ -228,7 +230,7 @@ export function NewDisputeExperience() {
     >
       {step === 4
         ? submitting
-          ? "Submitting..."
+          ? <><ButtonLoader className="size-5" /> Submitting...</>
           : "Submit"
         : "Next"}
     </button>

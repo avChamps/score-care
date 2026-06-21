@@ -83,8 +83,13 @@ body > div {
 .goog-te-banner-frame,
 .goog-te-banner-frame.skiptranslate,
 iframe.goog-te-banner-frame,
-body > .skiptranslate {
+body > .skiptranslate,
+.goog-te-spinner-pos,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+.VIpgJd-ZVi9od-aZ2wEe-OiiCO,
+body > div[class*="VIpgJd-ZVi9od-aZ2wEe"] {
   display: none !important;
+  pointer-events: none !important;
 }
 
 .goog-te-gadget,

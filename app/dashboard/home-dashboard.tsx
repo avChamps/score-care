@@ -165,6 +165,7 @@ const freeTierAppTiles = [
 const notificationsPageSize = 10;
 const scorecarePlayStoreUrl = "https://play.google.com/apps/internaltest/4701307504694712853";
 const actionPlanAiCache = new Map<string, Promise<string>>();
+let googleTranslateRetryTimers: number[] = [];
 const languageOptions = [
   { code: "en", label: "English" },
   { code: "hi", label: "Hindi" },
@@ -2828,10 +2829,13 @@ function loadGoogleTranslate() {
   };
 
   googleWindow.googleTranslateElementInit = () => {
-    if (!googleWindow.google?.translate?.TranslateElement || !document.getElementById("google_translate_element")) {
+    const translateElement = document.getElementById("google_translate_element");
+
+    if (!googleWindow.google?.translate?.TranslateElement || !translateElement || translateElement.dataset.initialized === "true") {
       return;
     }
 
+    translateElement.dataset.initialized = "true";
     new googleWindow.google.translate.TranslateElement(
       {
         includedLanguages: languageOptions.map((language) => language.code).join(","),
@@ -2848,7 +2852,9 @@ function loadGoogleTranslate() {
   };
 
   if (document.getElementById("scorecare-google-translate-script")) {
-    googleWindow.googleTranslateElementInit();
+    if (googleWindow.google?.translate?.TranslateElement) {
+      googleWindow.googleTranslateElementInit();
+    }
     return;
   }
 
@@ -2860,13 +2866,16 @@ function loadGoogleTranslate() {
 }
 
 function applyGoogleLanguageWithRetry(language: string) {
+  googleTranslateRetryTimers.forEach((timer) => window.clearTimeout(timer));
+  googleTranslateRetryTimers = [];
+
   if (readStoredLanguage() === language && isGoogleLanguageApplied(language)) {
     return;
   }
 
   const delays = [0, 300, 800, 1500];
 
-  delays.forEach((delay) => {
+  googleTranslateRetryTimers = delays.map((delay) =>
     window.setTimeout(() => {
       const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
 
@@ -2874,8 +2883,8 @@ function applyGoogleLanguageWithRetry(language: string) {
       if (select?.value === language) return;
 
       applyGoogleLanguage(language, false);
-    }, delay);
-  });
+    }, delay)
+  );
 }
 
 function applyProfileLanguage(profile: UserProfile | null) {
