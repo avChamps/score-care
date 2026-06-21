@@ -1,7 +1,7 @@
 import { Capacitor, CapacitorHttp, type HttpOptions } from "@capacitor/core";
 
 const PRODUCTION_API_BASE_URL = "https://scorecareapp.com/api";
-const DEVELOPMENT_API_BASE_URL = "http://localhost:5000";
+const DEVELOPMENT_API_BASE_URL = "https://scorecareapp.com/api";
 
 export const API_BASE_URL = process.env.NODE_ENV === "development"
   ? normalizeApiBaseUrl(DEVELOPMENT_API_BASE_URL)
