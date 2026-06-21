@@ -30,7 +30,7 @@ import {
   PortalTopBar,
   PrimaryPortalButton,
 } from "@/components/dashboard/portal-ui";
-import { PremiumBenefitsIntro, ProBenefitsComparisonSheet, SubscribePromptOverlay, formatBillingCycle, formatPlanAmount, getSubscriptionPlans, type ComparisonBenefitRow, type SubscriptionPlan } from "@/components/dashboard/subscribe-prompt";
+import { PremiumBenefitsIntro, ProBenefitsComparisonSheet, SubscribePromptOverlay, formatBillingCycle, formatPlanAmount, getSubscriptionPlans, type SubscriptionPlan } from "@/components/dashboard/subscribe-prompt";
 import { apiFetch, apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { CibilDisplayDataError, getCachedCibilDisplayData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
@@ -810,7 +810,6 @@ function LoanSuccessToast({ message, onClose, title }: { message: string; onClos
 
 function LoanBenefitsPrompt({ loading = false, onClose, onSubscribe }: { loading?: boolean; onClose: () => void; onSubscribe: () => void }) {
   const [showLeavingMessage, setShowLeavingMessage] = useState(false);
-  const [comparisonBenefits, setComparisonBenefits] = useState<ComparisonBenefitRow[]>([]);
   const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan | null>(null);
 
   useEffect(() => {
@@ -823,12 +822,10 @@ function LoanBenefitsPrompt({ loading = false, onClose, onSubscribe }: { loading
         if (isMounted) {
           const plan = plans[0] ?? null;
           setSubscriptionPlan(plan);
-          setComparisonBenefits(plans.find((item) => item.comparisonBenefits.length)?.comparisonBenefits ?? []);
         }
       } catch {
         if (isMounted) {
           setSubscriptionPlan(null);
-          setComparisonBenefits([]);
         }
       }
     }
@@ -843,11 +840,11 @@ function LoanBenefitsPrompt({ loading = false, onClose, onSubscribe }: { loading
   return (
     <div className="fixed inset-0 z-[110] flex items-end bg-black/60 px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(var(--native-status-offset,0px)+0.75rem)] backdrop-blur-sm">
       <section className="mx-auto h-[calc(100dvh-var(--native-status-offset,0px)-1.75rem-env(safe-area-inset-bottom,0px))] w-full max-w-md overflow-y-auto rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
-        <PremiumBenefitsIntro ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={() => setShowLeavingMessage(true)} onSubscribe={onSubscribe} />
+        <PremiumBenefitsIntro benefits={subscriptionPlan?.benefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={() => setShowLeavingMessage(true)} onSubscribe={onSubscribe} />
       </section>
 
       {showLeavingMessage ? (
-        <ProBenefitsComparisonSheet comparisonBenefits={comparisonBenefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={onClose} onSubscribe={onSubscribe} />
+        <ProBenefitsComparisonSheet comparisonBenefits={subscriptionPlan?.comparisonBenefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={onClose} onSubscribe={onSubscribe} />
       ) : null}
     </div>
   );

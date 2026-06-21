@@ -27,13 +27,18 @@ export type SubscriptionPlan = {
   title?: string;
   subtitle?: string;
   description?: string;
-  benefits: string[];
+  benefits: SubscriptionBenefit[];
   comparisonBenefits: ComparisonBenefitRow[];
   buttonLabel?: string;
   skipLabel?: string;
   features: string[];
   moreFeatures?: string;
   theme: "blue" | "purple" | "green" | "orange" | "pink" | "cyan";
+};
+
+export type SubscriptionBenefit = {
+  title: string;
+  description: string;
 };
 
 export type ComparisonBenefitValue = boolean | string;
@@ -193,17 +198,6 @@ export function useSubscribePrompt() {
   return { closeSubscribePrompt, promptSubscribe, showSubscribePrompt };
 }
 
-const proComparisonRows: ComparisonBenefitRow[] = [
-  { benefit: "Credit Score Check", free: true, scorecarePro: true },
-  { benefit: "Score Refresh", free: "Monthly", scorecarePro: "Daily" },
-  { benefit: "AI Credit Improvement Plan", free: false, scorecarePro: true },
-  { benefit: "Detailed Credit Reports", free: false, scorecarePro: true },
-  { benefit: "Loan & Credit Card Tracking", free: false, scorecarePro: true },
-  { benefit: "EMI Reminders", free: false, scorecarePro: true },
-  { benefit: "AI Credit Coach", free: false, scorecarePro: true },
-  { benefit: "Priority Support", free: false, scorecarePro: true },
-];
-
 function ProComparisonValue({ value }: { value: ComparisonBenefitValue }) {
   if (value === true || value === "check") {
     return (
@@ -224,9 +218,7 @@ function ProComparisonValue({ value }: { value: ComparisonBenefitValue }) {
   return <span className="text-[11px] font-bold text-[#AAB6C8]">{String(value)}</span>;
 }
 
-export function ProBenefitsComparisonSheet({ comparisonBenefits, ctaLabel = "View Subscription", loading = false, onClose, onSubscribe, zIndex = "z-[110]" }: { comparisonBenefits?: ComparisonBenefitRow[]; ctaLabel?: string; loading?: boolean; onClose: () => void; onSubscribe: () => void; zIndex?: string }) {
-  const rows = comparisonBenefits?.length ? comparisonBenefits : proComparisonRows;
-
+export function ProBenefitsComparisonSheet({ comparisonBenefits = [], ctaLabel = "View Subscription", loading = false, onClose, onSubscribe, zIndex = "z-[110]" }: { comparisonBenefits?: ComparisonBenefitRow[]; ctaLabel?: string; loading?: boolean; onClose: () => void; onSubscribe: () => void; zIndex?: string }) {
   return (
     <div className={`fixed inset-0 ${zIndex} flex items-end bg-black/65 px-0 backdrop-blur-sm sm:px-4`}>
       <section className="mx-auto max-h-[calc(100dvh-12px)] w-full max-w-md overflow-y-auto animate-[creditPanelIn_0.22s_ease-out] rounded-t-[30px] bg-[#0D131C] px-4 pb-4 pt-5 shadow-[0_-24px_70px_rgba(0,0,0,0.42)]">
@@ -249,7 +241,7 @@ export function ProBenefitsComparisonSheet({ comparisonBenefits, ctaLabel = "Vie
             <div className="bg-[#112536] px-2 py-2.5 text-center">ScoreCare Pro</div>
           </div>
 
-          {rows.map((row) => (
+          {comparisonBenefits.map((row) => (
             <div key={row.benefit} className="grid grid-cols-[1.45fr_0.72fr_0.95fr] border-t border-white/10 text-[12px] leading-4 text-[#D7E0EA]">
               <div className="flex min-h-9 items-center px-2.5 py-1.5 font-semibold">{row.benefit}</div>
               <div className="flex min-h-9 items-center justify-center bg-[#0D131C] px-2 py-1.5 text-center">
@@ -274,38 +266,7 @@ export function ProBenefitsComparisonSheet({ comparisonBenefits, ctaLabel = "Vie
 }
 
 
-const premiumPlanSteps = [
-  {
-    accent: "#14A76C",
-    icon: TrendingUp,
-    title: "Monitor bureau scores daily",
-    body: "Track CIBIL, Equifax, Experian & CRIF scores in one place with detailed report insights.",
-  },
-  {
-    accent: "#FF9F1C",
-    icon: FileWarning,
-    title: "Detect unauthorized accounts",
-    body: "Spot fraudulent or incorrect loan entries across bureaus and raise a dispute instantly.",
-  },
-  {
-    accent: "#1261C9",
-    icon: Bot,
-    title: "Get AI-powered score analysis",
-    body: "Understand exactly what's pulling your score down with bureau-wise factor breakdown.",
-  },
-  {
-    accent: "#7752C9",
-    icon: CreditCard,
-    title: "Improve your credit mix smartly",
-    body: "Get personalized recommendations on credit utilization, repayment habits, and loan types.",
-  },
-  {
-    accent: "#14A76C",
-    icon: Trophy,
-    title: "Follow your ScoreCare Action Plan",
-    body: "Step-by-step instructions tailored to your profile to help you reach 750+ in 90 days.",
-  },
-];
+const premiumBenefitIcons = [TrendingUp, FileWarning, Bot, CreditCard, Trophy];
 
 
 function TwelveHourTimer({ className = "" }: { className?: string }) {
@@ -332,7 +293,7 @@ function TwelveHourTimer({ className = "" }: { className?: string }) {
   );
 }
 
-export function PremiumBenefitsIntro({ ctaLabel = "View subscription", loading = false, onClose, onSubscribe }: { ctaLabel?: string; loading?: boolean; onClose: () => void; onSubscribe: () => void }) {
+export function PremiumBenefitsIntro({ benefits = [], ctaLabel = "View subscription", loading = false, onClose, onSubscribe }: { benefits?: SubscriptionBenefit[]; ctaLabel?: string; loading?: boolean; onClose: () => void; onSubscribe: () => void }) {
   return (
     <div className="flex min-h-full flex-col bg-[#0D131C]">
       <div className="flex h-14 shrink-0 items-center bg-[#0D131C] px-4">
@@ -356,14 +317,14 @@ export function PremiumBenefitsIntro({ ctaLabel = "View subscription", loading =
 
      <div className="flex min-h-0 flex-1 flex-col bg-[#0D131C] px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] pt-5">
   <div className="overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.06]">
-    {premiumPlanSteps.map((step, index) => {
-      const Icon = step.icon;
+    {benefits.map((benefit, index) => {
+      const Icon = premiumBenefitIcons[index % premiumBenefitIcons.length];
 
       return (
         <div
-          key={step.title}
+          key={`${benefit.title}-${index}`}
           className={`grid grid-cols-[4.75rem_1fr] items-center gap-3 px-4 py-3.5 min-[390px]:py-4 ${
-            index !== premiumPlanSteps.length - 1
+            index !== benefits.length - 1
               ? "border-b border-white/10"
               : ""
           }`}
@@ -387,11 +348,11 @@ export function PremiumBenefitsIntro({ ctaLabel = "View subscription", loading =
 
           <div>
             <p className="text-[15px] font-bold leading-5 text-white">
-              {step.title}
+              {benefit.title}
             </p>
 
             <p className="mt-1.5 text-[12px] font-medium leading-[18px] text-[#AAB6C8]">
-              {step.body}
+              {benefit.description}
             </p>
           </div>
         </div>
@@ -800,7 +761,7 @@ export function SubscribePromptOverlay({
               </>
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto">
-                <PremiumBenefitsIntro ctaLabel={`Pay ${formatPlanAmount(selectedPlan)} ${formatBillingCycle(selectedPlan.billingCycle)}`} loading={paymentLoading} onClose={() => setShowSkipMessage(true)} onSubscribe={() => void handleSubscriptionPayment()} />
+                <PremiumBenefitsIntro benefits={selectedPlan.benefits} ctaLabel={`Pay ${formatPlanAmount(selectedPlan)} ${formatBillingCycle(selectedPlan.billingCycle)}`} loading={paymentLoading} onClose={() => setShowSkipMessage(true)} onSubscribe={() => void handleSubscriptionPayment()} />
               </div>
             )}
             {showSkipMessage ? (
@@ -897,7 +858,7 @@ export function readSubscriptionPlans(result: unknown): SubscriptionPlan[] {
       title: item.title ?? "Unlock premium features",
       subtitle: item.subtitle ?? "Subscribe",
       description: item.description ?? "Choose a plan to continue using reports, health insights, and predictor tools.",
-      benefits: Array.isArray(item.benefits) ? item.benefits.map(String) : [],
+      benefits: readSubscriptionBenefits(item.benefits),
       comparisonBenefits: readComparisonBenefits(item.comparisonBenefits),
       buttonLabel: item.buttonLabel ?? "Subscribe",
       skipLabel: item.skipLabel ?? "Skip for later",
@@ -908,6 +869,24 @@ export function readSubscriptionPlans(result: unknown): SubscriptionPlan[] {
   });
 
   return normalizedPlans;
+}
+
+function readSubscriptionBenefits(value: unknown): SubscriptionBenefit[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+
+    const benefit = item as { title?: unknown; description?: unknown };
+    const title = String(benefit.title ?? "").trim();
+    const description = String(benefit.description ?? "").trim();
+
+    return title ? [{ title, description }] : [];
+  });
 }
 
 function readComparisonBenefits(value: unknown): ComparisonBenefitRow[] {

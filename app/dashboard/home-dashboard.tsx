@@ -50,7 +50,7 @@ import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardHeaderHomeControl, PortalShell } from "@/components/dashboard/portal-ui";
 import { SupportDrawer } from "@/components/dashboard/topbar-actions";
-import { PremiumBenefitsIntro, ProBenefitsComparisonSheet, SubscribePromptOverlay, formatBillingCycle, formatPlanAmount, getSubscriptionPlans, type ComparisonBenefitRow, type SubscriptionPlan } from "@/components/dashboard/subscribe-prompt";
+import { PremiumBenefitsIntro, ProBenefitsComparisonSheet, SubscribePromptOverlay, formatBillingCycle, formatPlanAmount, getSubscriptionPlans, type SubscriptionPlan } from "@/components/dashboard/subscribe-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CibilDisplayDataError, clearCachedCibilDisplayData, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { apiRequest, apiUrl } from "@/lib/api";
@@ -891,7 +891,7 @@ export function HomeDashboard() {
           onSubscribe={() => setBenefitsPaymentTrigger((value) => value + 1)}
         />
       ) : null}
-      {showActionPlan ? <ActionPlanPopup dashboard={visibleDashboard} onClose={() => setShowActionPlan(false)} /> : null}
+      {showActionPlan ? <ActionPlanPopup dashboard={visibleDashboard} profile={profile} onClose={() => setShowActionPlan(false)} /> : null}
       <SubscribePromptOverlay
         show={false}
         onClose={() => undefined}
@@ -1786,7 +1786,7 @@ function JourneyStat({ label, onClick, value, gold = false }: { label: string; o
   );
 }
 
-function ActionPlanPopup({ dashboard, onClose }: { dashboard: DashboardData; onClose: () => void }) {
+function ActionPlanPopup({ dashboard, profile, onClose }: { dashboard: DashboardData; profile: UserProfile | null; onClose: () => void }) {
   const [aiPlan, setAiPlan] = useState("");
   const [aiPlanError, setAiPlanError] = useState("");
   const [aiPlanLoading, setAiPlanLoading] = useState(true);
@@ -1812,7 +1812,8 @@ function ActionPlanPopup({ dashboard, onClose }: { dashboard: DashboardData; onC
       }
 
       try {
-        const prompt = buildActionPlanAiPrompt(dashboard);
+        const generalPrompt = await loadActionPlanGeneralPrompt();
+        const prompt = buildActionPlanAiPrompt(generalPrompt, dashboard, profile);
         let actionPlanRequest = actionPlanAiCache.get(prompt);
 
         if (!actionPlanRequest) {
@@ -1841,7 +1842,7 @@ function ActionPlanPopup({ dashboard, onClose }: { dashboard: DashboardData; onC
     return () => {
       active = false;
     };
-  }, [dashboard]);
+  }, [dashboard, profile]);
 
   return (
     <div className="fixed inset-0 z-[72] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
@@ -1917,6 +1918,18 @@ async function loadGeminiActionPlan(token: string, prompt: string) {
   }
 }
 
+async function loadActionPlanGeneralPrompt() {
+  const response = await apiRequest("/general");
+  const result = await response.json() as { data?: { prompt_message?: unknown } };
+  const promptMessage = String(result.data?.prompt_message ?? "").trim();
+
+  if (!response.ok || !promptMessage) {
+    throw new Error("Unable to load action plan prompt");
+  }
+
+  return promptMessage;
+}
+
 function ActionPlanSkeleton() {
   return (
     <>
@@ -1934,11 +1947,13 @@ function ActionPlanSkeleton() {
   );
 }
 
-function buildActionPlanAiPrompt(dashboard: DashboardData) {
+function buildActionPlanAiPrompt(generalPrompt: string, dashboard: DashboardData, profile: UserProfile | null) {
   return [
-    "Create a concise personalized CIBIL improvement action plan.",
+    generalPrompt,
+    "Analyze the following current user credit data and create a concise personalized CIBIL improvement action plan.",
     "Return exactly 4 lines in this format: Title: action.",
     "Do not include markdown, numbering, bullets, or intro text. Keep it practical, specific, and under 90 words.",
+    `User name: ${profile?.fullName?.trim() || "unavailable"}`,
     `Current score: ${dashboard.score ?? "unavailable"}`,
     `Target score: ${dashboard.targetScore} by ${dashboard.targetMonth}`,
     `Expected score gain: ${dashboard.coachGain} points in ${dashboard.coachTime}`,
@@ -2038,7 +2053,6 @@ function buildActionPlanPoints(dashboard: DashboardData) {
 
 function BenefitsPrompt({ loading = false, onClose, onSubscribe }: { loading?: boolean; onClose: () => void; onSubscribe: () => void }) {
   const [showLeavingMessage, setShowLeavingMessage] = useState(false);
-  const [comparisonBenefits, setComparisonBenefits] = useState<ComparisonBenefitRow[]>([]);
   const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan | null>(null);
 
   useEffect(() => {
@@ -2051,12 +2065,10 @@ function BenefitsPrompt({ loading = false, onClose, onSubscribe }: { loading?: b
         if (isMounted) {
           const plan = plans[0] ?? null;
           setSubscriptionPlan(plan);
-          setComparisonBenefits(plans.find((item) => item.comparisonBenefits.length)?.comparisonBenefits ?? []);
         }
       } catch {
         if (isMounted) {
           setSubscriptionPlan(null);
-          setComparisonBenefits([]);
         }
       }
     }
@@ -2071,10 +2083,10 @@ function BenefitsPrompt({ loading = false, onClose, onSubscribe }: { loading?: b
   return (
     <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(var(--native-status-offset,0px)+0.75rem)] backdrop-blur-sm">
       <section className="mx-auto h-[calc(100dvh-var(--native-status-offset,0px)-1.75rem-env(safe-area-inset-bottom,0px))] w-full max-w-md overflow-y-auto rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
-        <PremiumBenefitsIntro ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={() => setShowLeavingMessage(true)} onSubscribe={onSubscribe} />
+        <PremiumBenefitsIntro benefits={subscriptionPlan?.benefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={() => setShowLeavingMessage(true)} onSubscribe={onSubscribe} />
       </section>
       {showLeavingMessage ? (
-        <ProBenefitsComparisonSheet comparisonBenefits={comparisonBenefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={onClose} onSubscribe={onSubscribe} zIndex="z-[70]" />
+        <ProBenefitsComparisonSheet comparisonBenefits={subscriptionPlan?.comparisonBenefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={onClose} onSubscribe={onSubscribe} zIndex="z-[70]" />
       ) : null}
     </div>
   );

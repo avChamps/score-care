@@ -206,6 +206,7 @@ export function DisputeCentreExperience() {
             {activeDisputes.length ? (
          <Link
   href="/dashboard/dispute-centre/new"
+  data-dashboard-dispute="true"
   className="flex items-center justify-between rounded-[20px] border border-[#0F6A52]/50 bg-[linear-gradient(135deg,#08241C,#0D3328)] px-5 py-4 shadow-[0_14px_32px_rgba(0,0,0,0.28)]"
 >
   <div>
