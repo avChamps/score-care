@@ -26,6 +26,7 @@
     "@capacitor-firebase/analytics": "^7.5.0",
     "@capacitor-firebase/crashlytics": "^7.5.0",
     "@capacitor/app": "^7.1.2",
+    "@capacitor/ios": "^7.6.7",
     "@capacitor/network": "^7.0.4",
     "@capacitor/push-notifications": "^7.0.6",
     "class-variance-authority": "^0.7.1",
