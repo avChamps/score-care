@@ -1,11 +1,8 @@
 import { Capacitor, CapacitorHttp, type HttpOptions } from "@capacitor/core";
 
-const PRODUCTION_API_BASE_URL = "https://scorecareapp.com/api";
-const DEVELOPMENT_API_BASE_URL = "https://scorecareapp.com/api";
+const DEFAULT_API_BASE_URL = "https://scorecareapp.com/api";
 
-export const API_BASE_URL = process.env.NODE_ENV === "development"
-  ? normalizeApiBaseUrl(DEVELOPMENT_API_BASE_URL)
-  : PRODUCTION_API_BASE_URL;
+export const API_BASE_URL = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL);
 
 export function apiUrl(path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;

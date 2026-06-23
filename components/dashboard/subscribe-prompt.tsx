@@ -6,12 +6,13 @@ import Image from "next/image";
 import subscriptionBenefitsImage from "@/assets/subscription-benefits.png";
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Capacitor, registerPlugin } from "@capacitor/core";
-import { ArrowLeft, Check, CreditCard, FileWarning, PlaySquare, TrendingUp, Trophy, X, Bot } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
+import { ArrowLeft, Check, CreditCard, FileWarning, TrendingUp, Trophy, X, Bot } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { clearCachedCibilDisplayData, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
+import { nativeRazorpay } from "@/lib/native-razorpay";
 import { logCrashlyticsMessage, trackEvent } from "@/src/lib/analytics";
 
 export type SubscriptionPlan = {
@@ -61,27 +62,11 @@ type RazorpayPrefill = {
   contact: string;
 };
 
-type NativeRazorpayPlugin = {
-  open: (options: {
-    amount?: number;
-    currency?: string;
-    customerId?: string;
-    description?: string;
-    key: string;
-    name?: string;
-    orderId: string;
-    prefill?: RazorpayPrefill;
-    recurring?: string;
-  }) => Promise<RazorpaySubscriptionResponse>;
-};
-
 declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
   }
 }
-
-const nativeRazorpay = registerPlugin<NativeRazorpayPlugin>("NativeRazorpay");
 
 const subscriptionPlanThemes: Array<SubscriptionPlan["theme"]> = ["blue", "purple", "green", "orange", "pink", "cyan"];
 const subscriptionPlanThemeStyles: Record<SubscriptionPlan["theme"], { accent: string; header: string; selectedRing: string }> = {
@@ -258,7 +243,7 @@ export function ProBenefitsComparisonSheet({ comparisonBenefits = [], ctaLabel =
           {loading ? "Processing..." : ctaLabel}
         </button>
         <button className="mx-auto mt-2.5 block text-sm font-semibold text-[#6F7B8E]" type="button" onClick={onClose}>
-       I don't want to increase my credit score.
+       I don&apos;t want to increase my credit score.
         </button>
       </section>
     </div>
@@ -502,7 +487,9 @@ export function SubscribePromptOverlay({
     void logCrashlyticsMessage("Payment started");
 
     try {
-      if (!Capacitor.isNativePlatform()) {
+      const useNativeRazorpay = Capacitor.getPlatform() === "android";
+
+      if (!useNativeRazorpay) {
         await loadRazorpayCheckout();
       }
 
@@ -540,7 +527,7 @@ export function SubscribePromptOverlay({
       const payableAmount = calculatePlanPayableAmount(plan, paymentPlan);
       const gstAmount = calculatePlanGstAmount(plan, paymentPlan);
 
-      if (!subscriptionResponse.ok || !data?.keyId || !order?.id || !data?.customerId || data?.recurring !== "1" || (!Capacitor.isNativePlatform() && !window.Razorpay)) {
+      if (!subscriptionResponse.ok || !data?.keyId || !order?.id || !data?.customerId || data?.recurring !== "1" || (!useNativeRazorpay && !window.Razorpay)) {
         throw new Error("Unable to create subscription.");
       }
 
@@ -609,7 +596,7 @@ export function SubscribePromptOverlay({
         }
       }
 
-      if (Capacitor.isNativePlatform()) {
+      if (useNativeRazorpay) {
         onPaymentFlowStart?.();
         const paymentResponse = await nativeRazorpay.open({
           amount: toRazorpayAmount(payableAmount),

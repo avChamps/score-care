@@ -3,7 +3,6 @@
 import {
   BadgeCheck,
   CalendarDays,
-  LayoutDashboard,
   Mail,
   Phone,
   Shield,
@@ -14,7 +13,6 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppCard } from "@/components/dashboard/portal-ui";
-import { ScorecareBrandAnimation } from "@/components/auth/scorecare-brand-animation";
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired, logoutScorecareSession } from "@/lib/auth-session";
 
@@ -32,12 +30,11 @@ type UserProfile = {
   isAdmin?: boolean;
 };
 
-export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean }) {
+export function ProfileDetails({}: { isAdminView?: boolean }) {
   const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [launchingAdmin, setLaunchingAdmin] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
@@ -82,19 +79,6 @@ export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean 
     logoutScorecareSession(router.replace);
   }
 
-  function openAdminView() {
-    setLaunchingAdmin(true);
-    localStorage.setItem("scorecare_admin_view", "true");
-    window.setTimeout(() => {
-      router.push("/dashboard/admin");
-    }, 5000);
-  }
-
-  function openUserView() {
-    localStorage.removeItem("scorecare_admin_view");
-    router.push("/dashboard");
-  }
-
   const details = [
     { label: "Full Name", value: user?.fullName, Icon: UserRound },
     { label: "Email", value: user?.email, Icon: Mail },
@@ -108,8 +92,6 @@ export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean 
 
   return (
     <div className="space-y-3 animate-[creditPanelIn_0.42s_ease-out]">
-      {launchingAdmin ? <ScorecareBrandAnimation message="Opening Admin View" /> : null}
-
       <section className="text-center">
         <div className="mx-auto grid size-20 place-items-center rounded-full bg-[var(--portal-blue)] text-white shadow-[0_10px_24px_rgba(22,119,255,0.2)]">
           <UserRound className="size-9" />
@@ -143,18 +125,6 @@ export function ProfileDetails({ isAdminView = false }: { isAdminView?: boolean 
           ))}
         </div>
       </AppCard>
-
-      {/* {user?.isAdmin ? (
-       <button
-      type="button"
-      onClick={isAdminView ? openUserView : openAdminView}
-      disabled={launchingAdmin}
-      className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-blue-100 bg-white text-base font-semibold text-blue-600 shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50 active:scale-[0.99]"
-    >
-      <LayoutDashboard className="size-5" />
-      {isAdminView ? "User Dashboard" : launchingAdmin ? "Opening Admin Panel..." : "Admin Dashboard"}
-    </button>
-      ) : null} */}
 
       <button
     type="button"

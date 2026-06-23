@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { Capacitor, registerPlugin } from "@capacitor/core";
+import { Capacitor } from "@capacitor/core";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { readSelectedCibilRepairAccounts, type SelectedCibilRepairAccount } from "@/lib/cibil-repair-selection";
+import { nativeRazorpay } from "@/lib/native-razorpay";
 import { cn } from "@/lib/utils";
 
 type CibilRepairPlan = {
@@ -37,19 +38,6 @@ type RazorpayPrefill = {
   name: string;
   email: string;
   contact: string;
-};
-
-type NativeRazorpayPlugin = {
-  open: (options: {
-    amount?: number;
-    config?: Record<string, unknown>;
-    currency?: string;
-    description?: string;
-    key: string;
-    name?: string;
-    orderId: string;
-    prefill?: RazorpayPrefill;
-  }) => Promise<RazorpaySuccessResponse>;
 };
 
 declare global {
@@ -78,7 +66,6 @@ type RepairDocumentForm = {
 const reportCardClass =
   "border border-[#103A2B]/50 bg-[linear-gradient(135deg,#06120E_0%,#081712_50%,#091813_100%)] shadow-[0_20px_45px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]";
 const reportMiniCardClass = "border border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]";
-const nativeRazorpay = registerPlugin<NativeRazorpayPlugin>("NativeRazorpay");
 
 function cleanRazorpayContact(value: unknown) {
   const digits = String(value || "").replace(/\D/g, "");
@@ -282,7 +269,9 @@ export default function CibilRepairSummaryPage() {
     setPaymentMessage("");
 
     try {
-      if (!Capacitor.isNativePlatform()) {
+      const useNativeRazorpay = Capacitor.getPlatform() === "android";
+
+      if (!useNativeRazorpay) {
         await loadRazorpayCheckout();
       }
 
@@ -308,7 +297,7 @@ export default function CibilRepairSummaryPage() {
       const prefill = await getRazorpayPrefill(token, orderResult?.data?.prefill);
       const razorpayKey = orderResult?.data?.keyId || orderResult?.data?.razorpayKeyId || order?.key;
 
-      if (!orderResponse.ok || !order?.id || !razorpayKey || (!Capacitor.isNativePlatform() && !window.Razorpay)) {
+      if (!orderResponse.ok || !order?.id || !razorpayKey || (!useNativeRazorpay && !window.Razorpay)) {
         throw new Error("Unable to create payment order.");
       }
 
@@ -354,7 +343,7 @@ export default function CibilRepairSummaryPage() {
         }
       }
 
-      if (Capacitor.isNativePlatform()) {
+      if (useNativeRazorpay) {
         const paymentResponse = await nativeRazorpay.open({
           amount: order.amount,
           config: {
@@ -377,7 +366,11 @@ export default function CibilRepairSummaryPage() {
           prefill,
         });
 
-        await createRepairRequest(paymentResponse);
+        await createRepairRequest({
+          razorpay_order_id: paymentResponse.razorpay_order_id ?? order.id,
+          razorpay_payment_id: paymentResponse.razorpay_payment_id,
+          razorpay_signature: paymentResponse.razorpay_signature,
+        });
         return;
       }
 

@@ -2,8 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import { Capacitor } from "@capacitor/core";
-import { Footer } from "@/components/layout/footer";
-import { Navbar } from "@/components/layout/navbar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

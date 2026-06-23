@@ -433,12 +433,6 @@ function readDisputeAccounts(displayData: unknown): DisputeAccount[] {
   const rawAccounts = Array.isArray(data?.data?.credit_report?.CAIS_Account?.CAIS_Account_DETAILS)
     ? data.data.credit_report.CAIS_Account.CAIS_Account_DETAILS as Record<string, unknown>[]
     : [];
-  const disputeEligibleAccounts = rawAccounts.filter(isRawDisputeEligibleAccount);
-
-  console.log("rawAccounts", rawAccounts.length);
-  console.log("disputeEligibleAccounts", disputeEligibleAccounts.length);
-  console.log("eligible lenders", disputeEligibleAccounts.map((account) => account.Subscriber_Name));
-
   return rawAccounts.map((account, index) => {
     const accountNumber = readString(account.Account_Number ?? account.account_number ?? account.AccountNumber);
     const lenderName = readString(account.Subscriber_Name ?? account.subscriber_name);
@@ -458,17 +452,6 @@ function readDisputeAccounts(displayData: unknown): DisputeAccount[] {
       status,
     };
   });
-}
-
-function readDisplayBureaus(result: unknown, accounts: DisputeAccount[]) {
-  const data = result as { data?: { bureaus?: unknown; display?: { bureaus?: unknown } } } | null;
-  const bureaus = [
-    ...readBureauValues(data?.data?.bureaus),
-    ...readBureauValues(data?.data?.display?.bureaus),
-    ...accounts.flatMap((account) => account.bureaus),
-  ];
-
-  return Array.from(new Set(bureaus));
 }
 
 function isDisputeEligibleAccount(account: DisputeAccount) {

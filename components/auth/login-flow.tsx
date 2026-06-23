@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, BadgeCheck, ShieldCheck, X } from "lucide-react";
+import { ArrowLeft, BadgeCheck, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import panDetailsImage from "@/assets/pan-details.png";
 import { ButtonLoader } from "@/components/auth/button-loader";
@@ -136,7 +136,7 @@ export function LoginFlow() {
   useEffect(() => {
     if (step !== "otp") return;
 
-    if (Capacitor.isNativePlatform()) {
+    if (Capacitor.getPlatform() === "android") {
       let isActive = true;
 
       nativeOtpReader.startSmsUserConsent()
@@ -697,13 +697,6 @@ export function LoginFlow() {
 
       <div className="relative z-10 mx-auto flex w-full max-w-md flex-col">
           <div className="pt-7">
-            {/* <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 shadow-[0_10px_25px_rgba(0,0,0,0.22)]">
-              <ShieldCheck className="size-4 text-[#22F2C2]" />
-              <span className="text-caption font-semibold uppercase tracking-[0.18em] text-[#B8FFF0]">
-                Scorecare
-              </span>
-            </div> */}
-
             <h1 className="mt-7 max-w-sm text-heading font-bold leading-tight tracking-tight text-white">
               Enter your mobile number
             </h1>

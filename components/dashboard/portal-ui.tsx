@@ -77,7 +77,7 @@ export function PortalShell({ active, children, variant = "user" }: PortalShellP
   );
 }
 
-export function PortalTopBar({ title: _title, backHref: _backHref, profileHref: _profileHref = "/profile" }: { title?: string; backHref?: string; profileHref?: string }) {
+export function PortalTopBar({}: { title?: string; backHref?: string; profileHref?: string }) {
   return null;
 }
 
