@@ -1,11 +1,8 @@
 workflows:
   ios-app-store:
-    name: ScoreCare iOS App Store
+    name: ScoreCare iOS IPA Build
     instance_type: mac_mini_m2
     max_build_duration: 60
-
-    integrations:
-      app_store_connect: codemagic
 
     environment:
       node: 22
@@ -21,21 +18,28 @@ workflows:
 
     scripts:
       - name: Install dependencies
-        script: npm ci
+        script: |
+          cd $CM_BUILD_DIR
+          npm ci
 
       - name: Build web app and sync Capacitor iOS
-        script: npm run ios:sync
+        script: |
+          cd $CM_BUILD_DIR
+          npm run ios:sync
 
       - name: Apply iOS signing profiles
-        script: xcode-project use-profiles
+        script: |
+          cd $CM_BUILD_DIR
+          xcode-project use-profiles
 
       - name: Set iOS build number
         script: |
-          cd ios/App
+          cd $CM_BUILD_DIR/ios/App
           agvtool new-version -all "$BUILD_NUMBER"
 
       - name: Build App Store IPA
         script: |
+          cd $CM_BUILD_DIR
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
@@ -44,8 +48,3 @@ workflows:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/Archives/**/*.dSYM
-
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
