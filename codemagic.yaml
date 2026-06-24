@@ -22,6 +22,14 @@ workflows:
         bundle_identifier: com.scorecareapp.scorecare
 
     scripts:
+      - name: Clean iOS build files
+        script: |
+          cd $CM_BUILD_DIR
+          rm -rf ios/App/Pods
+          rm -rf ios/App/Podfile.lock
+          rm -rf ~/Library/Developer/Xcode/DerivedData
+          rm -rf build/ios
+
       - name: Install dependencies
         script: |
           cd $CM_BUILD_DIR
