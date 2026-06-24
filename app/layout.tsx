@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppLifecycleProvider } from "@/components/layout/app-lifecycle-provider";
 import { AppShell } from "@/components/layout/app-shell";
@@ -30,6 +30,12 @@ export const metadata: Metadata = {
     siteName: "SCORECARE",
     type: "website",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

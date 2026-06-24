@@ -1042,7 +1042,7 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
       <div className="mx-auto max-w-md pb-10">
         <div
           className={cn(
-            "fixed left-1/2 top-5 z-[9999] -translate-x-1/2 rounded-full bg-[#5EF2C2] px-5 py-2.5 text-caption font-semibold text-[#06221A] shadow-[0_14px_30px_rgba(94,242,194,0.22)] transition-transform",
+            "fixed left-1/2 top-[calc(env(safe-area-inset-top,0px)+1.25rem)] z-[9999] -translate-x-1/2 rounded-full bg-[#5EF2C2] px-5 py-2.5 text-caption font-semibold text-[#06221A] shadow-[0_14px_30px_rgba(94,242,194,0.22)] transition-transform",
             toast.visible ? "translate-y-0" : "-translate-y-24"
           )}
         >
@@ -2860,7 +2860,7 @@ function loadGoogleTranslate() {
 
   const script = document.createElement("script");
   script.id = "scorecare-google-translate-script";
-  script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+  script.src = "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
   script.async = true;
   document.body.appendChild(script);
 }
@@ -2922,7 +2922,7 @@ function applyGoogleLanguage(language: string, reloadWhenMissing = true) {
   }
 
   select.value = language;
-  select.dispatchEvent(new Event("change"));
+  select.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 function ensureGoogleTranslateElement() {
@@ -2959,7 +2959,7 @@ function resetGoogleLanguage() {
 
   if (select) {
     select.value = "en";
-    select.dispatchEvent(new Event("change"));
+    select.dispatchEvent(new Event("change", { bubbles: true }));
   }
 }
 

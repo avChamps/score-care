@@ -8,7 +8,7 @@ type NativeReportDownloadPlugin = {
 const NativeReportDownload = registerPlugin<NativeReportDownloadPlugin>("NativeReportDownload");
 
 export function canUseNativeReportDownload() {
-  return Capacitor.getPlatform() === "android";
+  return ["android", "ios"].includes(Capacitor.getPlatform());
 }
 
 export function enqueueNativeReportDownload(path: string, token: string, fileName: string) {

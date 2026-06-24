@@ -388,31 +388,6 @@ export default function CibilRepairSummaryPage() {
         description: planName,
         order_id: order.id,
         prefill,
-        method: {
-          upi: true,
-          card: true,
-          netbanking: true,
-          wallet: true,
-        },
-        config: {
-          display: {
-            blocks: {
-              paymentOptions: {
-                name: "All Payment Options",
-                instruments: [
-                  {
-                    method: "upi",
-                    flows: ["intent"],
-                  },
-                ],
-              },
-            },
-            sequence: ["block.paymentOptions"],
-            preferences: {
-              show_default_blocks: false,
-            },
-          },
-        },
         handler: createRepairRequest,
         modal: {
           ondismiss: () => setPaymentLoading(false),

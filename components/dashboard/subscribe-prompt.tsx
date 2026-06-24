@@ -629,34 +629,6 @@ export function SubscribePromptOverlay({
         name: "ScoreCare",
         description: plan.planName ?? paymentPlan.planName,
         prefill,
-        method: {
-          card: true,
-          netbanking: true,
-          wallet: true,
-          upi: true,
-        },
-        config: {
-          display: {
-            blocks: {
-              paymentOptions: {
-                name: "Payment Options",
-                instruments: [
-                  { method: "card" },
-                  { method: "netbanking" },
-                  { method: "wallet" },
-                  {
-                    method: "upi",
-                    flows: ["collect"],
-                  },
-                ],
-              },
-            },
-            sequence: ["block.paymentOptions"],
-            preferences: {
-              show_default_blocks: true,
-            },
-          },
-        },
         handler: confirmSubscription,
         modal: {
           ondismiss: () => {

@@ -23,13 +23,14 @@ type InitializePushNotificationOptions = {
 };
 
 const registeredTokenStorageKey = "scorecare_registered_fcm_token";
-const deviceIdStorageKey = "scorecare_android_device_id";
+const deviceIdStorageKey = "scorecare_push_device_id";
+const androidDeviceIdStorageKey = "scorecare_android_device_id";
 
 function debugLog(message: string, data?: unknown) {
   console.info(`[ScoreCare Push] ${message}`, data ?? "");
 }
 
-function getAndroidNotificationPath(data: unknown) {
+function getNotificationPath(data: unknown) {
   if (!data || typeof data !== "object") return "/notifications";
 
   const payload = data as Record<string, unknown>;
@@ -42,12 +43,13 @@ function getAndroidNotificationPath(data: unknown) {
   return rawPath;
 }
 
-function isCapacitorAndroid() {
-  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+function isSupportedNativePlatform() {
+  return Capacitor.isNativePlatform() && ["android", "ios"].includes(Capacitor.getPlatform());
 }
 
-function getAndroidDeviceId() {
-  const storedDeviceId = localStorage.getItem(deviceIdStorageKey);
+function getDeviceId() {
+  const storageKey = Capacitor.getPlatform() === "android" ? androidDeviceIdStorageKey : deviceIdStorageKey;
+  const storedDeviceId = localStorage.getItem(storageKey);
 
   if (storedDeviceId) {
     return storedDeviceId;
@@ -57,7 +59,7 @@ function getAndroidDeviceId() {
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  localStorage.setItem(deviceIdStorageKey, deviceId);
+  localStorage.setItem(storageKey, deviceId);
   return deviceId;
 }
 
@@ -78,8 +80,8 @@ async function sendTokenToBackend(fcmToken: string, jwtToken: string) {
     },
     body: {
       fcmToken,
-      platform: "android",
-      deviceId: getAndroidDeviceId(),
+      platform: Capacitor.getPlatform(),
+      deviceId: getDeviceId(),
     },
   });
 
@@ -96,6 +98,7 @@ async function sendTokenToBackend(fcmToken: string, jwtToken: string) {
 export function clearPushNotificationState() {
   localStorage.removeItem(registeredTokenStorageKey);
   localStorage.removeItem(deviceIdStorageKey);
+  localStorage.removeItem(androidDeviceIdStorageKey);
 }
 
 export async function initializePushNotifications(jwtToken: string, options: InitializePushNotificationOptions = {}): Promise<PushNotificationCleanup | null> {
@@ -105,49 +108,50 @@ export async function initializePushNotifications(jwtToken: string, options: Ini
       error: null,
       fcmToken: null,
       isLoading: false,
-      isNativeAndroid: isCapacitorAndroid(),
+      isNativeAndroid: Capacitor.getPlatform() === "android",
       permission: null,
       ...state,
     });
   };
 
-  if (!isCapacitorAndroid()) {
-    debugLog("Skipped initialization outside Capacitor Android");
+  if (!isSupportedNativePlatform()) {
+    debugLog("Skipped initialization outside supported native platforms");
     setState({ isNativeAndroid: false });
     return null;
   }
 
   if (!jwtToken || isTokenExpired(jwtToken)) {
     console.error("[ScoreCare Push] Missing or expired auth token; push registration skipped");
-    setState({ error: "Missing auth token.", isNativeAndroid: true });
+    setState({ error: "Missing auth token." });
     return null;
   }
 
-  setState({ isLoading: true, isNativeAndroid: true });
+  setState({ isLoading: true });
 
   try {
     const { PushNotifications }: PushNotificationsModule = await import("@capacitor/push-notifications");
+    const isAndroid = Capacitor.getPlatform() === "android";
     const listenerHandles = await Promise.all([
       PushNotifications.addListener("registration", async (token: Token) => {
         try {
           debugLog("Registration success; FCM token received", { fcmToken: token.value });
           await sendTokenToBackend(token.value, jwtToken);
-          setState({ fcmToken: token.value, isLoading: false, isNativeAndroid: true, permission: "granted" });
+          setState({ fcmToken: token.value, isLoading: false, permission: "granted" });
         } catch (error) {
           console.error("[ScoreCare Push] Failed to register FCM token", error);
-          setState({ error: "Unable to register this device for notifications.", isLoading: false, isNativeAndroid: true });
+          setState({ error: "Unable to register this device for notifications.", isLoading: false });
         }
       }),
       PushNotifications.addListener("registrationError", (error) => {
         console.error("[ScoreCare Push] Native registration failed", error);
-        setState({ error: error.error || "Push notification registration failed.", isLoading: false, isNativeAndroid: true });
+        setState({ error: error.error || "Push notification registration failed.", isLoading: false });
       }),
       PushNotifications.addListener("pushNotificationReceived", (notification: PushNotificationSchema) => {
         debugLog("Foreground notification received", notification);
         window.dispatchEvent(new Event("scorecare:notifications-updated"));
       }),
       PushNotifications.addListener("pushNotificationActionPerformed", (action: ActionPerformed) => {
-        const path = getAndroidNotificationPath(action.notification.data);
+        const path = getNotificationPath(action.notification.data);
         debugLog("Notification clicked", { action, path });
         onNotificationClick?.(path);
       }),
@@ -159,11 +163,11 @@ export async function initializePushNotifications(jwtToken: string, options: Ini
       : currentPermission;
 
     debugLog("Permission status", permission);
-    setState({ isLoading: true, isNativeAndroid: true, permission: permission.receive });
+    setState({ isLoading: true, permission: permission.receive });
 
     if (permission.receive !== "granted") {
       debugLog("Notification permission denied", permission);
-      setState({ error: "Notification permission was not granted.", isLoading: false, isNativeAndroid: true, permission: permission.receive });
+      setState({ error: "Notification permission was not granted.", isLoading: false, permission: permission.receive });
       return {
         remove: async () => {
           await Promise.all(listenerHandles.map((listener) => listener.remove()));
@@ -171,15 +175,17 @@ export async function initializePushNotifications(jwtToken: string, options: Ini
       };
     }
 
-    await PushNotifications.createChannel({
-      id: "scorecare_notifications",
-      name: "ScoreCare Notifications",
-      description: "Credit score, report, offer, and account alerts.",
-      importance: 4,
-      visibility: 1,
-      lights: true,
-      vibration: true,
-    });
+    if (isAndroid) {
+      await PushNotifications.createChannel({
+        id: "scorecare_notifications",
+        name: "ScoreCare Notifications",
+        description: "Credit score, report, offer, and account alerts.",
+        importance: 4,
+        visibility: 1,
+        lights: true,
+        vibration: true,
+      });
+    }
 
     await PushNotifications.register();
     debugLog("Push registration requested");
@@ -195,7 +201,6 @@ export async function initializePushNotifications(jwtToken: string, options: Ini
     setState({
       error: error instanceof Error ? error.message : "Unable to initialize push notifications.",
       isLoading: false,
-      isNativeAndroid: true,
       permission: null,
     });
     return null;
