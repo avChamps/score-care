@@ -1,84 +1,79 @@
 workflows:
-ios-app-store:
-name: ScoreCare iOS IPA Build
-instance_type: mac_mini_m2
-max_build_duration: 60
+  ios-app-store:
+    name: ScoreCare iOS IPA Build
+    instance_type: mac_mini_m2
+    max_build_duration: 60
 
-```
-integrations:
-  app_store_connect: codemagic
+    integrations:
+      app_store_connect: codemagic
 
-environment:
-  groups:
-    - firebase
+    environment:
+      groups:
+        - firebase
+      node: 22
+      xcode: latest
+      cocoapods: default
+      vars:
+        NEXT_PUBLIC_API_BASE_URL: https://scorecareapp.com/api
+        XCODE_WORKSPACE: ios/App/App.xcworkspace
+        XCODE_SCHEME: App
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.scorecareapp.scorecare
 
-  node: 22
-  xcode: latest
-  cocoapods: default
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd $CM_BUILD_DIR
+          npm ci
 
-  vars:
-    NEXT_PUBLIC_API_BASE_URL: https://scorecareapp.com/api
-    XCODE_WORKSPACE: ios/App/App.xcworkspace
-    XCODE_SCHEME: App
+      - name: Create Firebase iOS config
+        script: |
+          cd $CM_BUILD_DIR
+          test -n "$FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST"
+          echo "$FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/App/App/GoogleService-Info.plist
+          plutil -lint ios/App/App/GoogleService-Info.plist
 
-  ios_signing:
-    distribution_type: app_store
-    bundle_identifier: com.scorecareapp.scorecare
+      - name: Build web app and sync Capacitor iOS
+        script: |
+          cd $CM_BUILD_DIR
+          npm run ios:sync
 
-scripts:
-  - name: Install dependencies
-    script: |
-      cd $CM_BUILD_DIR
-      npm ci
+      - name: Install iOS pods
+        script: |
+          cd $CM_BUILD_DIR/ios/App
+          pod install --repo-update
 
-  - name: Create Firebase iOS config
-    script: |
-      cd $CM_BUILD_DIR
-      test -n "$FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST"
-      echo "$FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/App/App/GoogleService-Info.plist
-      plutil -lint ios/App/App/GoogleService-Info.plist
+      - name: Apply iOS signing profiles
+        script: |
+          cd $CM_BUILD_DIR
+          xcode-project use-profiles
 
-  - name: Build web app and sync Capacitor iOS
-    script: |
-      cd $CM_BUILD_DIR
-      npm run ios:sync
+      - name: Set iOS build number
+        script: |
+          cd $CM_BUILD_DIR/ios/App
+          agvtool new-version -all "$BUILD_NUMBER"
 
-  - name: Install iOS pods
-    script: |
-      cd $CM_BUILD_DIR/ios/App
-      pod install --repo-update
+      - name: Build App Store IPA
+        script: |
+          cd $CM_BUILD_DIR
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
 
-  - name: Apply iOS signing profiles
-    script: |
-      cd $CM_BUILD_DIR
-      xcode-project use-profiles
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/Archives/**/*.dSYM
 
-  - name: Set iOS build number
-    script: |
-      cd $CM_BUILD_DIR/ios/App
-      agvtool new-version -all "$BUILD_NUMBER"
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
 
-  - name: Build App Store IPA
-    script: |
-      cd $CM_BUILD_DIR
-      xcode-project build-ipa \
-        --workspace "$XCODE_WORKSPACE" \
-        --scheme "$XCODE_SCHEME"
-
-artifacts:
-  - build/ios/ipa/*.ipa
-  - /tmp/xcodebuild_logs/*.log
-  - $HOME/Library/Developer/Xcode/Archives/**/*.dSYM
-
-publishing:
-  app_store_connect:
-    auth: integration
-    submit_to_testflight: true
-
-  email:
-    recipients:
-      - avchamps1@gmail.com
-    notify:
-      success: true
-      failure: true
-```
+      email:
+        recipients:
+          - avchamps1@gmail.com
+        notify:
+          success: true
+          failure: true
