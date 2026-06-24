@@ -20,6 +20,8 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.scorecareapp.scorecare
+        provisioning_profiles:
+          - scorecare_appstore
 
     scripts:
       - name: Clean iOS build files
