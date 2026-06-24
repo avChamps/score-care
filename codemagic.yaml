@@ -14,7 +14,7 @@ workflows:
         XCODE_SCHEME: App
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.scorecare.app
+        bundle_identifier: com.scorecareapp.scorecare
 
     scripts:
       - name: Install dependencies

@@ -7,7 +7,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.scorecare.app",
+  appId: "com.scorecareapp.scorecare",
   appName: "ScoreCare",
   webDir: "out",
   server: {

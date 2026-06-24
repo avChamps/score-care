@@ -3,7 +3,7 @@
 ## App metadata
 
 - App Name: ScoreCare
-- Bundle Identifier: com.scorecare.app
+- Bundle Identifier: com.scorecareapp.scorecare
 - Version: 1.0
 - Build Number: 1
 - Web Directory: out
@@ -33,14 +33,14 @@ xcodebuild -exportArchive -archivePath build/ScoreCare.xcarchive -exportPath bui
 
 - Active Apple Developer Program membership.
 - App Store Connect access with Admin, App Manager, or Developer role.
-- Bundle ID registered as `com.scorecare.app`.
+- Bundle ID registered as `com.scorecareapp.scorecare`.
 - App Store distribution certificate.
-- App Store provisioning profile for `com.scorecare.app`.
+- App Store provisioning profile for `com.scorecareapp.scorecare`.
 - App privacy answers for credit, identity, contact, payment, diagnostics, and analytics data.
 
 ## App Store Connect setup
 
-1. Create the app in App Store Connect with Bundle ID `com.scorecare.app`.
+1. Create the app in App Store Connect with Bundle ID `com.scorecareapp.scorecare`.
 2. Set the app name to `ScoreCare`.
 3. Set SKU to an internal unique value.
 4. Complete pricing, availability, age rating, privacy nutrition labels, and support URLs.
@@ -48,7 +48,7 @@ xcodebuild -exportArchive -archivePath build/ScoreCare.xcarchive -exportPath bui
 
 ## Bundle ID configuration
 
-- Identifier: `com.scorecare.app`
+- Identifier: `com.scorecareapp.scorecare`
 - Capabilities to enable only if used in production:
   - Push Notifications
   - Associated Domains
@@ -57,7 +57,7 @@ xcodebuild -exportArchive -archivePath build/ScoreCare.xcarchive -exportPath bui
 ## Certificate requirements
 
 - Apple Distribution certificate.
-- App Store provisioning profile for `com.scorecare.app`.
+- App Store provisioning profile for `com.scorecareapp.scorecare`.
 - APNs key or certificate only if iOS push notifications are enabled.
 
 ## IPA generation process

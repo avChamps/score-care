@@ -3,7 +3,7 @@
 ## Metadata
 
 - App Name: ScoreCare
-- Bundle Identifier: com.scorecare.app
+- Bundle Identifier: com.scorecareapp.scorecare
 - Version: 1.0
 - Build Number: 1
 - Category: Finance

@@ -28,7 +28,7 @@ workflows:
         NEXT_PUBLIC_API_BASE_URL: https://scorecareapp.com/api
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.scorecare.app
+        bundle_identifier: com.scorecareapp.scorecare
     scripts:
       - name: Install dependencies
         script: npm ci
@@ -52,8 +52,8 @@ workflows:
 
 ## Manual checks before first build
 
-- Confirm App Store Connect app exists for `com.scorecare.app`.
-- Confirm Codemagic signing profile maps to `com.scorecare.app`.
+- Confirm App Store Connect app exists for `com.scorecareapp.scorecare`.
+- Confirm Codemagic signing profile maps to `com.scorecareapp.scorecare`.
 - Confirm `NEXT_PUBLIC_API_BASE_URL` points to the production HTTPS API.
 - Confirm Firebase iOS config is added before enabling iOS analytics, Crashlytics, or push.
 
