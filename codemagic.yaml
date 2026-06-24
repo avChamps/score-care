@@ -22,10 +22,21 @@ workflows:
           cd $CM_BUILD_DIR
           npm ci
 
+      - name: Create Firebase iOS config
+        script: |
+          cd $CM_BUILD_DIR
+          test -n "$FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST"
+          ruby -e 'require "base64"; File.binwrite("ios/App/App/GoogleService-Info.plist", Base64.decode64(ENV.fetch("FIREBASE_IOS_GOOGLE_SERVICE_INFO_PLIST")))'
+
       - name: Build web app and sync Capacitor iOS
         script: |
           cd $CM_BUILD_DIR
           npm run ios:sync
+
+      - name: Install iOS pods
+        script: |
+          cd $CM_BUILD_DIR/ios/App
+          pod install --repo-update
 
       - name: Apply iOS signing profiles
         script: |
