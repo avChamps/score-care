@@ -64,6 +64,10 @@ workflows:
       - $HOME/Library/Developer/Xcode/Archives/**/*.dSYM
 
     publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
       email:
         recipients:
           - avchamps1@gmail.com
