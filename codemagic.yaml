@@ -18,10 +18,8 @@ workflows:
         XCODE_WORKSPACE: ios/App/App.xcworkspace
         XCODE_SCHEME: App
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.scorecareapp.scorecare
-        provisioning_profiles:
-          - scorecare_appstore
+         distribution_type: app_store
+  bundle_identifier: com.scorecareapp.scorecare
 
     scripts:
       - name: Clean iOS build files
