@@ -166,6 +166,7 @@ const notificationsPageSize = 10;
 const scorecarePlayStoreUrl = "https://play.google.com/apps/internaltest/4701307504694712853";
 const actionPlanAiCache = new Map<string, Promise<string>>();
 let googleTranslateRetryTimers: number[] = [];
+let googleTranslatePendingLanguage = "";
 const languageOptions = [
   { code: "en", label: "English" },
   { code: "hi", label: "Hindi" },
@@ -2417,7 +2418,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
 
       onProfileUpdate(updatedProfile);
 
-      if (updatedLanguage) {
+      if (updatedLanguage && updatedLanguage !== language) {
         setSelectedLanguage(updatedLanguage);
         applyGoogleLanguageWithRetry(updatedLanguage);
       }
@@ -2866,23 +2867,33 @@ function loadGoogleTranslate() {
 }
 
 function applyGoogleLanguageWithRetry(language: string) {
+  if (googleTranslatePendingLanguage === language && readStoredLanguage() === language) {
+    return;
+  }
+
+  googleTranslatePendingLanguage = language;
   googleTranslateRetryTimers.forEach((timer) => window.clearTimeout(timer));
   googleTranslateRetryTimers = [];
 
   if (readStoredLanguage() === language && isGoogleLanguageApplied(language)) {
+    googleTranslatePendingLanguage = "";
     return;
   }
 
-  const delays = [0, 300, 800, 1500];
+  const delays = [0, 250, 700];
 
   googleTranslateRetryTimers = delays.map((delay) =>
     window.setTimeout(() => {
       const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
 
       if (!select && delay !== delays[delays.length - 1]) return;
-      if (select?.value === language) return;
+      if (select?.value === language) {
+        googleTranslatePendingLanguage = "";
+        return;
+      }
 
       applyGoogleLanguage(language, false);
+      googleTranslatePendingLanguage = "";
     }, delay)
   );
 }
@@ -2903,7 +2914,7 @@ function applyProfileLanguage(profile: UserProfile | null) {
 }
 
 function waitForLanguageApply() {
-  return new Promise((resolve) => window.setTimeout(resolve, 1700));
+  return new Promise((resolve) => window.setTimeout(resolve, 800));
 }
 
 function applyGoogleLanguage(language: string, reloadWhenMissing = true) {
@@ -2948,6 +2959,9 @@ function isGoogleLanguageApplied(language: string) {
 }
 
 function resetGoogleLanguage() {
+  googleTranslatePendingLanguage = "";
+  googleTranslateRetryTimers.forEach((timer) => window.clearTimeout(timer));
+  googleTranslateRetryTimers = [];
   localStorage.setItem("scorecare_language", "en");
   document.cookie = "googtrans=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT";
   document.cookie = `googtrans=;domain=${window.location.hostname};path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT`;

@@ -63,6 +63,14 @@ function getDeviceId() {
   return deviceId;
 }
 
+async function getFirebaseMessagingToken() {
+  const firebaseMessagingModule = "@capacitor-firebase/messaging" as string;
+  const { FirebaseMessaging } = await import(firebaseMessagingModule);
+  const token = await FirebaseMessaging.getToken();
+
+  return typeof token === "string" ? token : token.token;
+}
+
 async function sendTokenToBackend(fcmToken: string, jwtToken: string) {
   if (!jwtToken) {
     throw new Error("Missing auth token for push notification registration.");
@@ -73,6 +81,13 @@ async function sendTokenToBackend(fcmToken: string, jwtToken: string) {
     return;
   }
 
+  const platform = Capacitor.getPlatform();
+  const deviceId = getDeviceId();
+
+  console.log("Notification platform:", platform);
+  console.log("FCM token length:", fcmToken?.length);
+  console.log("FCM token prefix:", fcmToken?.slice(0, 20));
+
   const response = await apiRequest("/api/notifications/register-device", {
     method: "POST",
     headers: {
@@ -80,8 +95,8 @@ async function sendTokenToBackend(fcmToken: string, jwtToken: string) {
     },
     body: {
       fcmToken,
-      platform: Capacitor.getPlatform(),
-      deviceId: getDeviceId(),
+      platform,
+      deviceId,
     },
   });
 
@@ -134,9 +149,11 @@ export async function initializePushNotifications(jwtToken: string, options: Ini
     const listenerHandles = await Promise.all([
       PushNotifications.addListener("registration", async (token: Token) => {
         try {
-          debugLog("Registration success; FCM token received", { fcmToken: token.value });
-          await sendTokenToBackend(token.value, jwtToken);
-          setState({ fcmToken: token.value, isLoading: false, permission: "granted" });
+          const fcmToken = isAndroid ? token.value : await getFirebaseMessagingToken();
+
+          debugLog("Registration success; FCM token received", { fcmToken });
+          await sendTokenToBackend(fcmToken, jwtToken);
+          setState({ fcmToken, isLoading: false, permission: "granted" });
         } catch (error) {
           console.error("[ScoreCare Push] Failed to register FCM token", error);
           setState({ error: "Unable to register this device for notifications.", isLoading: false });
