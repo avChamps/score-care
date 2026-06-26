@@ -1,9 +1,12 @@
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import type { ActionPerformed, PushNotificationSchema, Token } from "@capacitor/push-notifications";
 import { apiRequest } from "@/lib/api";
 import { isTokenExpired } from "@/lib/auth-session";
 
 type PushNotificationsModule = typeof import("@capacitor/push-notifications");
+type FirebaseMessagingPlugin = {
+  getToken: () => Promise<string | { token?: string; value?: string }>;
+};
 
 export type PushNotificationInitState = {
   error: string | null;
@@ -25,6 +28,7 @@ type InitializePushNotificationOptions = {
 const registeredTokenStorageKey = "scorecare_registered_fcm_token";
 const deviceIdStorageKey = "scorecare_push_device_id";
 const androidDeviceIdStorageKey = "scorecare_android_device_id";
+const FirebaseMessaging = registerPlugin<FirebaseMessagingPlugin>("FirebaseMessaging");
 
 function debugLog(message: string, data?: unknown) {
   console.info(`[ScoreCare Push] ${message}`, data ?? "");
@@ -64,11 +68,9 @@ function getDeviceId() {
 }
 
 async function getFirebaseMessagingToken() {
-  const firebaseMessagingModule = "@capacitor-firebase/messaging" as string;
-  const { FirebaseMessaging } = await import(firebaseMessagingModule);
   const token = await FirebaseMessaging.getToken();
 
-  return typeof token === "string" ? token : token.token;
+  return typeof token === "string" ? token : token.token ?? token.value ?? "";
 }
 
 async function sendTokenToBackend(fcmToken: string, jwtToken: string) {
