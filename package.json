@@ -14,19 +14,16 @@
     "apk:debug": "npm run android:sync && cd android && gradlew assembleDebug",
     "android:apk": "npm run android:sync && cd android && gradlew assembleRelease",
     "android:aab": "npm run android:sync && cd android && gradlew bundleRelease",
-
     "apk:debug:linux": "npm run android:sync && cd android && chmod +x gradlew && ./gradlew assembleDebug",
-
-"android:apk:linux": "npm run android:sync && cd android && chmod +x gradlew && ./gradlew assembleRelease",
-
-"android:aab:linux": "npm run android:sync && cd android && chmod +x gradlew && ./gradlew bundleRelease",
-
+    "android:apk:linux": "npm run android:sync && cd android && chmod +x gradlew && ./gradlew assembleRelease",
+    "android:aab:linux": "npm run android:sync && cd android && chmod +x gradlew && ./gradlew bundleRelease",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@capacitor-firebase/analytics": "^7.5.0",
     "@capacitor-firebase/crashlytics": "^7.5.0",
+    "@capacitor-firebase/messaging": "^7.5.0",
     "@capacitor/app": "^7.1.2",
     "@capacitor/ios": "^7.6.7",
     "@capacitor/network": "^7.0.4",

@@ -47,6 +47,17 @@ workflows:
           cd $CM_BUILD_DIR
           npm run ios:sync
 
+      - name: Verify iOS UPI navigation fix
+        script: |
+          cd $CM_BUILD_DIR
+          plutil -lint ios/App/App/Info.plist
+          test -f ios/App/App/UpiNavigationPlugin.swift
+          grep -q "UpiNavigationPlugin" ios/App/App/MainViewController.swift
+          grep -q "UpiNavigationPlugin.swift in Sources" ios/App/App.xcodeproj/project.pbxproj
+          grep -q "UIApplication.shared.open" ios/App/App/UpiNavigationPlugin.swift
+          grep -q "NativeReportDownloadPlugin" ios/App/App/MainViewController.swift
+          grep -q "NativeReportDownloadPlugin.swift in Sources" ios/App/App.xcodeproj/project.pbxproj
+
       - name: Install iOS pods
         script: |
           cd $CM_BUILD_DIR/ios/App

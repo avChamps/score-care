@@ -3901,7 +3901,11 @@ function formatDownloadDateTime(value: Date) {
 function formatOptionalDownloadDate(value?: string | null) {
   if (!value) return "--";
 
-  return formatDownloadDateTime(new Date(value));
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "--";
+
+  return formatDownloadDateTime(date);
 }
 
 function formatReportType(value?: string | null) {
