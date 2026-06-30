@@ -21,6 +21,7 @@ import {
   Languages,
   ReceiptText,
   LogOut,
+  Trash2,
   ShieldAlert,
   Share2,
   Target,
@@ -47,6 +48,7 @@ import {
 } from "lucide-react";
 
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
+import { DeleteAccountFlow } from "@/components/dashboard/delete-account-flow";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardHeaderHomeControl, PortalShell } from "@/components/dashboard/portal-ui";
 import { SupportDrawer } from "@/components/dashboard/topbar-actions";
@@ -2234,6 +2236,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
   const [showDownloadReports, setShowDownloadReports] = useState(false);
   const [showLanguageSettings, setShowLanguageSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [whatsappAlertsEnabled, setWhatsappAlertsEnabled] = useState(false);
   const [whatsappAlertsError, setWhatsappAlertsError] = useState("");
   const [whatsappAlertsLoading, setWhatsappAlertsLoading] = useState(true);
@@ -2640,6 +2643,19 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
         />
       </section>
 
+      <section className="mx-auto mt-6 max-w-md rounded-[26px] bg-[#111821] p-5 shadow-[0_18px_36px_rgba(0,0,0,0.22)]">
+        <p className="text-caption font-medium uppercase tracking-wide text-[#AAB6C8]">
+          Danger Zone
+        </p>
+        <ProfileOption
+          title="Delete Account"
+          subtitle="Permanently remove your account"
+          Icon={Trash2}
+          danger
+          onClick={() => setShowDeleteAccount(true)}
+        />
+      </section>
+
       {showNotifications ? (
         <NotificationsScreen
           error={notificationError}
@@ -2659,6 +2675,14 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
           selectedLanguage={selectedLanguage}
           onClose={() => setShowLanguageSettings(false)}
           onSelect={(language) => void updateSelectedLanguage(language)}
+        />
+      ) : null}
+
+      {showDeleteAccount ? (
+        <DeleteAccountFlow
+          mobileNumber={phone}
+          onClose={() => setShowDeleteAccount(false)}
+          onDone={() => router.replace("/login")}
         />
       ) : null}
 

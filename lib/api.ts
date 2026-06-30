@@ -1,6 +1,7 @@
 import { Capacitor, CapacitorHttp, type HttpOptions } from "@capacitor/core";
 
 const DEFAULT_API_BASE_URL = "https://scorecareapp.com/api";
+// const DEFAULT_API_BASE_URL = "http://localhost:5000";
 
 export const API_BASE_URL = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL);
 
@@ -17,7 +18,7 @@ export function apiUrl(path: string) {
 type ApiRequestOptions = {
   body?: unknown;
   headers?: Record<string, string>;
-  method?: "GET" | "POST" | "PATCH";
+  method?: "DELETE" | "GET" | "POST" | "PATCH";
   retry?: number;
   timeoutMs?: number;
 };
@@ -80,7 +81,7 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}) {
   throw new Error("API request failed");
 }
 
-async function requestWithRetry(path: string, options: ApiRequestOptions, method: "GET" | "POST" | "PATCH") {
+async function requestWithRetry(path: string, options: ApiRequestOptions, method: "DELETE" | "GET" | "POST" | "PATCH") {
   const retryCount = options.retry ?? (method === "GET" ? 1 : 0);
 
   for (let attempt = 0; attempt <= retryCount; attempt += 1) {
@@ -109,7 +110,7 @@ async function requestWithRetry(path: string, options: ApiRequestOptions, method
   throw new Error("API request failed");
 }
 
-async function sendApiRequest(path: string, options: ApiRequestOptions, method: "GET" | "POST" | "PATCH") {
+async function sendApiRequest(path: string, options: ApiRequestOptions, method: "DELETE" | "GET" | "POST" | "PATCH") {
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   let requestBody: BodyInit | undefined;
 

@@ -7,11 +7,13 @@ import {
   Phone,
   Shield,
   LogOut,
+  Trash2,
   UserRound,
   WalletCards,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { DeleteAccountFlow } from "@/components/dashboard/delete-account-flow";
 import { AppCard } from "@/components/dashboard/portal-ui";
 import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired, logoutScorecareSession } from "@/lib/auth-session";
@@ -35,6 +37,7 @@ export function ProfileDetails({}: { isAdminView?: boolean }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
@@ -127,14 +130,31 @@ export function ProfileDetails({}: { isAdminView?: boolean }) {
       </AppCard>
 
       <button
-    type="button"
-    onClick={logout}
-    data-dashboard-logout="true"
-    className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-rose-100 bg-white text-base font-semibold text-rose-600 shadow-sm transition-all hover:border-rose-200 hover:bg-rose-50 active:scale-[0.99]"
-  >
-    <LogOut className="size-5" />
-    Logout
-  </button>
+        type="button"
+        onClick={logout}
+        data-dashboard-logout="true"
+        className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-rose-100 bg-white text-base font-semibold text-rose-600 shadow-sm transition-all hover:border-rose-200 hover:bg-rose-50 active:scale-[0.99]"
+      >
+        <LogOut className="size-5" />
+        Logout
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setShowDeleteAccount(true)}
+        className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-rose-100 bg-white text-base font-semibold text-rose-600 shadow-sm transition-all hover:border-rose-200 hover:bg-rose-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <Trash2 className="size-5" />
+        Delete Account
+      </button>
+
+      {showDeleteAccount ? (
+        <DeleteAccountFlow
+          mobileNumber={user?.mobileNumber}
+          onClose={() => setShowDeleteAccount(false)}
+          onDone={() => router.replace("/login")}
+        />
+      ) : null}
     </div>
   );
 }
