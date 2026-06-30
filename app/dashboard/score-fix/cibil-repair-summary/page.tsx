@@ -269,7 +269,7 @@ export default function CibilRepairSummaryPage() {
     setPaymentMessage("");
 
     try {
-      const useNativeRazorpay = Capacitor.getPlatform() === "android";
+      const useNativeRazorpay = Capacitor.isNativePlatform();
 
       if (!useNativeRazorpay) {
         await loadRazorpayCheckout();

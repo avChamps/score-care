@@ -487,7 +487,7 @@ export function SubscribePromptOverlay({
     void logCrashlyticsMessage("Payment started");
 
     try {
-      const useNativeRazorpay = Capacitor.getPlatform() === "android";
+      const useNativeRazorpay = Capacitor.isNativePlatform();
 
       if (!useNativeRazorpay) {
         await loadRazorpayCheckout();

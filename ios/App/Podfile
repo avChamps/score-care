@@ -23,6 +23,7 @@ target 'App' do
   capacitor_pods
   # Add your Pods here
   pod 'CapacitorFirebaseAnalytics/Analytics', :path => '../../node_modules/@capacitor-firebase/analytics'
+  pod 'razorpay-pod'
 end
 
 post_install do |installer|
