@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import LoadingPage from "./loading/page";
 
 export default function Home() {
-  redirect("/loading");
+  return <LoadingPage />;
 }

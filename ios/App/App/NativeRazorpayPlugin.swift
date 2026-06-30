@@ -24,9 +24,16 @@ class NativeRazorpayPlugin: CAPPlugin, CAPBridgedPlugin, RazorpayPaymentCompleti
             return
         }
 
-        paymentCall = call
-        razorpay = RazorpayCheckout.initWithKey(key, andDelegateWithData: self)
-        razorpay?.open(createOptions(call), displayController: viewController)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            self.paymentCall?.reject("Another payment is already in progress.")
+            self.clearPaymentState()
+
+            self.paymentCall = call
+            self.razorpay = RazorpayCheckout.initWithKey(key, andDelegateWithData: self)
+            self.razorpay?.open(self.createOptions(call), displayController: self.topViewController(from: viewController))
+        }
     }
 
     func onPaymentSuccess(_ paymentId: String, andData response: [AnyHashable: Any]?) {
@@ -68,10 +75,6 @@ class NativeRazorpayPlugin: CAPPlugin, CAPBridgedPlugin, RazorpayPaymentCompleti
             options["prefill"] = prefill
         }
 
-        if let config = call.getObject("config") {
-            options["config"] = config
-        }
-
         options["method"] = [
             "card": true,
             "netbanking": true,
@@ -86,6 +89,24 @@ class NativeRazorpayPlugin: CAPPlugin, CAPBridgedPlugin, RazorpayPaymentCompleti
         if let value, !value.isEmpty {
             options[key] = value
         }
+    }
+
+    private func topViewController(from viewController: UIViewController) -> UIViewController {
+        if let presented = viewController.presentedViewController {
+            return topViewController(from: presented)
+        }
+
+        if let navigationController = viewController as? UINavigationController,
+           let visibleViewController = navigationController.visibleViewController {
+            return topViewController(from: visibleViewController)
+        }
+
+        if let tabBarController = viewController as? UITabBarController,
+           let selectedViewController = tabBarController.selectedViewController {
+            return topViewController(from: selectedViewController)
+        }
+
+        return viewController
     }
 
     private func clearPaymentState() {

@@ -28,12 +28,18 @@
 		<string>tez</string>
 		<string>gpay</string>
 		<string>phonepe</string>
+		<string>paytm</string>
 		<string>paytmmp</string>
 		<string>bhim</string>
 		<string>cred</string>
+		<string>credpay</string>
 		<string>amazonpay</string>
 		<string>mobikwik</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>ScoreCare uses camera access only when the payment gateway requires scanning payment details.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ScoreCare uses photo library access only when the payment gateway requires uploading or scanning payment details.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

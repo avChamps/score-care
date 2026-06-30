@@ -139,7 +139,7 @@ export function DeleteAccountFlow({ mobileNumber, onClose, onDone }: DeleteAccou
   if (step === "done") {
     return (
       <DeleteAccountFrame>
-        <div className="flex min-h-[calc(100vh-7rem)] flex-col items-center justify-center px-8 text-center">
+        <div className="flex min-h-[calc(100dvh-var(--native-status-offset,0px)-7rem-env(safe-area-inset-bottom,0px))] flex-col items-center justify-center px-8 text-center">
           <div className="grid size-[72px] place-items-center rounded-full bg-[#0E695C] text-[#32D8CA]">
             <span className="grid size-9 place-items-center rounded-full border-2 border-current">
               <Check className="size-5" strokeWidth={2.4} />
@@ -176,7 +176,7 @@ export function DeleteAccountFlow({ mobileNumber, onClose, onDone }: DeleteAccou
       </header>
 
       {step === "warning" ? (
-        <div className="flex min-h-[calc(100vh-11rem)] flex-col px-5 py-5">
+        <div className="flex min-h-[calc(100dvh-var(--native-status-offset,0px)-11rem-env(safe-area-inset-bottom,0px))] flex-col px-5 py-5">
           <div className="flex gap-3 rounded-2xl border border-[#803A3A] bg-[#491B1D] px-4 py-4 text-sm font-semibold leading-6 text-white">
             <AlertTriangle className="mt-1 size-5 shrink-0 text-[#FF6B6B]" />
             <p>This action is permanent. Once your account is deleted, it cannot be recovered.</p>
@@ -226,7 +226,7 @@ export function DeleteAccountFlow({ mobileNumber, onClose, onDone }: DeleteAccou
           </button>
         </div>
       ) : (
-        <div className="flex min-h-[calc(100vh-11rem)] flex-col items-center px-5 py-10 text-center">
+        <div className="flex min-h-[calc(100dvh-var(--native-status-offset,0px)-11rem-env(safe-area-inset-bottom,0px))] flex-col items-center px-5 py-10 text-center">
           <div className="grid size-14 place-items-center rounded-full bg-[#0E695C] text-[#32D8CA]">
             <ShieldCheck className="size-7" />
           </div>
@@ -281,8 +281,8 @@ export function DeleteAccountFlow({ mobileNumber, onClose, onDone }: DeleteAccou
 
 function DeleteAccountFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="fixed inset-0 z-[70] overflow-y-auto bg-[#020711] px-4 py-4 [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
-      <div className="mx-auto min-h-[calc(100vh-2rem)] max-w-md overflow-hidden rounded-[30px] bg-[#0A1222] shadow-[0_24px_48px_rgba(0,0,0,0.45)]">
+    <div className="fixed inset-0 z-[70] overflow-y-auto bg-[#020711] px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(var(--native-status-offset,0px)+1rem)] [font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',system-ui,sans-serif]">
+      <div className="mx-auto min-h-[calc(100dvh-var(--native-status-offset,0px)-2rem-env(safe-area-inset-bottom,0px))] max-w-md overflow-hidden rounded-[30px] bg-[#0A1222] shadow-[0_24px_48px_rgba(0,0,0,0.45)]">
         {children}
       </div>
     </div>
