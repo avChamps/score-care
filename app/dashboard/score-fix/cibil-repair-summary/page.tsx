@@ -346,18 +346,6 @@ export default function CibilRepairSummaryPage() {
       if (useNativeRazorpay) {
         const paymentResponse = await nativeRazorpay.open({
           amount: order.amount,
-          config: {
-            display: {
-              blocks: {
-                paymentOptions: {
-                  name: "All Payment Options",
-                  instruments: [{ method: "upi", flows: ["intent"] }],
-                },
-              },
-              sequence: ["block.paymentOptions"],
-              preferences: { show_default_blocks: false },
-            },
-          },
           currency: order.currency || currency,
           description: planName,
           key: razorpayKey,

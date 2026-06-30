@@ -72,15 +72,18 @@ class NativeRazorpayPlugin: CAPPlugin, CAPBridgedPlugin, RazorpayPaymentCompleti
         }
 
         if let prefill = call.getObject("prefill") {
-            options["prefill"] = prefill
-        }
+            var cleanPrefill: [String: String] = [:]
 
-        options["method"] = [
-            "card": true,
-            "netbanking": true,
-            "upi": true,
-            "wallet": true,
-        ]
+            for key in ["name", "email", "contact"] {
+                if let value = prefill[key] as? String, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    cleanPrefill[key] = value
+                }
+            }
+
+            if !cleanPrefill.isEmpty {
+                options["prefill"] = cleanPrefill
+            }
+        }
 
         return options
     }
