@@ -217,7 +217,7 @@ export function DeleteAccountFlow({ mobileNumber, onClose, onDone }: DeleteAccou
             type="button"
             disabled={!accepted || loading}
             className={cn(
-              "mt-auto h-[52px] rounded-2xl text-sm font-extrabold transition",
+              "mt-6 h-[52px] rounded-2xl text-sm font-extrabold transition",
               accepted && !loading ? "bg-[#32D8CA] text-[#061A20]" : "bg-[#18233A] text-[#8FA8D4]"
             )}
             onClick={() => void sendDeletionOtp()}
@@ -233,7 +233,7 @@ export function DeleteAccountFlow({ mobileNumber, onClose, onDone }: DeleteAccou
           <h3 className="mt-6 text-base font-extrabold text-white">Enter the code sent to</h3>
           <p className="mt-2 text-sm font-medium text-[#9DB1D8]">{formattedMobile}</p>
 
-          <div className="mt-8 flex justify-center gap-3">
+          <div className="mt-8 grid w-full max-w-[336px] grid-cols-6 gap-2">
             {otpDigits.map((digit, index) => (
               <input
                 key={index}
@@ -244,7 +244,7 @@ export function DeleteAccountFlow({ mobileNumber, onClose, onDone }: DeleteAccou
                 inputMode="numeric"
                 maxLength={1}
                 aria-label={`Verification code digit ${index + 1}`}
-                className="size-14 rounded-xl border border-[#2A3A58] bg-[#18233A] text-center text-xl font-extrabold text-white outline-none focus:border-[#32D8CA]"
+                className="aspect-square w-full rounded-xl border border-[#2A3A58] bg-[#18233A] text-center text-xl font-extrabold text-white outline-none focus:border-[#32D8CA]"
                 onChange={(event) => updateOtpDigit(index, event.target.value)}
                 onKeyDown={(event) => handleOtpKeyDown(index, event.key)}
               />
