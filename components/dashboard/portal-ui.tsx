@@ -6,6 +6,7 @@ import { type ComponentPropsWithoutRef } from "react";
 import { ArrowLeft, CreditCard, Headphones, Home, Menu, MessageCircle, Plus, ReceiptText, Users, WalletCards } from "lucide-react";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
+import { TopBarActions } from "@/components/dashboard/topbar-actions";
 import { useDashboardActionsDisabled } from "@/lib/dashboard-lock";
 import { cn } from "@/lib/utils";
 
@@ -77,8 +78,18 @@ export function PortalShell({ active, children, variant = "user" }: PortalShellP
   );
 }
 
-export function PortalTopBar({}: { title?: string; backHref?: string; profileHref?: string }) {
-  return null;
+export function PortalTopBar({ title }: { title?: string; backHref?: string; profileHref?: string }) {
+  return (
+    <header className="sticky top-0 z-40 border-b border-[var(--portal-border)] bg-[#050912]/92 px-4 py-3 shadow-[0_14px_34px_rgba(0,0,0,0.20)] sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-tiny font-black uppercase tracking-[0.16em] text-[#14B8A6]">Scorecare</p>
+          {title ? <h1 className="mt-0.5 truncate text-base font-black text-white">{title}</h1> : null}
+        </div>
+        <TopBarActions />
+      </div>
+    </header>
+  );
 }
 
 export function DashboardHeaderHomeControl({ className, iconClassName, onMenuClick }: { className: string; iconClassName: string; onMenuClick?: () => void }) {

@@ -1117,10 +1117,11 @@ function HelpSupportModal({ onClose, onLiveChat }: { onClose: () => void; onLive
             <div className="mt-5 flex items-center gap-2.5 rounded-[18px] border border-white/60 bg-white/50 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]">
               <Search className="size-5 text-[#6F7B8E]" strokeWidth={1.8} />
               <input
+                type="search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search questions"
-                className="min-w-0 flex-1 bg-transparent text-body-sm font-medium text-[#111827] outline-none placeholder:text-[#8A94A6]"
+                className="h-6 min-w-0 flex-1 appearance-none border-0 !bg-transparent p-0 text-body-sm font-medium leading-6 text-[#111827] shadow-none outline-none [box-shadow:none] [-webkit-text-fill-color:#111827] placeholder:text-[#8A94A6]"
               />
               {search ? (
                 <button

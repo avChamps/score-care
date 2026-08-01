@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { ProfilePanel, type UserProfile } from "@/app/dashboard/home-dashboard";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
+import { TopBarActions } from "@/components/dashboard/topbar-actions";
 import {
   AppCard,
   DashboardHeaderHomeControl,
@@ -467,7 +468,6 @@ export function LoansExperience() {
   return (
     <PortalShell active="loans">
       <div className="min-h-screen bg-[#050912] pb-28 text-white">
-        <PortalTopBar title="Loans" />
         <PageContent className="px-4 py-5">
           <div className="mx-auto max-w-md">
             <RepaymentsView
@@ -620,18 +620,7 @@ function RepaymentsView({
               <Crown className="size-6 fill-[#FFD34D]/20" strokeWidth={1.8} />
             </button>
           ) : null}
-          <Link
-            aria-label="Open notifications"
-            className="relative grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl"
-            href="/notifications"
-          >
-            <Bell className="size-6" strokeWidth={1.8} />
-            {notificationUnreadCount > 0 ? (
-              <span className="absolute right-1.5 top-1.5 grid min-w-5 place-items-center rounded-full bg-[#FF3B30] px-1.5 text-[11px] font-bold leading-5 text-white shadow-[0_6px_12px_rgba(255,59,48,0.28)]">
-                <AnimatedNumber value={notificationUnreadCount > 99 ? "99+" : notificationUnreadCount} />
-              </span>
-            ) : null}
-          </Link>
+          <TopBarActions />
         </div>
       </div>
 
