@@ -237,7 +237,6 @@ export function LoansExperience() {
   const [benefitsPaymentLoading, setBenefitsPaymentLoading] = useState(false);
   const [benefitsPaymentTrigger, setBenefitsPaymentTrigger] = useState(0);
   const [toast, setToast] = useState<LoanToast | null>(null);
-  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
   const isMountedRef = useRef(true);
   const loansRequestIdRef = useRef(0);
@@ -373,24 +372,6 @@ export function LoansExperience() {
     }
   }, [router]);
 
-  const refreshNotifications = useCallback(async () => {
-    const token = localStorage.getItem("scorecare_token");
-
-    if (!token || isTokenExpired(token)) {
-      clearScorecareSession();
-      router.replace("/login");
-      return;
-    }
-
-    try {
-      const result = await loadNotifications(token);
-
-      setNotificationUnreadCount(result.unreadCount);
-    } catch {
-      setNotificationUnreadCount(0);
-    }
-  }, [router]);
-
   useEffect(() => {
     isMountedRef.current = true;
 
@@ -424,23 +405,15 @@ export function LoansExperience() {
   }, [accessLoading, displayData, isFreeTier, loading]);
 
   useEffect(() => {
-    void refreshNotifications();
-    window.addEventListener("scorecare:notifications-updated", refreshNotifications);
-
-    return () => window.removeEventListener("scorecare:notifications-updated", refreshNotifications);
-  }, [refreshNotifications]);
-
-  useEffect(() => {
     function refreshLoansScreen() {
       void loadLoans();
       void loadApplicationStatus();
-      void refreshNotifications();
     }
 
     window.addEventListener("scorecare:app-refresh", refreshLoansScreen);
 
     return () => window.removeEventListener("scorecare:app-refresh", refreshLoansScreen);
-  }, [loadApplicationStatus, loadLoans, refreshNotifications]);
+  }, [loadApplicationStatus, loadLoans]);
 
   useEffect(() => {
     if (!toast) return;
@@ -497,7 +470,6 @@ export function LoansExperience() {
               onRefresh={loadLoans}
               onLoanStatusFilterChange={setLoanStatusFilter}
               isFreeTier={isFreeTier}
-              notificationUnreadCount={notificationUnreadCount}
               onPremiumClick={openBenefitsPrompt}
               onProfileOpen={() => setShowProfile(true)}
               score={score}
@@ -574,7 +546,6 @@ function RepaymentsView({
   onApply,
   onFilterChange,
   onLoanStatusFilterChange,
-  notificationUnreadCount,
   onPremiumClick,
   onProfileOpen,
   onRefresh,
@@ -595,7 +566,6 @@ function RepaymentsView({
   onApply: () => void;
   onFilterChange: (filter: LoanFilter) => void;
   onLoanStatusFilterChange: (filter: LoanStatusFilter) => void;
-  notificationUnreadCount: number;
   onPremiumClick: () => void;
   onProfileOpen: () => void;
   onRefresh: () => void;

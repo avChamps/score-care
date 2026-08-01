@@ -110,6 +110,8 @@ html.translated-rtl body {
 .native-shell,
 .native-shell body {
   --native-status-offset: max(env(safe-area-inset-top, 0px), 24px);
+  --portal-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+  --portal-shadow-soft: 0 6px 16px rgba(0, 0, 0, 0.18);
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -137,6 +139,10 @@ html.translated-rtl body {
   z-index: 50;
   height: var(--native-status-offset);
   background: #050912;
+}
+
+.native-shell .portal-theme::after {
+  content: none !important;
 }
 
 .native-shell .hero-header {
@@ -167,9 +173,20 @@ html.translated-rtl body {
 .native-shell .shadow-lg,
 .native-shell .shadow-xl,
 .native-shell .shadow-2xl,
+.native-shell [class*="shadow-[0_"],
 .native-shell .shadow-\[0_20px_60px_rgba\(8\,_15\,_40\,_0\.18\)\],
 .native-shell .shadow-\[0_24px_80px_rgba\(8\,_15\,_40\,_0\.22\)\] {
   box-shadow: var(--portal-shadow) !important;
+}
+
+.native-shell .portal-theme::before {
+  background-image: none !important;
+}
+
+.native-shell .hero-header,
+.native-shell .portal-card,
+.native-shell .portal-surface {
+  transform: translateZ(0);
 }
 
 .native-shell * {

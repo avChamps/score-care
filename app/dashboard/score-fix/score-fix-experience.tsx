@@ -343,7 +343,6 @@ export function ScoreFixExperience() {
   const [displayData, setDisplayData] = useState<DisplayDataResponse | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [showProfile, setShowProfile] = useState(false);
-  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [, setIsLanguageLoading] = useState(false);
   const [repairContent, setRepairContent] = useState<CibilRepairContent>(fallbackRepairContent);
   const [repairRequests, setRepairRequests] = useState<CibilRepairRequest[]>([]);
@@ -415,26 +414,6 @@ export function ScoreFixExperience() {
 
     void loadDisplayData();
   }, [router]);
-
-  useEffect(() => {
-    async function refreshNotifications() {
-      const token = localStorage.getItem("scorecare_token");
-
-      if (!token || isTokenExpired(token)) return;
-
-      try {
-        const result = await loadNotifications(token);
-        setNotificationUnreadCount(result.unreadCount);
-      } catch {
-        setNotificationUnreadCount(0);
-      }
-    }
-
-    void refreshNotifications();
-    window.addEventListener("scorecare:notifications-updated", refreshNotifications);
-
-    return () => window.removeEventListener("scorecare:notifications-updated", refreshNotifications);
-  }, []);
 
   const loadRepairContent = useCallback(async () => {
     try {

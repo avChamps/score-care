@@ -1,50 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { Crown } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
 import comingSoonImage from "@/assets/coming-soon.png";
 import { DashboardBottomNav } from "@/components/dashboard/bottom-nav";
 import { TopBarActions } from "@/components/dashboard/topbar-actions";
 import { DashboardHeaderHomeControl, PageContent, PortalShell, PortalTopBar } from "@/components/dashboard/portal-ui";
 import { SubscribePromptOverlay, useSubscribePrompt } from "@/components/dashboard/subscribe-prompt";
-import { apiRequest } from "@/lib/api";
-import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { useSubscriptionAccess } from "@/lib/subscription-access";
 
-const notificationsPageSize = 10;
-
 export function OffersExperience() {
-  const router = useRouter();
-  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const { isFreeTier } = useSubscriptionAccess();
   const { closeSubscribePrompt, promptSubscribe, showSubscribePrompt } = useSubscribePrompt();
-
-  const refreshNotifications = useCallback(async () => {
-    const token = localStorage.getItem("scorecare_token");
-
-    if (!token || isTokenExpired(token)) {
-      clearScorecareSession();
-      router.replace("/login");
-      return;
-    }
-
-    try {
-      const result = await loadNotifications(token);
-
-      setNotificationUnreadCount(result.unreadCount);
-    } catch {
-      setNotificationUnreadCount(0);
-    }
-  }, [router]);
-
-  useEffect(() => {
-    void refreshNotifications();
-    window.addEventListener("scorecare:notifications-updated", refreshNotifications);
-
-    return () => window.removeEventListener("scorecare:notifications-updated", refreshNotifications);
-  }, [refreshNotifications]);
 
   return (
     <PortalShell active="offers">
@@ -88,27 +55,4 @@ export function OffersExperience() {
       </div>
     </PortalShell>
   );
-}
-
-async function loadNotifications(token: string) {
-  const response = await apiRequest(`/notifications?limit=${notificationsPageSize}&unreadOnly=false`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("Unable to load notifications.");
-  }
-
-  const result = (await response.json()) as {
-    status?: string;
-    data?: {
-      unreadCount?: number | null;
-    };
-  };
-
-  return {
-    unreadCount: result.status === "success" ? result.data?.unreadCount ?? 0 : 0,
-  };
 }

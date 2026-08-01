@@ -357,7 +357,6 @@ export function CreditScoreExperience() {
   const [scoreHelpLoading, setScoreHelpLoading] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [showProfile, setShowProfile] = useState(false);
-  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [, setIsLanguageLoading] = useState(false);
   const [toast, setToast] = useState("");
   const { isFreeTier, loading: accessLoading } = useSubscriptionAccess();
@@ -467,26 +466,6 @@ export function CreditScoreExperience() {
       window.removeEventListener("scorecare:cibil-display-updated", handleDisplayUpdate);
     };
   }, [isFreeTier, loadDisplayData]);
-
-  useEffect(() => {
-    async function refreshNotifications() {
-      const token = localStorage.getItem("scorecare_token");
-
-      if (!token || isTokenExpired(token)) return;
-
-      try {
-        const result = await loadNotifications(token);
-        setNotificationUnreadCount(result.unreadCount);
-      } catch {
-        setNotificationUnreadCount(0);
-      }
-    }
-
-    void refreshNotifications();
-    window.addEventListener("scorecare:notifications-updated", refreshNotifications);
-
-    return () => window.removeEventListener("scorecare:notifications-updated", refreshNotifications);
-  }, []);
 
   useEffect(() => {
     function refreshCreditScoreScreen() {
