@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { App } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import type { ComponentType } from "react";
 import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -57,6 +59,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CibilDisplayDataError, clearCachedCibilDisplayData, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { apiRequest, apiUrl } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired, logoutScorecareSession } from "@/lib/auth-session";
+import { replaceAfterPaymentSuccess } from "@/lib/payment-navigation";
 import { logCrashlyticsMessage, setSafeUserId, trackEvent } from "@/src/lib/analytics";
 import { initializePushNotifications, type PushNotificationInitState } from "@/src/lib/pushNotifications";
 import { cn } from "@/lib/utils";
@@ -319,6 +322,27 @@ export function HomeDashboard() {
   useEffect(() => {
     void loadDashboard();
   }, [loadDashboard]);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) {
+      return;
+    }
+
+    let removeBackButtonListener: (() => void) | undefined;
+
+    void App.addListener("backButton", () => {
+      if (window.location.pathname === "/dashboard") {
+        void App.exitApp();
+        return;
+      }
+
+      window.history.back();
+    }).then((listener) => {
+      removeBackButtonListener = () => listener.remove();
+    });
+
+    return () => removeBackButtonListener?.();
+  }, []);
 
   useEffect(() => {
     if (!window.location.search.includes("subscription=success")) {
@@ -3404,7 +3428,7 @@ function markSubscriptionSuccessReloaded() {
 }
 
 function routerReplaceDashboardSuccess() {
-  window.location.replace("/dashboard?subscription=success");
+  replaceAfterPaymentSuccess("/dashboard?subscription=success");
 }
 
 function createEmptyDashboard(message = "Score data is unavailable right now."): DashboardData {

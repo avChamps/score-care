@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { readSelectedCibilRepairAccounts, type SelectedCibilRepairAccount } from "@/lib/cibil-repair-selection";
 import { nativeRazorpay } from "@/lib/native-razorpay";
+import { replaceAfterPaymentSuccess } from "@/lib/payment-navigation";
 import { cn } from "@/lib/utils";
 
 type CibilRepairPlan = {
@@ -240,7 +241,7 @@ export default function CibilRepairSummaryPage() {
     setToast("Documents uploaded successfully.");
     setUploadDialogOpen(false);
     window.setTimeout(() => {
-      router.replace("/dashboard/score-fix?tab=credit-improvement-plan");
+      replaceAfterPaymentSuccess("/dashboard/score-fix?tab=credit-improvement-plan", router);
     }, 1000);
     return true;
   }
@@ -485,7 +486,7 @@ export default function CibilRepairSummaryPage() {
       {successMessage ? (
         <PaymentSuccessDialog
           message={successMessage}
-          onSkip={() => router.replace("/dashboard/score-fix?tab=credit-improvement-plan")}
+          onSkip={() => replaceAfterPaymentSuccess("/dashboard/score-fix?tab=credit-improvement-plan", router)}
           onUpload={() => setUploadDialogOpen(true)}
         />
       ) : null}

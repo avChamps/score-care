@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/api";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import { clearCachedCibilDisplayData, getCachedCibilDisplayData } from "@/lib/cibil-display-cache";
 import { nativeRazorpay } from "@/lib/native-razorpay";
+import { replaceAfterPaymentSuccess } from "@/lib/payment-navigation";
 import { logCrashlyticsMessage, trackEvent } from "@/src/lib/analytics";
 
 export type SubscriptionPlan = {
@@ -582,7 +583,7 @@ export function SubscribePromptOverlay({
           ]);
           window.dispatchEvent(new CustomEvent("scorecare:subscription-activated", { detail: confirmResult?.subscription ?? confirmResult?.data?.subscription ?? null }));
           onClose();
-          router.replace("/dashboard?subscription=success");
+          replaceAfterPaymentSuccess("/dashboard?subscription=success", router);
         } catch (error) {
           void trackEvent("razorpay_payment_failed", {
             page_name: "subscription",
