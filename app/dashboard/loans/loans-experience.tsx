@@ -97,10 +97,15 @@ type CreditAccount = {
   Date_Closed?: string | null;
   Date_Reported?: string | null;
   "DATE-REPORTED"?: string | number | null;
+  "DISBURSED-DT"?: string | number | null;
+  "EMI-DUE-DATE"?: string | number | null;
+  "INSTALLMENT-DUE-DATE"?: string | number | null;
   "DISBURSED-AMT"?: string | number | null;
   Highest_Credit_or_Original_Loan_Amount?: string | number | null;
   Identification_Number?: string | number | null;
   "LAST-PAYMENT-DATE"?: string | number | null;
+  "SANCTION-DATE"?: string | number | null;
+  "SANCTIONED-DATE"?: string | number | null;
   Open_Date?: string | null;
   Payment_Frequency?: string | null;
   Portfolio_Type?: string | null;
@@ -123,6 +128,7 @@ type CreditAccount = {
   emi?: string | number | null;
   high_credit_amount?: string | number | null;
   last_payment?: string | null;
+  next_emi_date?: string | number | null;
   member_name?: string | null;
   opened?: string | null;
   payment_frequency?: string | null;
@@ -1631,20 +1637,22 @@ function buildLoans(result: DisplayDataResponse | null): Loan[] {
     const currentBalance = readNumericValue(account.current_balance ?? account.Current_Balance ?? account["CURRENT-BAL"]);
     const originalAmount = readNumericValue(account.high_credit_amount ?? account.Highest_Credit_or_Original_Loan_Amount ?? account["DISBURSED-AMT"]);
     const amount = currentBalance || originalAmount;
+    const disbursedDate = readDisbursedDate(account);
+    const sanctionedDate = readSanctionedDate(account) ?? disbursedDate;
 
     return {
       accountType: readAccountType(account),
       amount: formatRupees(amount),
       bank: account["CREDIT-GUARANTOR"] || account.member_name || account.Subscriber_Name || formatAccountType(account.Account_Type) || "Credit lender",
       borrower,
-      disbursed: formatCompactDate(account.opened || account.Open_Date || account["DATE-REPORTED"]),
+      disbursed: formatCompactDate(disbursedDate),
       emi: emi.amountLabel,
       id: `${account.Identification_Number ?? account.Account_Number ?? account["ACCT-NUMBER"] ?? account.member_name ?? account.Subscriber_Name ?? account["CREDIT-GUARANTOR"] ?? "loan"}-${account.type ?? account.Account_Type ?? account["ACCT-TYPE"] ?? "account"}-${index}`,
       loanType: formatAccountType(account.type ?? account.Account_Type ?? account["ACCT-TYPE"]) || "Loan Account",
-      nextEmi: formatCompactDate(account.last_payment ?? account.Date_of_Last_Payment ?? account["LAST-PAYMENT-DATE"] ?? account["DATE-REPORTED"]),
+      nextEmi: formatCompactDate(readNextEmiDueDate(account, status, emi.frequencyLabel)),
       overdue: overdueAmount > 0 ? `${formatRupees(overdueAmount)} overdue - Affects CIBIL` : "",
       paymentFrequency: emi.frequencyLabel,
-      sanctioned: formatCompactDate(account.opened || account.Open_Date || account["DATE-REPORTED"]),
+      sanctioned: formatCompactDate(sanctionedDate),
       status,
       tenure: account.repayment_tenure || account.Repayment_Tenure || account.Terms_Duration || account["REPAYMENT-TENURE"] ? String(account.repayment_tenure ?? account.Repayment_Tenure ?? account.Terms_Duration ?? account["REPAYMENT-TENURE"]) : "--",
     };
@@ -1896,9 +1904,9 @@ function formatAccountType(value: unknown) {
 }
 
 function formatDateTime(value: string) {
-  const date = new Date(value);
+  const date = parseLoanDate(value);
 
-  if (Number.isNaN(date.getTime())) {
+  if (!date) {
     return formatCompactDate(value);
   }
 
@@ -1909,23 +1917,122 @@ function formatDateTime(value: string) {
   }).format(date);
 }
 
-function formatCompactDate(value?: string | number | null) {
-  const raw = String(value ?? "").trim();
+function readSanctionedDate(account: CreditAccount) {
+  return readFirstFilledValue([
+    account["SANCTION-DATE"],
+    account["SANCTIONED-DATE"],
+  ]);
+}
 
-  if (!raw) return "--";
+function readDisbursedDate(account: CreditAccount) {
+  return readFirstFilledValue([
+    account.opened,
+    account.Open_Date,
+    account["DISBURSED-DT"],
+    account.Date_Reported,
+    account["DATE-REPORTED"],
+  ]);
+}
 
-  if (/^\d{8}$/.test(raw)) {
-    if (raw === "11111111" || raw === "00000000") {
-      return "--";
-    }
+function readNextEmiDueDate(account: CreditAccount, status: Loan["status"], frequency: string) {
+  const explicitDueDate = readFirstFilledValue([
+    account.next_emi_date,
+    account["EMI-DUE-DATE"],
+    account["INSTALLMENT-DUE-DATE"],
+  ]);
 
-    const firstFour = Number(raw.slice(0, 4));
-    const year = firstFour >= 1900 ? raw.slice(0, 4) : raw.slice(4);
-    const month = firstFour >= 1900 ? raw.slice(4, 6) : raw.slice(2, 4);
-    const day = firstFour >= 1900 ? raw.slice(6, 8) : raw.slice(0, 2);
-
-    return `${day}/${month}/${year}`;
+  if (explicitDueDate) {
+    return explicitDueDate;
   }
 
-  return raw;
+  const lastPaymentDate = parseLoanDate(account.last_payment ?? account.Date_of_Last_Payment ?? account["LAST-PAYMENT-DATE"]);
+
+  if (!lastPaymentDate || status === "Completed") {
+    return account.last_payment ?? account.Date_of_Last_Payment ?? account["LAST-PAYMENT-DATE"] ?? account["DATE-REPORTED"];
+  }
+
+  return addLoanFrequency(lastPaymentDate, frequency);
+}
+
+function readFirstFilledValue(values: Array<string | number | Date | null | undefined>) {
+  return values.find((value) => value !== null && value !== undefined && String(value).trim() !== "");
+}
+
+function formatCompactDate(value?: string | number | Date | null) {
+  if (value instanceof Date) {
+    return formatLoanDate(value);
+  }
+
+  const date = parseLoanDate(value);
+
+  return date ? formatLoanDate(date) : "--";
+}
+
+function parseLoanDate(value?: string | number | Date | null) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  }
+
+  const raw = String(value ?? "").trim();
+
+  if (!raw || raw === "11111111" || raw === "00000000") {
+    return null;
+  }
+
+  let day = 0;
+  let month = 0;
+  let year = 0;
+  const compactMatch = /^(\d{8})$/.exec(raw);
+  const dashedMatch = /^(\d{2})[-/](\d{2})[-/](\d{4})$/.exec(raw);
+  const isoMatch = /^(\d{4})[-/](\d{2})[-/](\d{2})/.exec(raw);
+
+  if (compactMatch) {
+    const value = compactMatch[1];
+    const firstFour = Number(value.slice(0, 4));
+
+    year = firstFour >= 1900 ? Number(value.slice(0, 4)) : Number(value.slice(4));
+    month = firstFour >= 1900 ? Number(value.slice(4, 6)) : Number(value.slice(2, 4));
+    day = firstFour >= 1900 ? Number(value.slice(6, 8)) : Number(value.slice(0, 2));
+  } else if (dashedMatch) {
+    day = Number(dashedMatch[1]);
+    month = Number(dashedMatch[2]);
+    year = Number(dashedMatch[3]);
+  } else if (isoMatch) {
+    year = Number(isoMatch[1]);
+    month = Number(isoMatch[2]);
+    day = Number(isoMatch[3]);
+  } else {
+    return null;
+  }
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  const date = new Date(year, month - 1, day);
+
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : null;
+}
+
+function formatLoanDate(date: Date) {
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function addLoanFrequency(date: Date, frequency: string) {
+  const normalizedFrequency = frequency.toLowerCase();
+  const monthsToAdd = normalizedFrequency.includes("quarter") ? 3 : normalizedFrequency.includes("year") ? 12 : normalizedFrequency.includes("week") ? 0 : 1;
+  const nextDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (normalizedFrequency.includes("week")) {
+    nextDate.setDate(nextDate.getDate() + 7);
+    return nextDate;
+  }
+
+  nextDate.setMonth(nextDate.getMonth() + monthsToAdd);
+
+  return nextDate;
 }
