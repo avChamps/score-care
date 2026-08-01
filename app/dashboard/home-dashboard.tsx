@@ -19,6 +19,7 @@ import {
   CreditCard,
   Crown,
   FileText,
+  Headphones,
   Lightbulb,
   Languages,
   ReceiptText,
@@ -630,6 +631,14 @@ export function HomeDashboard() {
                   <Crown className="size-6 fill-[#FFD34D]/20" strokeWidth={1.8} />
                 </button>
               ) : null}
+              <button
+                aria-label="Open support chat"
+                className="grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#22F2C2] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl sm:size-16"
+                type="button"
+                onClick={() => setShowHelp(true)}
+              >
+                <Headphones className="size-6" strokeWidth={1.8} />
+              </button>
               <Link
                 aria-label="Open notifications"
                 className="relative grid size-14 place-items-center rounded-full border border-white/20 bg-white/10 text-[#FFD34D] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_14px_30px_rgba(20,26,86,0.2)] backdrop-blur-xl sm:size-16"
