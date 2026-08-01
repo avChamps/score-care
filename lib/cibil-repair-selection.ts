@@ -12,20 +12,39 @@ export type SelectedCibilRepairAccount = {
   subscriberName: string;
 };
 
-export function readSelectedCibilRepairAccounts() {
+type StoredCibilRepairSelection = {
+  accounts: SelectedCibilRepairAccount[];
+  token: string;
+};
+
+export function readSelectedCibilRepairAccounts(token = readCurrentToken()) {
   if (typeof window === "undefined") return [];
 
   try {
-    const parsed = JSON.parse(localStorage.getItem(CIBIL_REPAIR_SELECTION_STORAGE_KEY) ?? "[]");
+    const parsed = JSON.parse(localStorage.getItem(CIBIL_REPAIR_SELECTION_STORAGE_KEY) ?? "null") as StoredCibilRepairSelection | null;
 
-    return Array.isArray(parsed) ? parsed.filter(isSelectedCibilRepairAccount) : [];
+    if (!parsed || parsed.token !== token || !Array.isArray(parsed.accounts)) {
+      clearSelectedCibilRepairAccounts();
+      return [];
+    }
+
+    return parsed.accounts.filter(isSelectedCibilRepairAccount);
   } catch {
+    clearSelectedCibilRepairAccounts();
     return [];
   }
 }
 
-export function writeSelectedCibilRepairAccounts(accounts: SelectedCibilRepairAccount[]) {
-  localStorage.setItem(CIBIL_REPAIR_SELECTION_STORAGE_KEY, JSON.stringify(accounts));
+export function writeSelectedCibilRepairAccounts(accounts: SelectedCibilRepairAccount[], token = readCurrentToken()) {
+  localStorage.setItem(CIBIL_REPAIR_SELECTION_STORAGE_KEY, JSON.stringify({ accounts, token }));
+}
+
+export function clearSelectedCibilRepairAccounts() {
+  localStorage.removeItem(CIBIL_REPAIR_SELECTION_STORAGE_KEY);
+}
+
+function readCurrentToken() {
+  return typeof window === "undefined" ? "" : localStorage.getItem("scorecare_token") ?? "";
 }
 
 function isSelectedCibilRepairAccount(value: unknown): value is SelectedCibilRepairAccount {

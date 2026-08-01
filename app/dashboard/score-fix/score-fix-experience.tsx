@@ -216,7 +216,7 @@ function readMaxDpd(account: Record<string, unknown>) {
 }
 
 function hasOverdue(account: Record<string, unknown>) {
-  return toNumber(account["OVERDUE-AMT"]) > 0;
+  return readRepairOverdueAmount(account) > 0;
 }
 
 function hasSettled(account: Record<string, unknown>) {
@@ -277,7 +277,7 @@ function readRepairCurrentBalance(account: Record<string, unknown>) {
 }
 
 function readRepairOverdueAmount(account: Record<string, unknown>) {
-  return toNumber(account["OVERDUE-AMT"]);
+  return toNumber(account["OVERDUE-AMT"] ?? account.Amount_Past_Due ?? account.amount_overdue);
 }
 
 function readRepairAccountStatus(account: Record<string, unknown>) {
@@ -298,6 +298,9 @@ function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairI
     if (!accountNumber || !subscriberName) return;
 
     const id = `${subscriberName.toLowerCase()}-${accountNumber || index}`;
+    const accountType = readRepairAccountType(account);
+    const overdueAmount = readRepairOverdueAmount(account);
+    const currentBalance = readRepairCurrentBalance(account);
 
     if (cards.has(id)) {
       const existingCard = cards.get(id);
@@ -306,8 +309,8 @@ function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairI
         existingCard.issueLabels = Array.from(new Set([...existingCard.issueLabels, ...issueLabels]));
         existingCard.issueType = existingCard.issueLabels.join(", ");
         existingCard.issueLabel = existingCard.issueLabels[0] ?? "";
-        existingCard.currentBalance = Math.max(existingCard.currentBalance, readRepairCurrentBalance(account));
-        existingCard.overdueAmount = Math.max(existingCard.overdueAmount, readRepairOverdueAmount(account));
+        existingCard.currentBalance = Math.max(existingCard.currentBalance, currentBalance);
+        existingCard.overdueAmount = Math.max(existingCard.overdueAmount, overdueAmount);
       }
 
       return;
@@ -316,19 +319,19 @@ function buildRepairIssueCards(displayData: DisplayDataResponse | null): RepairI
     cards.set(id, {
       id,
       accountNumber,
-      accountType: readRepairAccountType(account),
+      accountType,
       subscriberName,
       issueType: issueLabels.join(", "),
       issueLabel: issueLabels[0],
       issueLabels,
-      currentBalance: readRepairCurrentBalance(account),
-      overdueAmount: readRepairOverdueAmount(account),
+      currentBalance,
+      overdueAmount,
       accountStatus: readRepairAccountStatus(account),
       rawAccount: account,
     });
   });
 
-  return Array.from(cards.values()).filter((card) => card.currentBalance > 0 || card.overdueAmount > 0);
+  return Array.from(cards.values());
 }
 
 export function ScoreFixExperience() {
@@ -395,7 +398,7 @@ export function ScoreFixExperience() {
       if (!token || isTokenExpired(token)) return;
 
       try {
-        const result = (await getCachedCibilDisplayData(token)) as DisplayDataResponse;
+        const result = (await getCachedCibilDisplayData(token, { forceRefresh: true })) as DisplayDataResponse;
 
         setDisplayData(result);
       } catch (loadError) {
@@ -788,6 +791,10 @@ function CreditImprovementPlan({
   const selectedAccounts = useMemo(() => repairIssueCards.filter((card) => selectedIssueIds.includes(card.id)), [repairIssueCards, selectedIssueIds]);
   const selectedCount = selectedAccounts.length;
 
+  useEffect(() => {
+    setSelectedIssueIds((currentIds) => currentIds.filter((id) => repairIssueCards.some((card) => card.id === id)));
+  }, [repairIssueCards]);
+
   function toggleIssueCard(issueId: string) {
     setSelectedIssueIds((currentIds) => (currentIds.includes(issueId) ? currentIds.filter((id) => id !== issueId) : [...currentIds, issueId]));
   }
@@ -900,6 +907,8 @@ function CreditImprovementPlan({
   async function continueToRepairSummary() {
     if (!selectedAccounts.length) return;
 
+    const token = localStorage.getItem("scorecare_token") ?? "";
+
     writeSelectedCibilRepairAccounts(
       selectedAccounts.map((account) => ({
         id: account.id,
@@ -912,6 +921,7 @@ function CreditImprovementPlan({
         rawAccount: account.rawAccount,
         subscriberName: account.subscriberName,
       })),
+      token,
     );
     router.push("/dashboard/score-fix/cibil-repair-summary");
   }
