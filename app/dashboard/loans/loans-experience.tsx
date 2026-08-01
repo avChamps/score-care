@@ -972,7 +972,7 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
 
   return (
    <div
-  className="relative overflow-hidden rounded-[24px] border border-[#103A2B]/50 bg-[linear-gradient(135deg,#06120E_0%,#081712_50%,#091813_100%)] p-4 shadow-[0_20px_45px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-xl"
+  className="relative overflow-hidden rounded-[24px] border border-[#103A2B]/50 bg-[linear-gradient(135deg,#06120E_0%,#081712_50%,#091813_100%)] p-6 shadow-[0_20px_45px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)] backdrop-blur-xl"
   style={{ animationDelay: `${index * 70}ms` }}
 >
       <div className="absolute left-5 right-5 top-0 h-[3px] rounded-full bg-[linear-gradient(90deg,#22F2C2,#FFD34D)]" />
@@ -1007,7 +1007,7 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
         <MetaCell align="right" label="EMIs" value={loan.tenure} />
       </div>
 
-      {!completed ? (
+      {/* {!completed ? (
         <div className="pt-3">
           <button
             disabled
@@ -1018,7 +1018,7 @@ function ProfessionalLoanCard({ loan, index }: { loan: Loan; index: number }) {
             Pay EMI
           </button>
         </div>
-      ) : null}
+      ) : null} */}
     </div>
   );
 }
