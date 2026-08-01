@@ -7,6 +7,7 @@ import {
   launchVideoMaxSeconds,
   launchVideoSrc,
   markLaunchVideoPlayed,
+  playLaunchVideo,
   wasLaunchVideoRecentlyPlayed,
 } from "@/lib/launch-video";
 
@@ -72,7 +73,7 @@ export default function LoadingPage() {
         disablePictureInPicture
         controlsList="nodownload nofullscreen noremoteplayback"
         onCanPlay={(event) => {
-          event.currentTarget.play().catch(() => undefined);
+          playLaunchVideo(event.currentTarget).catch(continueToApp);
         }}
         onPlaying={revealVideo}
         onTimeUpdate={(event) => {

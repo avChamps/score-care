@@ -17,3 +17,16 @@ export function wasLaunchVideoRecentlyPlayed() {
 
   return Number.isFinite(lastPlayedAt) && Date.now() - lastPlayedAt < launchReplayWindowMs;
 }
+
+export async function playLaunchVideo(video: HTMLVideoElement) {
+  video.setAttribute("playsinline", "true");
+  video.setAttribute("webkit-playsinline", "true");
+  video.muted = false;
+
+  try {
+    await video.play();
+  } catch {
+    video.muted = true;
+    await video.play();
+  }
+}

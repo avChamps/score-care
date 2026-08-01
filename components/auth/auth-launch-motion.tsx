@@ -7,6 +7,7 @@ import {
   launchVideoMaxSeconds,
   launchVideoSrc,
   markLaunchVideoPlayed,
+  playLaunchVideo,
   wasLaunchVideoRecentlyPlayed,
 } from "@/lib/launch-video";
 
@@ -75,7 +76,7 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
     disablePictureInPicture
     controlsList="nodownload nofullscreen noremoteplayback"
     onCanPlay={(event) => {
-      event.currentTarget.play().catch(() => undefined);
+      playLaunchVideo(event.currentTarget).catch(stopLaunchVideo);
     }}
     onPlaying={revealVideo}
     onTimeUpdate={(event) => {
