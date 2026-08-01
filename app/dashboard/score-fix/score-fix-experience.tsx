@@ -93,7 +93,7 @@ type CibilRepairRequest = {
 type RepairDocumentForm = {
   closingDate: string;
   error: string;
-  file: File | null;
+  files: File[];
   remarks: string;
   uploaded: boolean;
   uploading: boolean;
@@ -772,7 +772,7 @@ function CreditImprovementPlan({
       const existingForm = currentForms[accountId] ?? {
         closingDate: "",
         error: "",
-        file: null,
+        files: [],
         remarks: "",
         uploaded: false,
         uploading: false,
@@ -809,8 +809,8 @@ function CreditImprovementPlan({
     for (const account of uploadAccounts) {
       const form = documentForms[account.id];
 
-      if (!form?.file) {
-        updateDocumentForm(account.id, { error: "Document upload is required." });
+      if (!form?.files.length) {
+        updateDocumentForm(account.id, { error: "At least one document upload is required." });
         return false;
       }
 
@@ -819,7 +819,7 @@ function CreditImprovementPlan({
         return false;
       }
 
-      const validationError = validateRepairDocumentFile(form.file);
+      const validationError = validateRepairDocumentFiles(form.files);
 
       if (validationError) {
         updateDocumentForm(account.id, { error: validationError });
@@ -830,7 +830,7 @@ function CreditImprovementPlan({
     for (const account of uploadAccounts) {
       const form = documentForms[account.id];
 
-      if (!form || form.uploaded || !form.file) continue;
+      if (!form || form.uploaded || !form.files.length) continue;
 
       updateDocumentForm(account.id, { error: "", uploading: true });
 
@@ -839,7 +839,9 @@ function CreditImprovementPlan({
       formData.append(isCreditCardAccount(account.accountType) ? "creditCardNumber" : "loanNumber", account.accountNumber);
       formData.append("closingDate", form.closingDate);
       formData.append("remarks", form.remarks);
-      formData.append("file", form.file);
+      form.files.forEach((file) => {
+        formData.append("file", file);
+      });
 
       try {
         const response = await apiRequest("/api/credit-repair/documents", {
@@ -1203,19 +1205,20 @@ function RepairDocumentUploadDialog({
                   <RepairDocumentField label="Document" required>
                     <label className="grid min-h-28 cursor-pointer place-items-center rounded-[20px] border border-dashed border-[#22F2C2]/30 bg-[#0A1725] px-4 text-center text-[#AAB6C8]">
                       <input
-                        accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png"
                         className="sr-only"
+                        multiple
                         required
                         type="file"
                         onChange={(event) => {
-                          const file = event.target.files?.[0] ?? null;
-                          onChange(account.id, { error: file ? validateRepairDocumentFile(file) : "", file, uploaded: false });
+                          const files = Array.from(event.target.files ?? []);
+                          onChange(account.id, { error: validateRepairDocumentFiles(files), files, uploaded: false });
                         }}
                       />
                       <span className="w-full min-w-0">
                         <Upload className="mx-auto size-8 text-[#22F2C2]" />
-                        <span className="mt-3 block truncate text-xs font-bold text-white">{form?.file?.name || "Choose document"}</span>
-                        <span className="mt-2 block text-caption text-[#AAB6C8]">PDF, JPG, JPEG, or PNG. Max 5MB.</span>
+                        <span className="mt-3 block truncate text-xs font-bold text-white">{formatSelectedRepairFiles(form?.files) || "Choose documents"}</span>
+                        <span className="mt-2 block text-caption text-[#AAB6C8]">PDF, DOC, DOCX, JPG, JPEG, or PNG. Max 5MB each.</span>
                       </span>
                     </label>
                   </RepairDocumentField>
@@ -1317,21 +1320,40 @@ function getRepairDocumentType(accountType: string) {
   return isCreditCardAccount(accountType) ? "Credit card closure proof" : "Loan closure proof";
 }
 
+function validateRepairDocumentFiles(files: File[]) {
+  if (!files.length) return "";
+
+  for (const file of files) {
+    const error = validateRepairDocumentFile(file);
+
+    if (error) return error;
+  }
+
+  return "";
+}
+
 function validateRepairDocumentFile(file: File) {
-  const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
-  const allowedExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
+  const allowedTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "image/jpeg", "image/png"];
+  const allowedExtensions = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"];
   const hasAllowedType = allowedTypes.includes(file.type);
   const hasAllowedExtension = allowedExtensions.some((extension) => file.name.toLowerCase().endsWith(extension));
 
   if (!hasAllowedType && !hasAllowedExtension) {
-    return "Only PDF, JPG, JPEG, or PNG files are allowed.";
+    return "Only PDF, DOC, DOCX, JPG, JPEG, or PNG files are allowed.";
   }
 
   if (file.size > 5 * 1024 * 1024) {
-    return "File size must be 5MB or less.";
+    return `${file.name} must be 5MB or less.`;
   }
 
   return "";
+}
+
+function formatSelectedRepairFiles(files?: File[]) {
+  if (!files?.length) return "";
+  if (files.length === 1) return files[0].name;
+
+  return `${files.length} documents selected`;
 }
 
 function clampScore(score: number) {
