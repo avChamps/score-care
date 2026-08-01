@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
-import { launchVideoSrc, markLaunchVideoPlayed } from "@/lib/launch-video";
+import {
+  launchVideoMaxSeconds,
+  launchVideoSrc,
+  markLaunchVideoPlayed,
+  wasLaunchVideoRecentlyPlayed,
+} from "@/lib/launch-video";
 
 export default function LoadingPage() {
   const router = useRouter();
@@ -29,9 +34,14 @@ export default function LoadingPage() {
   }, [router]);
 
   useEffect(() => {
+    if (wasLaunchVideoRecentlyPlayed()) {
+      continueToApp();
+      return;
+    }
+
     markLaunchVideoPlayed();
 
-    const timer = window.setTimeout(continueToApp, 3500);
+    const timer = window.setTimeout(continueToApp, launchVideoMaxSeconds * 1000);
 
     return () => {
       window.clearTimeout(timer);
@@ -56,7 +66,6 @@ export default function LoadingPage() {
     <div className="fixed inset-0 z-[120] h-[100dvh] w-[100vw] overflow-hidden bg-[#020B18]">
       <video
         autoPlay
-        muted
         playsInline
         preload="auto"
         controls={false}
@@ -66,6 +75,11 @@ export default function LoadingPage() {
           event.currentTarget.play().catch(() => undefined);
         }}
         onPlaying={revealVideo}
+        onTimeUpdate={(event) => {
+          if (event.currentTarget.currentTime >= launchVideoMaxSeconds) {
+            continueToApp();
+          }
+        }}
         onEnded={continueToApp}
         onError={continueToApp}
         className={`launch-video-element absolute inset-0 h-full w-full object-fill transition-opacity duration-150 ${videoVisible ? "opacity-100" : "opacity-0"}`}

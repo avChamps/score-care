@@ -1,7 +1,8 @@
-export const launchVideoSrc = "/loginpage-animation-20260617.mp4";
+export const launchVideoSrc = "/login-animation.mp4";
+export const launchVideoMaxSeconds = 6;
 
 const launchVideoSessionKey = "scorecare_launch_video_played_at";
-const launchReplayWindowMs = 10_000;
+const launchReplayWindowMs = 60_000;
 
 export function markLaunchVideoPlayed() {
   if (typeof window === "undefined") return;

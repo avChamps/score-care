@@ -660,9 +660,7 @@ export function HomeDashboard() {
 
           <div className="mt-10 max-w-sm sm:mt-16">
             <div className="min-w-0">
-              <p className="text-title font-medium italic leading-5 text-[#10206B] sm:text-heading sm:leading-6">Up to</p>
-              <h1 className="mt-1 text-[31px] font-bold italic leading-none text-[#10206B] sm:text-[35px]"><AnimatedNumber value="800+" /></h1>
-              <p className="mt-1.5 text-heading font-medium leading-5 text-white sm:text-heading sm:leading-6">Credit Ready</p>
+              <h1 className="max-w-[19rem] text-[28px] font-black leading-tight text-white drop-shadow-[0_10px_24px_rgba(11,37,69,0.26)] sm:text-[34px]">Take control of your credit</h1>
 
                 <p className="mt-4 inline-flex items-center rounded-full bg-[#112C8F] px-4 py-2 text-white shadow-[0_12px_26px_rgba(17,44,143,0.22)] sm:mt-5">
                   <span className="text-base font-medium sm:text-lg">

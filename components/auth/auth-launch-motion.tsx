@@ -3,7 +3,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { launchVideoSrc, markLaunchVideoPlayed, wasLaunchVideoRecentlyPlayed } from "@/lib/launch-video";
+import {
+  launchVideoMaxSeconds,
+  launchVideoSrc,
+  markLaunchVideoPlayed,
+  wasLaunchVideoRecentlyPlayed,
+} from "@/lib/launch-video";
 
 type AuthLaunchMotionProps = {
   children: ReactNode;
@@ -26,6 +31,10 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
 
     markLaunchVideoPlayed();
     setShowLaunch(true);
+  }, []);
+
+  const stopLaunchVideo = useCallback(() => {
+    setShowLaunch(false);
   }, []);
 
   useEffect(() => {
@@ -60,7 +69,6 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
 <motion.div className="fixed inset-0 z-[99999] h-[100dvh] w-[100vw] overflow-hidden bg-[#020B18]">
   <video
     autoPlay
-    muted
     playsInline
     preload="auto"
     controls={false}
@@ -70,8 +78,13 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
       event.currentTarget.play().catch(() => undefined);
     }}
     onPlaying={revealVideo}
-    onEnded={() => setShowLaunch(false)}
-    onError={() => setShowLaunch(false)}
+    onTimeUpdate={(event) => {
+      if (event.currentTarget.currentTime >= launchVideoMaxSeconds) {
+        stopLaunchVideo();
+      }
+    }}
+    onEnded={stopLaunchVideo}
+    onError={stopLaunchVideo}
     className={`launch-video-element absolute inset-0 h-full w-full object-fill transition-opacity duration-150 ${videoVisible ? "opacity-100" : "opacity-0"}`}
   >
     <source src={launchVideoSrc} type="video/mp4" />
