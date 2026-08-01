@@ -92,6 +92,7 @@ export function LoginFlow() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [consent, setConsent] = useState(false);
   const [otpError, setOtpError] = useState("");
+  const [isOtpFocused, setIsOtpFocused] = useState(false);
   const [profileError, setProfileError] = useState("");
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
@@ -109,6 +110,7 @@ export function LoginFlow() {
   const cleanPan = pan.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
   const canProceed = cleanMobile.length === 10 && signupConsent;
   const canVerifyOtp = cleanOtp.length === 6;
+  const activeOtpIndex = Math.min(cleanOtp.length, otpDigits.length - 1);
   const canSubmit =
     /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(cleanPan) &&
     name.trim().length > 2 &&
@@ -206,6 +208,7 @@ export function LoginFlow() {
 
       void trackEvent("otp_requested", { page_name: "login" });
       setOtpDigits(["", "", "", "", "", ""]);
+      setIsOtpFocused(true);
       setOtpSeconds(45);
       setStep("otp");
     } catch {
@@ -611,6 +614,8 @@ export function LoginFlow() {
                     ref={otpInputRef}
                     value={cleanOtp}
                     onChange={(event) => updateOtpValue(event.target.value)}
+                    onFocus={() => setIsOtpFocused(true)}
+                    onBlur={() => setIsOtpFocused(false)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") void verifyOtp();
                     }}
@@ -628,7 +633,12 @@ export function LoginFlow() {
                     <div
                       key={index}
                       id={`otp-${index}`}
-                      className="flex aspect-square w-full items-center justify-center rounded-2xl border border-white/10 bg-[#071626] text-center text-heading font-semibold text-white outline-none transition"
+                      className={cn(
+                        "flex aspect-square w-full items-center justify-center rounded-2xl border bg-[#071626] text-center text-heading font-semibold text-white outline-none transition",
+                        isOtpFocused && !canVerifyOtp && index === activeOtpIndex
+                          ? "border-[#22F2C2]/45 bg-[#0B2B2E] text-[#5EF2C2]"
+                          : "border-white/10",
+                      )}
                       aria-hidden="true"
                     >
                       {digit}
