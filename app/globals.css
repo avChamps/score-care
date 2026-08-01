@@ -14,20 +14,20 @@
   --peach: #ffb38a;
   --yellow: #f8d96b;
   --paper: #fffdf7;
-  --portal-bg: #f5f5f5;
-  --portal-surface: #ffffff;
-  --portal-surface-soft: #f8fafc;
-  --portal-ink: #172033;
-  --portal-muted: #667085;
-  --portal-blue: #1677ff;
-  --portal-blue-deep: #0958d9;
-  --portal-blue-soft: #eef6ff;
+  --portal-bg: #06111f;
+  --portal-surface: #0b1728;
+  --portal-surface-soft: #101f33;
+  --portal-ink: #f8fafc;
+  --portal-muted: #9fb2c6;
+  --portal-blue: #14b8a6;
+  --portal-blue-deep: #0f766e;
+  --portal-blue-soft: rgba(20, 184, 166, 0.12);
   --portal-orange: #ff6d00;
   --portal-orange-deep: #e65a00;
-  --portal-orange-soft: #fff4eb;
-  --portal-border: #e2e5ea;
-  --portal-shadow: 0 2px 10px rgba(16, 24, 40, 0.08);
-  --portal-shadow-soft: 0 1px 4px rgba(16, 24, 40, 0.06);
+  --portal-orange-soft: rgba(255, 109, 0, 0.14);
+  --portal-border: rgba(148, 163, 184, 0.16);
+  --portal-shadow: 0 22px 70px rgba(0, 0, 0, 0.36);
+  --portal-shadow-soft: 0 14px 38px rgba(0, 0, 0, 0.24);
   --portal-radius: 1rem;
 }
 
@@ -48,14 +48,14 @@
   --text-title--line-height: 1.625rem;
   --text-heading: 22px;
   --text-heading--line-height: 1.75rem;
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-poppins);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-poppins), Arial, Helvetica, sans-serif;
   font-size: 16px;
   line-height: 1.4;
   overflow-x: hidden;
@@ -104,7 +104,7 @@ html.translated-rtl body {
 }
 
 .native-shell body {
-  background: var(--portal-bg);
+  background: #050912;
 }
 
 .native-shell,
@@ -146,7 +146,7 @@ html.translated-rtl body {
 .native-shell .portal-theme .sticky.top-0 {
   top: 0;
   padding-top: calc(env(safe-area-inset-top, 0) + 0.75rem);
-  background: #ffffff;
+  background: #050912;
 }
 
 .native-shell .portal-theme nav.fixed.bottom-0 {
@@ -392,24 +392,39 @@ body:has(.auth-page) *::-webkit-scrollbar {
 
 .portal-theme {
   color: var(--portal-ink);
-  background: var(--portal-bg);
-  font-family: Inter, var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 50% -12%, rgba(20, 184, 166, 0.20), transparent 34rem),
+    linear-gradient(180deg, #081525 0%, #050912 52%, #07111f 100%);
+  font-family: var(--font-poppins), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .portal-theme::before {
-  content: none;
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at center, transparent 58%, rgba(20, 184, 166, 0.08) 59%, transparent 61%),
+    linear-gradient(rgba(148, 163, 184, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
+  background-position: center 2rem, 0 0, 0 0;
+  background-size: 148px 148px, 28px 28px, 28px 28px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 78%);
+  z-index: 0;
 }
 
 .portal-theme .portal-surface {
   border-color: var(--portal-border);
-  background: #ffffff;
+  background: linear-gradient(180deg, rgba(15, 31, 51, 0.94), rgba(9, 19, 33, 0.94));
   box-shadow: var(--portal-shadow-soft);
 }
 
 .portal-theme .portal-card {
   border-color: var(--portal-border);
-  background: #ffffff;
-  box-shadow: var(--portal-shadow-soft);
+  background:
+    linear-gradient(180deg, rgba(17, 30, 49, 0.94), rgba(10, 18, 31, 0.96)),
+    radial-gradient(circle at 86% 0%, rgba(20, 184, 166, 0.12), transparent 16rem);
+  box-shadow: var(--portal-shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .portal-theme .portal-focus:focus-visible,
@@ -500,14 +515,14 @@ body:has(.auth-page) *::-webkit-scrollbar {
 .portal-theme textarea,
 .portal-theme select {
   border-color: var(--portal-border);
-  background-color: #ffffff;
+  background-color: rgba(5, 12, 22, 0.58);
   color: var(--portal-ink);
   border-radius: 1rem;
 }
 
 .portal-theme input::placeholder,
 .portal-theme textarea::placeholder {
-  color: #98a2b3;
+  color: rgba(159, 178, 198, 0.72);
 }
 
 .portal-theme .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
@@ -515,11 +530,11 @@ body:has(.auth-page) *::-webkit-scrollbar {
 }
 
 .portal-theme .bg-slate-950\/45 {
-  background-color: rgba(23, 32, 51, 0.42) !important;
+  background-color: rgba(5, 9, 18, 0.72) !important;
 }
 
 .portal-theme .border-dashed {
-  border-color: #cfd6df !important;
+  border-color: rgba(148, 163, 184, 0.24) !important;
 }
 
 .portal-theme .hover\:-translate-y-0\.5:hover,

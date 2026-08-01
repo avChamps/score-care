@@ -41,8 +41,8 @@ export function PortalShell({ active, children, variant = "user" }: PortalShellP
       <DashboardAuthGuard />
       <div className="relative z-10 mx-auto grid min-h-screen max-w-7xl lg:h-screen lg:grid-cols-[16rem_minmax(0,1fr)]">
         {sidebarItems.length ? (
-          <aside className="hidden border-r border-[var(--portal-border)] bg-white/92 px-4 py-6 lg:block">
-            <p className="px-3 text-tiny font-black uppercase tracking-[0.16em] text-[var(--portal-orange)]">{variant === "admin" ? "Admin" : "Scorecare"}</p>
+          <aside className="hidden border-r border-[var(--portal-border)] bg-[#07111F]/88 px-4 py-6 shadow-[inset_-1px_0_0_rgba(255,255,255,0.03)] lg:block">
+            <p className="px-3 text-tiny font-black uppercase tracking-[0.16em] text-[#14B8A6]">{variant === "admin" ? "Admin" : "Scorecare"}</p>
             <nav className="mt-5 space-y-1">
               {sidebarItems.map(({ active: itemActive, label, href, Icon }) => {
                 const isActive = active === itemActive;
@@ -58,7 +58,7 @@ export function PortalShell({ active, children, variant = "user" }: PortalShellP
                     data-dashboard-admin={variant === "admin" ? "true" : undefined}
                     className={cn(
                       "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-black transition",
-                      isActive ? "bg-[var(--portal-orange-soft)] text-[var(--portal-orange)]" : "text-[var(--portal-muted)] hover:bg-[var(--portal-blue-soft)] hover:text-[var(--portal-blue)]",
+                      isActive ? "bg-[#14B8A6]/14 text-[#5EF2C2] shadow-[inset_0_0_0_1px_rgba(94,242,194,0.18)]" : "text-[var(--portal-muted)] hover:bg-white/[0.04] hover:text-white",
                     )}
                   >
                     <Icon className="size-4" />
@@ -99,7 +99,7 @@ export function DashboardHeaderHomeControl({ className, iconClassName, onMenuCli
 }
 
 export function PageContent({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8", className)}>{children}</div>;
+  return <div className={cn("mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8", className)}>{children}</div>;
 }
 
 type AppCardProps = ComponentPropsWithoutRef<"div"> & {
@@ -128,7 +128,7 @@ export function PrimaryPortalButton({ children, href, className, ...props }: Pri
     props["data-dashboard-logout" as keyof typeof props] === "true";
   const disabledByDashboardLock = dashboardActionsDisabled && !bypassDashboardLock;
   const classes = cn(
-    "inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-xl border border-[var(--portal-orange)] bg-[var(--portal-orange)] px-5 text-xs font-black text-white shadow-[0_2px_6px_rgba(255,109,0,0.24)] transition hover:bg-[var(--portal-orange-deep)] sm:h-11 sm:text-sm",
+    "inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-xl border border-[#5EF2C2]/35 bg-[#14B8A6] px-5 text-xs font-black text-[#03110E] shadow-[0_12px_28px_rgba(20,184,166,0.22)] transition hover:bg-[#5EF2C2] sm:h-11 sm:text-sm",
     className,
   );
 
