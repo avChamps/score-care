@@ -249,11 +249,11 @@ export function LoansExperience() {
     }
 
     if (loanStatusFilter === "Loans") {
-      return loans.filter((loan) => LOAN_ACCOUNT_TYPES.has(loan.accountType));
+      return loans.filter(isLoanListLoan);
     }
 
     if (loanStatusFilter === "Credit Cards") {
-      return loans.filter((loan) => CREDIT_CARD_ACCOUNT_TYPES.has(loan.accountType));
+      return loans.filter(isLoanListCreditCard);
     }
 
     return loans;
@@ -1747,6 +1747,14 @@ function readAccountType(account: CreditAccount) {
 
 function isCrifLoanAccountType(accountType: string) {
   return Boolean(accountType && !/^\d+$/.test(accountType) && accountType.toLowerCase() !== "credit card");
+}
+
+function isLoanListLoan(loan: Loan) {
+  return !isLoanListCreditCard(loan);
+}
+
+function isLoanListCreditCard(loan: Loan) {
+  return CREDIT_CARD_ACCOUNT_TYPES.has(loan.accountType) || loan.accountType.toLowerCase() === "credit card" || loan.loanType.toLowerCase() === "credit card";
 }
 
 function normalizeAccountCode(value: unknown) {

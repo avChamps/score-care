@@ -65,6 +65,7 @@ type CreditAccount = {
   account_closed?: string | null;
   last_payment?: string | null;
   CAIS_Account_History?: PaymentHistoryItem[] | null;
+  "COMBINED-PAYMENT-HISTORY"?: string | null;
   payment_history?: string[] | null;
   payment_frequency?: string | null;
   payment_history_details?: PaymentHistoryItem[] | null;
@@ -79,6 +80,7 @@ type CrifLoanDetails = Record<string, unknown> & {
   "ACCT-TYPE"?: string | number | null;
   "ACTUAL-PAYMENT"?: string | number | null;
   "CLOSED-DATE"?: string | null;
+  "COMBINED-PAYMENT-HISTORY"?: string | null;
   "CREDIT-GUARANTOR"?: string | null;
   "CREDIT-LIMIT"?: string | number | null;
   "CURRENT-BAL"?: string | number | null;
@@ -1771,6 +1773,8 @@ function mapCrifReportAccount(account: CrifLoanDetails): CreditAccount {
     last_payment: account["LAST-PAYMENT-DATE"],
     member_name: account["CREDIT-GUARANTOR"] ?? null,
     opened: account["DISBURSED-DT"],
+    CAIS_Account_History: parseCrifPaymentHistory(account["COMBINED-PAYMENT-HISTORY"]),
+    "COMBINED-PAYMENT-HISTORY": account["COMBINED-PAYMENT-HISTORY"] ?? null,
     repayment_tenure: account["REPAYMENT-TENURE"],
     type: String(account["ACCT-TYPE"] ?? "").trim(),
   };
@@ -1808,7 +1812,17 @@ function isLoanAccount(account: CreditAccount) {
 }
 
 function isCardAccount(account: CreditAccount) {
-  return isCreditCard(readAccountType(account));
+  const portfolioType = readPortfolioType(account);
+
+  if (portfolioType === "R") {
+    return true;
+  }
+
+  if (portfolioType === "I") {
+    return false;
+  }
+
+  return isCreditCard(getAccountTypeLabel(account));
 }
 
 function isCreditCard(type = "") {
@@ -1932,7 +1946,39 @@ function readPaymentHistory(account: CreditAccount) {
     return account.payment_history_details;
   }
 
-  return [];
+  return parseCrifPaymentHistory(account["COMBINED-PAYMENT-HISTORY"]);
+}
+
+function parseCrifPaymentHistory(value: unknown): PaymentHistoryItem[] {
+  const history = String(value ?? "").trim();
+
+  if (!history) {
+    return [];
+  }
+
+  return history
+    .split("|")
+    .map((entry) => {
+      const [period = "", status = ""] = entry.split(",");
+      const [monthName = "", yearValue = ""] = period.split(":");
+      const [dpdValue = "", classification = ""] = status.split("/");
+      const dpd = Number(dpdValue);
+
+      return {
+        Year: Number(yearValue) || 0,
+        Month: readMonthNumber(monthName),
+        Days_Past_Due: Number.isFinite(dpd) ? dpd : 0,
+        Asset_Classification: classification || "",
+      };
+    })
+    .filter((item) => item.Year && item.Month);
+}
+
+function readMonthNumber(value: unknown) {
+  const month = String(value ?? "").trim().slice(0, 3).toLowerCase();
+  const monthIndex = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(month);
+
+  return monthIndex >= 0 ? monthIndex + 1 : 0;
 }
 
 function formatMonthYear(year: unknown, month: unknown) {
