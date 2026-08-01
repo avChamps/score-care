@@ -11,6 +11,7 @@ public class MainActivity extends BridgeActivity implements PaymentResultWithDat
         registerPlugin(NativeReportDownloadPlugin.class);
         registerPlugin(NativeOtpReaderPlugin.class);
         registerPlugin(NativeRazorpayPlugin.class);
+        registerPlugin(NativeAppLockPlugin.class);
         super.onCreate(savedInstanceState);
     }
 

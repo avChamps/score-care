@@ -19,8 +19,11 @@ import {
   CreditCard,
   Crown,
   FileText,
+  Fingerprint,
   Headphones,
+  KeyRound,
   Lightbulb,
+  LockKeyhole,
   Languages,
   ReceiptText,
   LogOut,
@@ -59,6 +62,7 @@ import { PremiumBenefitsIntro, ProBenefitsComparisonSheet, SubscribePromptOverla
 import { Skeleton } from "@/components/ui/skeleton";
 import { CibilDisplayDataError, clearCachedCibilDisplayData, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { apiRequest, apiUrl } from "@/lib/api";
+import { canUseBiometricAppLock, disableAppLock, disableBiometricAppLock, enableBiometricAppLock, readAppLockSettings, saveAppLockPin } from "@/lib/app-lock";
 import { clearScorecareSession, isTokenExpired, logoutScorecareSession } from "@/lib/auth-session";
 import { replaceAfterPaymentSuccess } from "@/lib/payment-navigation";
 import { logCrashlyticsMessage, setSafeUserId, trackEvent } from "@/src/lib/analytics";
@@ -2251,6 +2255,116 @@ function LanguageSettingsPopup({
   );
 }
 
+function AppLockSettingsPopup({ onClose }: { onClose: () => void }) {
+  const [settings, setSettings] = useState(() => readAppLockSettings());
+  const [pin, setPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const biometricAvailable = canUseBiometricAppLock();
+
+  async function savePin() {
+    if (pin.length < 4 || pin !== confirmPin || saving) {
+      setMessage(pin.length < 4 ? "Enter a 4 to 6 digit PIN." : "PINs do not match.");
+      return;
+    }
+
+    setSaving(true);
+    setMessage("");
+
+    try {
+      await saveAppLockPin(pin);
+      setSettings(readAppLockSettings());
+      setPin("");
+      setConfirmPin("");
+      setMessage("App lock enabled.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleBiometric(enabled: boolean) {
+    setSaving(true);
+    setMessage("");
+
+    try {
+      if (enabled) {
+        await enableBiometricAppLock();
+        setMessage("Biometric unlock enabled.");
+      } else {
+        await disableBiometricAppLock();
+        setMessage("Biometric unlock disabled.");
+      }
+
+      setSettings(readAppLockSettings());
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to update biometric unlock.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function turnOffAppLock() {
+    disableAppLock();
+    setSettings(readAppLockSettings());
+    setPin("");
+    setConfirmPin("");
+    setMessage("App lock disabled.");
+  }
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-end bg-black/60 px-4 pb-4 backdrop-blur-sm">
+      <section className="mx-auto w-full max-w-md overflow-hidden rounded-[30px] bg-[#0D131C] p-5 text-white shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-caption font-semibold uppercase tracking-[0.18em] text-[#22F2C2]">Security</p>
+            <h2 className="mt-1 text-title font-bold">App Security Lock</h2>
+          </div>
+          <button className="grid size-9 place-items-center rounded-full bg-white/10 text-white" type="button" aria-label="Close app lock settings" onClick={onClose}>
+            <X className="size-5" />
+          </button>
+        </div>
+
+        <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.05] p-4">
+          <div className="flex items-start gap-3">
+            <KeyRound className="mt-1 size-5 text-[#22F2C2]" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold">PIN fallback</p>
+              <p className="mt-1 text-caption leading-5 text-[#AAB6C8]">Required before enabling biometric unlock.</p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <input className="h-11 rounded-[16px] border border-white/10 bg-[#070B12] px-3 text-center text-sm font-bold tracking-[0.25em] outline-none" inputMode="numeric" maxLength={6} placeholder="PIN" type="password" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 6))} />
+            <input className="h-11 rounded-[16px] border border-white/10 bg-[#070B12] px-3 text-center text-sm font-bold tracking-[0.25em] outline-none" inputMode="numeric" maxLength={6} placeholder="Confirm" type="password" value={confirmPin} onChange={(event) => setConfirmPin(event.target.value.replace(/\D/g, "").slice(0, 6))} />
+          </div>
+
+          <button className="mt-4 h-11 w-full rounded-[16px] bg-[#22F2C2] text-sm font-black text-[#04120e] disabled:opacity-50" disabled={saving} type="button" onClick={() => void savePin()}>
+            {settings.enabled ? "Update PIN" : "Enable App Lock"}
+          </button>
+        </div>
+
+        <label className="mt-4 flex items-center gap-4 rounded-[22px] border border-white/10 bg-white/[0.05] p-4">
+          <Fingerprint className="size-5 text-[#AAB6C8]" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold">Biometric unlock</span>
+            <span className="mt-1 block text-caption leading-5 text-[#6F7B8E]">{biometricAvailable ? "Use Face ID, fingerprint, or device screen lock." : "Not available on this device/browser."}</span>
+          </span>
+          <input className="size-5 accent-[#2DB094] disabled:opacity-50" type="checkbox" checked={settings.biometricEnabled} disabled={!settings.enabled || !biometricAvailable || saving} onChange={(event) => void toggleBiometric(event.target.checked)} />
+        </label>
+
+        {message ? <p className="mt-3 text-center text-caption font-semibold text-[#AAB6C8]">{message}</p> : null}
+
+        {settings.enabled ? (
+          <button className="mt-4 h-11 w-full rounded-[16px] border border-[#FF5C8A]/25 bg-[#FF5C8A]/10 text-sm font-bold text-[#FF8AAB]" type="button" onClick={turnOffAppLock}>
+            Turn off app lock
+          </button>
+        ) : null}
+      </section>
+    </div>
+  );
+}
+
 export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, onProfileUpdate, profile }: { name: string; onClose: () => void; onHelp: () => void; onLanguageLoadingChange: (loading: boolean) => void; onProfileUpdate: (profile: UserProfile | null) => void; profile: UserProfile | null }) {
   const router = useRouter();
   const phone = profile?.mobileNumber || localStorage.getItem("scorecare_mobile_number") || "--";
@@ -2265,6 +2379,7 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
   const [ratingLoading, setRatingLoading] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
   const [selectedLanguage, setSelectedLanguage] = useState(() => normalizeLanguageCode(profile?.selectedLanguage) || readStoredLanguage());
+  const [showAppLockSettings, setShowAppLockSettings] = useState(false);
   const [showRatingForm, setShowRatingForm] = useState(false);
   const [showDownloadReports, setShowDownloadReports] = useState(false);
   const [showLanguageSettings, setShowLanguageSettings] = useState(false);
@@ -2644,6 +2759,13 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
         ) : null}
 
         <ProfileOption
+          title="App Security Lock"
+          subtitle="PIN lock with biometric unlock when available"
+          Icon={LockKeyhole}
+          onClick={() => setShowAppLockSettings(true)}
+        />
+
+        <ProfileOption
           title="Language Settings"
           subtitle={languageOptions.find((language) => language.code === selectedLanguage)?.label || profile?.selectedLanguage || "English"}
           Icon={Languages}
@@ -2709,6 +2831,10 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
           onClose={() => setShowLanguageSettings(false)}
           onSelect={(language) => void updateSelectedLanguage(language)}
         />
+      ) : null}
+
+      {showAppLockSettings ? (
+        <AppLockSettingsPopup onClose={() => setShowAppLockSettings(false)} />
       ) : null}
 
       {showDeleteAccount ? (

@@ -40,6 +40,8 @@
 	<string>ScoreCare uses camera access only when the payment gateway requires scanning payment details.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>ScoreCare uses photo library access only when the payment gateway requires uploading or scanning payment details.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>ScoreCare uses Face ID to unlock the app when App Security Lock is enabled.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
