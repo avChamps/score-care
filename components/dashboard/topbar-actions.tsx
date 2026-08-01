@@ -406,12 +406,30 @@ function NotificationsDrawer({ onClose, onUnreadCountChange }: { onClose: () => 
 
   return (
     <>
-      <DrawerHeader eyebrow="Alerts center" icon={<Bell className="size-5" />} onClose={onClose} title="Notifications" />
-      <div className="drawer-scroll min-h-0 flex-1 overflow-y-auto px-4 py-5" onScroll={handleNotificationsScroll}>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <p className="text-xs font-bold text-[var(--portal-muted)]">{unreadCount} unread</p>
+      <div className="shrink-0 border-b border-white/[0.08] bg-[#070B12] px-4 py-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="grid size-10 place-items-center rounded-full border border-[#5EF2C2]/20 bg-[#5EF2C2]/10 text-[#5EF2C2]">
+              <Bell className="size-5" />
+            </span>
+            <div>
+              <p className="text-tiny font-bold uppercase tracking-[0.14em] text-[#5EF2C2]">Alerts</p>
+              <h2 className="text-base font-bold leading-5 text-white">Notifications</h2>
+            </div>
+          </div>
+          <button aria-label="Close drawer" className="grid size-9 place-items-center rounded-full border border-white/[0.08] bg-[#111821] text-[#AAB6C8] transition hover:border-[#5EF2C2]/50 hover:text-[#5EF2C2]" type="button" onClick={onClose}>
+            <X className="size-4" />
+          </button>
+        </div>
+      </div>
+      <div className="drawer-scroll min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_50%_0%,rgba(20,184,166,0.10),transparent_18rem),#050912] px-4 py-5" onScroll={handleNotificationsScroll}>
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-[20px] border border-white/[0.08] bg-[#0B121D]/90 px-4 py-3">
+          <div>
+            <p className="text-tiny font-bold uppercase tracking-[0.12em] text-[#7E91A8]">Unread</p>
+            <p className="mt-0.5 text-sm font-black text-white">{unreadCount}</p>
+          </div>
           <button
-            className="rounded-full border border-[var(--portal-border)] bg-white px-3 py-1.5 text-caption font-black text-[var(--portal-muted)] shadow-sm transition hover:border-[var(--portal-blue)] hover:text-[var(--portal-blue)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full border border-[#5EF2C2]/20 bg-[#5EF2C2]/10 px-3 py-1.5 text-caption font-bold text-[#5EF2C2] transition hover:border-[#5EF2C2]/50 hover:bg-[#5EF2C2]/15 disabled:cursor-not-allowed disabled:opacity-45"
             type="button"
             disabled={!unreadCount || markingAll}
             onClick={() => void markAllNotificationsRead()}
@@ -421,9 +439,9 @@ function NotificationsDrawer({ onClose, onUnreadCountChange }: { onClose: () => 
         </div>
 
         {error ? (
-          <div className="mb-4 rounded-2xl border border-rose-100 bg-rose-50 p-3">
-            <p className="text-xs font-bold leading-5 text-rose-700">{error}</p>
-            <button className="mt-2 rounded-full bg-white px-3 py-1.5 text-caption font-black text-rose-700" type="button" onClick={() => void loadNotifications()}>
+          <div className="mb-4 rounded-2xl border border-[#FF5C8A]/20 bg-[#FF5C8A]/10 p-3">
+            <p className="text-xs font-bold leading-5 text-[#FFB4C8]">{error}</p>
+            <button className="mt-2 rounded-full bg-white/10 px-3 py-1.5 text-caption font-black text-white" type="button" onClick={() => void loadNotifications()}>
               Retry
             </button>
           </div>
@@ -442,14 +460,14 @@ function NotificationsDrawer({ onClose, onUnreadCountChange }: { onClose: () => 
               />
             ))
           ) : (
-            <div className="rounded-[var(--portal-radius)] border border-[var(--portal-border)] bg-white p-5 text-center shadow-sm">
-              <p className="text-sm font-black text-[var(--portal-ink)]">No notifications yet</p>
-              <p className="mt-1 text-xs font-medium text-[var(--portal-muted)]">Loan and CIBIL updates will appear here.</p>
+            <div className="rounded-[22px] border border-white/[0.08] bg-[#101A29] p-5 text-center">
+              <p className="text-sm font-black text-white">No notifications yet</p>
+              <p className="mt-1 text-xs font-medium text-[#9fb2c6]">Loan and CIBIL updates will appear here.</p>
             </div>
           )}
           {loadingMore ? <NotificationLoadingCards count={1} /> : null}
           {!loading && notifications.length && !hasMore ? (
-            <p className="py-2 text-center text-caption font-bold text-[var(--portal-muted)]/70">You are all caught up</p>
+            <p className="py-2 text-center text-caption font-bold text-[#7E91A8]">You are all caught up</p>
           ) : null}
         </div>
       </div>
@@ -460,27 +478,29 @@ function NotificationsDrawer({ onClose, onUnreadCountChange }: { onClose: () => 
 function NotificationCard({ item, marking, onMarkRead }: { item: NotificationApiItem; marking: boolean; onMarkRead: () => void }) {
   const { Icon, tone: presentationTone } = getNotificationPresentation(item.type);
   const tone = {
-    amber: { rail: "border-l-[var(--portal-orange)]", icon: "bg-[var(--portal-orange-soft)] text-[var(--portal-orange)]" },
-    cyan: { rail: "border-l-[var(--portal-blue)]", icon: "bg-[var(--portal-blue-soft)] text-[var(--portal-blue)]" },
-    rose: { rail: "border-l-[#fb7185]", icon: "bg-rose-50 text-rose-600" },
-    slate: { rail: "border-l-slate-200", icon: "bg-[var(--portal-surface-soft)] text-[var(--portal-muted)]" },
+    amber: { icon: "bg-[#FF9D28]/12 text-[#FFB84D]", dot: "bg-[#FF9D28]" },
+    cyan: { icon: "bg-[#5EF2C2]/10 text-[#5EF2C2]", dot: "bg-[#5EF2C2]" },
+    rose: { icon: "bg-[#FF5C8A]/12 text-[#FF8AAB]", dot: "bg-[#FF5C8A]" },
+    slate: { icon: "bg-white/[0.06] text-[#9fb2c6]", dot: "bg-[#7E91A8]" },
   }[presentationTone];
 
   return (
-    <article className={cn("relative rounded-[var(--portal-radius)] border border-l-4 border-[var(--portal-border)] bg-white p-4 shadow-sm", tone.rail)}>
-      {!item.isRead ? <span className="absolute right-4 top-4 size-2 rounded-full bg-rose-500" /> : null}
-      <div className="flex gap-3 pr-4">
-        <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl", tone.icon)}>
+    <article className={cn("relative overflow-hidden rounded-[22px] border p-4 transition", item.isRead ? "border-white/[0.08] bg-[#0B121D]" : "border-[#5EF2C2]/18 bg-[#101A29] shadow-[0_14px_30px_rgba(0,0,0,0.18)]")}>
+      <div className="flex gap-3">
+        <span className={cn("grid size-10 shrink-0 place-items-center rounded-2xl", tone.icon)}>
           <Icon className="size-4" strokeWidth={1.9} />
         </span>
-        <div className="min-w-0">
-          <h4 className="text-caption font-black text-[var(--portal-ink)]">{item.title || "Notification"}</h4>
-          <p className="mt-1 text-caption leading-4 text-[var(--portal-muted)]">{item.message || "You have a new update."}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <p className="text-caption font-medium text-[var(--portal-muted)]/70">{formatNotificationTime(item.createdAt)}</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <h4 className="text-[13px] font-bold leading-5 text-white">{item.title || "Notification"}</h4>
+            {!item.isRead ? <span className={cn("mt-1 size-2 shrink-0 rounded-full", tone.dot)} /> : null}
+          </div>
+          <p className="mt-1 text-caption leading-5 text-[#AAB6C8]">{item.message || "You have a new update."}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <p className="text-caption font-medium text-[#7E91A8]">{formatNotificationTime(item.createdAt)}</p>
             {!item.isRead ? (
               <button
-                className="rounded-full bg-[var(--portal-blue-soft)] px-2.5 py-1 text-caption font-black text-[var(--portal-blue)] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-full bg-[#5EF2C2]/10 px-2.5 py-1 text-caption font-bold text-[#5EF2C2] transition hover:bg-[#5EF2C2]/15 disabled:cursor-not-allowed disabled:opacity-50"
                 type="button"
                 disabled={marking}
                 onClick={onMarkRead}
@@ -499,13 +519,13 @@ function NotificationLoadingCards({ count = 3 }: { count?: number }) {
   return (
     <>
       {Array.from({ length: count }, (_, item) => (
-        <div key={item} className="rounded-[var(--portal-radius)] border border-[var(--portal-border)] bg-white p-4 shadow-sm">
+        <div key={item} className="rounded-[22px] border border-white/[0.08] bg-[#101A29] p-4">
           <div className="flex gap-3">
-            <span className="size-9 shrink-0 rounded-xl bg-slate-100 animate-pulse" />
+            <span className="size-10 shrink-0 rounded-2xl bg-white/10 animate-pulse" />
             <div className="min-w-0 flex-1 space-y-2">
-              <span className="block h-3 w-32 rounded-full bg-slate-100 animate-pulse" />
-              <span className="block h-3 w-full rounded-full bg-slate-100 animate-pulse" />
-              <span className="block h-3 w-20 rounded-full bg-slate-100 animate-pulse" />
+              <span className="block h-3 w-32 rounded-full bg-white/10 animate-pulse" />
+              <span className="block h-3 w-full rounded-full bg-white/10 animate-pulse" />
+              <span className="block h-3 w-20 rounded-full bg-white/10 animate-pulse" />
             </div>
           </div>
         </div>
