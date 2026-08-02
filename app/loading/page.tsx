@@ -64,6 +64,7 @@ export default function LoadingPage() {
   return (
     <div className="fixed inset-0 z-[120] h-[100dvh] w-[100vw] overflow-hidden bg-[#020B18]">
       <video
+        autoPlay
         playsInline
         preload="auto"
         controls={false}

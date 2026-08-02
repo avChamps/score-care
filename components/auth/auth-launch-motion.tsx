@@ -67,6 +67,7 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
     
 <motion.div className="fixed inset-0 z-[99999] h-[100dvh] w-[100vw] overflow-hidden bg-[#020B18]">
   <video
+    autoPlay
     playsInline
     preload="auto"
     controls={false}
