@@ -533,7 +533,7 @@ function CoinsTransactionList({ items }: { items: ListItem[] }) {
 
 function readData(result: unknown) {
   const data = result as { data?: unknown };
-  return (data?.data ?? result) as Record<string, any>;
+  return (data?.data ?? result) as Record<string, unknown>;
 }
 
 function readList(result: unknown, key: string): ListItem[] {

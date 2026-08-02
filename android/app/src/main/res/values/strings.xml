@@ -4,6 +4,6 @@
     <string name="title_activity_main">ScoreCare</string>
     <string name="package_name">in.scorecare.app</string>
     <string name="custom_url_scheme">in.scorecare.app</string>
-    <string name="facebook_app_id">fb934209316372673</string>
+    <string name="facebook_app_id">934209316372673</string>
     <string name="facebook_client_token">REPLACE_WITH_META_CLIENT_TOKEN</string>
 </resources>

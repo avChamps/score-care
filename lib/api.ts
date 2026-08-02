@@ -1,7 +1,6 @@
 import { Capacitor, CapacitorHttp, type HttpOptions } from "@capacitor/core";
 
-// const DEFAULT_API_BASE_URL = "https://scorecareapp.com/api";
-const DEFAULT_API_BASE_URL = "http://192.168.0.5:5000";
+const DEFAULT_API_BASE_URL = "https://scorecareapp.com/api";
 
 export const API_BASE_URL = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL);
 

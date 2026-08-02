@@ -1,16 +1,15 @@
-const path = require('path')
+import type { NextConfig } from "next";
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  output: 'export',
+const nextConfig: NextConfig = {
+  output: "export",
   images: {
     unoptimized: true,
   },
   devIndicators: false,
-  allowedDevOrigins: ['192.168.0.5'],
+  allowedDevOrigins: ["192.168.0.5"],
   turbopack: {
-    root: path.join(__dirname),
+    root: process.cwd(),
   },
-}
+};
 
-module.exports = nextConfig
+export default nextConfig;

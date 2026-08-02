@@ -182,7 +182,7 @@ export function DeleteAccountFlow({ mobileNumber, onClose, onDone }: DeleteAccou
             <p>This action is permanent. Once your account is deleted, it cannot be recovered.</p>
           </div>
 
-          <p className="mt-6 text-sm font-extrabold uppercase text-[#8FA8D4]">What you'll lose</p>
+          <p className="mt-6 text-sm font-extrabold uppercase text-[#8FA8D4]">What you&apos;ll lose</p>
           <ul className="mt-3 space-y-3 text-sm font-semibold leading-6 text-white">
             {[
               "Your credit score history and trend data will be permanently erased",

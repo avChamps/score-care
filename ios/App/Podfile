@@ -17,12 +17,12 @@ def capacitor_pods
   pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
   pod 'CapacitorNetwork', :path => '../../node_modules/@capacitor/network'
   pod 'CapacitorPushNotifications', :path => '../../node_modules/@capacitor/push-notifications'
-  pod 'FBSDKCoreKit', '~> 18.0.3'
 end
 
 target 'App' do
   capacitor_pods
   # Add your Pods here
+  pod 'FBSDKCoreKit', '~> 18.0.3'
   pod 'CapacitorFirebaseAnalytics/Analytics', :path => '../../node_modules/@capacitor-firebase/analytics'
   pod 'razorpay-pod'
 end
