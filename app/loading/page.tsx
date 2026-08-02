@@ -4,11 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearScorecareSession, isTokenExpired } from "@/lib/auth-session";
 import {
+  claimLaunchVideoPlayback,
   launchVideoMaxSeconds,
   launchVideoSrc,
   markLaunchVideoPlayed,
   playLaunchVideo,
-  wasLaunchVideoRecentlyPlayed,
 } from "@/lib/launch-video";
 
 export default function LoadingPage() {
@@ -35,12 +35,10 @@ export default function LoadingPage() {
   }, [router]);
 
   useEffect(() => {
-    if (wasLaunchVideoRecentlyPlayed()) {
+    if (!claimLaunchVideoPlayback()) {
       continueToApp();
       return;
     }
-
-    markLaunchVideoPlayed();
 
     const timer = window.setTimeout(continueToApp, launchVideoMaxSeconds * 1000);
 
@@ -66,7 +64,6 @@ export default function LoadingPage() {
   return (
     <div className="fixed inset-0 z-[120] h-[100dvh] w-[100vw] overflow-hidden bg-[#020B18]">
       <video
-        autoPlay
         playsInline
         preload="auto"
         controls={false}

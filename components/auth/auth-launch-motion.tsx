@@ -4,11 +4,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
+  claimLaunchVideoPlayback,
   launchVideoMaxSeconds,
   launchVideoSrc,
-  markLaunchVideoPlayed,
   playLaunchVideo,
-  wasLaunchVideoRecentlyPlayed,
 } from "@/lib/launch-video";
 
 type AuthLaunchMotionProps = {
@@ -28,9 +27,8 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
     const isMobileView = window.matchMedia("(max-width: 768px)").matches;
 
     if (!isNativeShell && !isMobileView) return;
-    if (wasLaunchVideoRecentlyPlayed()) return;
+    if (!claimLaunchVideoPlayback()) return;
 
-    markLaunchVideoPlayed();
     setShowLaunch(true);
   }, []);
 
@@ -69,7 +67,6 @@ export function AuthLaunchMotion({ children }: AuthLaunchMotionProps) {
     
 <motion.div className="fixed inset-0 z-[99999] h-[100dvh] w-[100vw] overflow-hidden bg-[#020B18]">
   <video
-    autoPlay
     playsInline
     preload="auto"
     controls={false}
