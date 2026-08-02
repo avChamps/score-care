@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Poppins } from "next/font/google";
 import { AppLifecycleProvider } from "@/components/layout/app-lifecycle-provider";
 import { AppShell } from "@/components/layout/app-shell";
+import { MetaPixel } from "@/components/layout/meta-pixel";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -67,6 +68,7 @@ export default function RootLayout({
         />
       </head>
       <body className="flex min-h-full flex-col bg-background text-foreground">
+        <MetaPixel />
         <AppLifecycleProvider>
           <AppShell>{children}</AppShell>
         </AppLifecycleProvider>

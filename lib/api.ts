@@ -210,5 +210,14 @@ function wait(ms: number) {
 }
 
 function normalizeApiBaseUrl(url: string) {
-  return url.replace(/\/+$/, "");
+  const normalizedUrl = url
+    .trim()
+    .replace(/^['"]+|['";\s]+$/g, "")
+    .replace(/\/+$/, "");
+
+  if (!/^https?:\/\//i.test(normalizedUrl)) {
+    return DEFAULT_API_BASE_URL;
+  }
+
+  return normalizedUrl;
 }

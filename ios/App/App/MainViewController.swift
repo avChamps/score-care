@@ -7,5 +7,6 @@ class MainViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(NativeRazorpayPlugin())
         bridge?.registerPluginInstance(UpiNavigationPlugin())
         bridge?.registerPluginInstance(NativeAppLockPlugin())
+        bridge?.registerPluginInstance(NativeMetaEventsPlugin())
     }
 }

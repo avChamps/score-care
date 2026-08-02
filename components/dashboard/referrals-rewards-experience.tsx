@@ -51,6 +51,7 @@ export function ReferralsRewardsExperience() {
     Redemptions: false,
   });
   const [applyingCode, setApplyingCode] = useState(false);
+  const [appliedRewardId, setAppliedRewardId] = useState("");
   const [redeemingRewardId, setRedeemingRewardId] = useState("");
   const [referralMe, setReferralMe] = useState<ReferralMe | null>(null);
   const [wallet, setWallet] = useState<Wallet | null>(null);
@@ -236,9 +237,11 @@ export function ReferralsRewardsExperience() {
         if (redemptionPublicId) {
           localStorage.setItem(selectedSubscriptionRedemptionKey, redemptionPublicId);
         }
+
+        setAppliedRewardId(publicId);
       }
 
-      showRewardMessage(publicId, response.ok ? readMessage(result, "Reward redeemed.") : readMessage(result, "Unable to redeem reward."), response.ok ? "success" : "error");
+      showRewardMessage(publicId, response.ok ? "Reward applied to your subscription checkout." : readMessage(result, "Unable to redeem reward."), response.ok ? "success" : "error");
       if (response.ok) {
         void loadOverview();
         void loadTabData("Rewards", true);
@@ -347,7 +350,7 @@ export function ReferralsRewardsExperience() {
       {!loadingTabs.Rewards && activeTab === "Rewards" ? (
         <div className="grid gap-3">
           {rewards.length ? rewards.map((reward) => (
-            <RewardCard key={String(reward.publicId ?? reward.id)} message={rewardMessage?.rewardId === String(reward.publicId ?? "") ? rewardMessage : null} redeemingRewardId={redeemingRewardId} reward={reward} onRedeem={redeemReward} />
+            <RewardCard appliedRewardId={appliedRewardId} key={String(reward.publicId ?? reward.id)} message={rewardMessage?.rewardId === String(reward.publicId ?? "") ? rewardMessage : null} redeemingRewardId={redeemingRewardId} reward={reward} onRedeem={redeemReward} />
           )) : <EmptyState title="No Records Found" message="No active rewards available." />}
         </div>
       ) : null}
@@ -397,13 +400,14 @@ function CodeAction({ loading, message, onChange, onSubmit, title, tone, value }
   );
 }
 
-function RewardCard({ message, onRedeem, redeemingRewardId, reward }: { message: InlineMessage | null; onRedeem: (publicId: string) => void; redeemingRewardId: string; reward: ListItem }) {
+function RewardCard({ appliedRewardId, message, onRedeem, redeemingRewardId, reward }: { appliedRewardId: string; message: InlineMessage | null; onRedeem: (publicId: string) => void; redeemingRewardId: string; reward: ListItem }) {
   const publicId = String(reward.publicId ?? "");
   const coinCost = Number(reward.coinCost ?? 0);
+  const isApplied = appliedRewardId === publicId;
   const isRedeeming = redeemingRewardId === publicId;
 
   return (
-    <AppCard className="relative min-w-0 overflow-hidden border-[#5EF2C2]/18 bg-[linear-gradient(145deg,rgba(20,184,166,0.13),rgba(11,18,29,0.94)_42%,rgba(14,26,42,0.96))]">
+    <AppCard className={cn("relative min-w-0 overflow-hidden border-[#5EF2C2]/18 bg-[linear-gradient(145deg,rgba(20,184,166,0.13),rgba(11,18,29,0.94)_42%,rgba(14,26,42,0.96))]", isApplied && "ring-1 ring-[#5EF2C2]/35")}>
       <div className="absolute right-[-1.5rem] top-[-1.5rem] size-20 rounded-full bg-[#5EF2C2]/10 blur-xl" />
       <div className="relative grid gap-4">
         <div className="flex min-w-0 items-start gap-3">
@@ -420,11 +424,12 @@ function RewardCard({ message, onRedeem, redeemingRewardId, reward }: { message:
             <Coins className="size-4 shrink-0" />
             <span className="truncate">{coinCost.toLocaleString("en-IN")} coins</span>
           </div>
-          <PrimaryPortalButton data-dashboard-rewards="true" disabled={Boolean(redeemingRewardId) || !publicId} onClick={() => void onRedeem(publicId)}>
-            {isRedeeming ? "Please wait" : "Redeem"}
+          <PrimaryPortalButton data-dashboard-rewards="true" disabled={Boolean(redeemingRewardId) || !publicId || isApplied} onClick={() => void onRedeem(publicId)}>
+            {isApplied ? "Applied" : isRedeeming ? "Please wait" : "Redeem"}
           </PrimaryPortalButton>
         </div>
         {message ? <InlineActionMessage message={message.message} tone={message.tone} /> : null}
+        {isApplied && !message ? <InlineActionMessage message="Reward applied. Continue to subscription checkout to use this discount." tone="success" /> : null}
       </div>
     </AppCard>
   );

@@ -16,6 +16,15 @@
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb934209316372673</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
@@ -24,6 +33,8 @@
 	<true/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
+		<string>fbapi</string>
+		<string>fb-messenger-share-api</string>
 		<string>upi</string>
 		<string>tez</string>
 		<string>gpay</string>
@@ -36,6 +47,16 @@
 		<string>amazonpay</string>
 		<string>mobikwik</string>
 	</array>
+	<key>FacebookAppID</key>
+	<string>934209316372673</string>
+	<key>FacebookClientToken</key>
+	<string>REPLACE_WITH_META_CLIENT_TOKEN</string>
+	<key>FacebookDisplayName</key>
+	<string>ScoreCare</string>
+	<key>FacebookAutoLogAppEventsEnabled</key>
+	<true/>
+	<key>FacebookAdvertiserIDCollectionEnabled</key>
+	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>ScoreCare uses camera access only when the payment gateway requires scanning payment details.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

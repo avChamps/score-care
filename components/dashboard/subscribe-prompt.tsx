@@ -529,6 +529,7 @@ export function SubscribePromptOverlay({
     setPaymentMessage("");
     setCheckoutSummary(null);
     void trackEvent("razorpay_payment_started", {
+      currency: "INR",
       page_name: "subscription",
       payment_status: "started",
       plan_public_id: planPublicId,
@@ -616,14 +617,18 @@ export function SubscribePromptOverlay({
           }
 
           void trackEvent("razorpay_payment_success", {
+            currency: checkout.plan.currency || "INR",
             page_name: "subscription",
             payment_status: "success",
             plan_public_id: planPublicId,
+            value: checkout.finalAmount,
           });
           void trackEvent("subscription_activated", {
+            currency: checkout.plan.currency || "INR",
             page_name: "subscription",
             subscription_status: "active",
             plan_public_id: planPublicId,
+            value: checkout.finalAmount,
           });
           void logCrashlyticsMessage("Payment confirm API success");
           clearSelectedSubscriptionRedemption();
