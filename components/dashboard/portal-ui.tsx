@@ -83,7 +83,7 @@ export function PortalShell({ active, children, variant = "user" }: PortalShellP
 
 export function PortalTopBar({ backHref, title }: { title?: string; backHref?: string; profileHref?: string }) {
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--portal-border)] bg-[#050912]/92 px-4 py-3 shadow-[0_14px_34px_rgba(0,0,0,0.20)] sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 bg-[var(--portal-bg)] px-4 py-3 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           {backHref ? (
