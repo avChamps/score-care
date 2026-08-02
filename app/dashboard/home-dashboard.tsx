@@ -20,6 +20,7 @@ import {
   Crown,
   FileText,
   Fingerprint,
+  Gift,
   Headphones,
   KeyRound,
   Lightbulb,
@@ -2704,6 +2705,16 @@ export function ProfilePanel({ name, onClose, onHelp, onLanguageLoadingChange, o
           subtitle="Invite Friends & Family"
           Icon={Share2}
           onClick={() => void shareApp()}
+        />
+
+        <ProfileOption
+          title="Rewards"
+          subtitle="Referral Coins & Redemptions"
+          Icon={Gift}
+          onClick={() => {
+            onClose();
+            router.push("/dashboard/referrals");
+          }}
         />
 
         <ProfileOption

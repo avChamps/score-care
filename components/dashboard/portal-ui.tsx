@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { type ComponentPropsWithoutRef } from "react";
-import { ArrowLeft, CreditCard, Headphones, Home, Menu, MessageCircle, Plus, ReceiptText, Users, WalletCards } from "lucide-react";
+import { ArrowLeft, Coins, CreditCard, Gift, Headphones, Home, Menu, MessageCircle, Plus, ReceiptText, Users, WalletCards } from "lucide-react";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
 import { TopBarActions } from "@/components/dashboard/topbar-actions";
@@ -11,7 +11,7 @@ import { useDashboardActionsDisabled } from "@/lib/dashboard-lock";
 import { cn } from "@/lib/utils";
 
 type PortalShellProps = {
-  active: "home" | "score" | "offers" | "loans" | "fix" | "bills" | "users" | "subscriptions" | "chats" | "help";
+  active: "home" | "score" | "offers" | "loans" | "fix" | "bills" | "rewards" | "users" | "subscriptions" | "chats" | "help" | "coins";
   children: React.ReactNode;
   variant?: "user" | "admin";
 };
@@ -21,6 +21,7 @@ const adminSidebarItems = [
   { active: "users", label: "Users", href: "/dashboard/admin/users", Icon: Users },
   { active: "loans", label: "Loans", href: "/dashboard/admin/loans", Icon: CreditCard },
   { active: "subscriptions", label: "Subscriptions", href: "/dashboard/admin/subscriptions", Icon: WalletCards },
+  { active: "coins", label: "Coins", href: "/dashboard/admin/coins", Icon: Coins },
   { active: "chats", label: "Chats", href: "/dashboard/admin/chats", Icon: MessageCircle },
   { active: "help", label: "Help", href: "/dashboard/admin/help", Icon: Headphones },
 ] satisfies Array<{ active: PortalShellProps["active"]; label: string; href: string; Icon: typeof Home }>;
@@ -31,6 +32,7 @@ const userSidebarItems = [
   { active: "fix", label: "Improve", href: "/dashboard/score-fix", Icon: Plus },
   { active: "offers", label: "Offers", href: "/dashboard/offers", Icon: WalletCards },
   { active: "loans", label: "Loans", href: "/dashboard/loans", Icon: CreditCard },
+  { active: "rewards", label: "Rewards", href: "/dashboard/referrals", Icon: Gift },
 ] satisfies Array<{ active: PortalShellProps["active"]; label: string; href: string; Icon: typeof Home }>;
 
 export function PortalShell({ active, children, variant = "user" }: PortalShellProps) {
@@ -56,6 +58,7 @@ export function PortalShell({ active, children, variant = "user" }: PortalShellP
                     data-dashboard-score={itemActive === "score" ? "true" : undefined}
                     data-dashboard-offers={itemActive === "offers" ? "true" : undefined}
                     data-dashboard-loans={itemActive === "loans" ? "true" : undefined}
+                    data-dashboard-rewards={itemActive === "rewards" ? "true" : undefined}
                     data-dashboard-admin={variant === "admin" ? "true" : undefined}
                     className={cn(
                       "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-black transition",
@@ -78,13 +81,20 @@ export function PortalShell({ active, children, variant = "user" }: PortalShellP
   );
 }
 
-export function PortalTopBar({ title }: { title?: string; backHref?: string; profileHref?: string }) {
+export function PortalTopBar({ backHref, title }: { title?: string; backHref?: string; profileHref?: string }) {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--portal-border)] bg-[#050912]/92 px-4 py-3 shadow-[0_14px_34px_rgba(0,0,0,0.20)] sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-tiny font-black uppercase tracking-[0.16em] text-[#14B8A6]">Scorecare</p>
-          {title ? <h1 className="mt-0.5 truncate text-base font-black text-white">{title}</h1> : null}
+        <div className="flex min-w-0 items-center gap-3">
+          {backHref ? (
+            <Link className="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.06] text-white transition active:scale-95" href={backHref} data-dashboard-home="true" aria-label="Back">
+              <ArrowLeft className="size-5" strokeWidth={2} />
+            </Link>
+          ) : null}
+          <div className="min-w-0">
+            <p className="text-tiny font-black uppercase tracking-[0.16em] text-[#14B8A6]">Scorecare</p>
+            {title ? <h1 className="mt-0.5 truncate text-base font-black text-white">{title}</h1> : null}
+          </div>
         </div>
         <TopBarActions />
       </div>
@@ -136,6 +146,7 @@ export function PrimaryPortalButton({ children, href, className, ...props }: Pri
     props["data-dashboard-home" as keyof typeof props] === "true" ||
     props["data-dashboard-profile" as keyof typeof props] === "true" ||
     props["data-dashboard-loans" as keyof typeof props] === "true" ||
+    props["data-dashboard-rewards" as keyof typeof props] === "true" ||
     props["data-dashboard-logout" as keyof typeof props] === "true";
   const disabledByDashboardLock = dashboardActionsDisabled && !bypassDashboardLock;
   const classes = cn(

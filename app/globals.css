@@ -573,8 +573,8 @@ body:has(.auth-page) *::-webkit-scrollbar {
   box-shadow: var(--portal-shadow-soft) !important;
 }
 
-.dashboard-actions-disabled a:not([data-dashboard-home="true"]):not([data-dashboard-profile="true"]):not([data-dashboard-score="true"]):not([data-dashboard-offers="true"]):not([data-dashboard-loans="true"]):not([data-dashboard-admin="true"]):not([data-dashboard-dispute="true"]),
-.dashboard-actions-disabled button:not([data-dashboard-home="true"]):not([data-dashboard-logout="true"]):not([data-dashboard-support="true"]):not([data-dashboard-notifications="true"]):not([data-dashboard-subscribe="true"]):not([data-dashboard-dispute="true"]) {
+.dashboard-actions-disabled a:not([data-dashboard-home="true"]):not([data-dashboard-profile="true"]):not([data-dashboard-score="true"]):not([data-dashboard-offers="true"]):not([data-dashboard-loans="true"]):not([data-dashboard-admin="true"]):not([data-dashboard-dispute="true"]):not([data-dashboard-rewards="true"]),
+.dashboard-actions-disabled button:not([data-dashboard-home="true"]):not([data-dashboard-logout="true"]):not([data-dashboard-support="true"]):not([data-dashboard-notifications="true"]):not([data-dashboard-subscribe="true"]):not([data-dashboard-dispute="true"]):not([data-dashboard-rewards="true"]) {
   pointer-events: none;
   cursor: not-allowed;
 }

@@ -63,6 +63,20 @@ type RazorpayPrefill = {
   contact: string;
 };
 
+type SubscriptionCheckout = {
+  customerId: string;
+  discountAmount: number;
+  finalAmount: number;
+  grossAmount: number;
+  keyId: string;
+  order: { currency?: string; id: string };
+  plan: Partial<SubscriptionPlan>;
+  prefill?: Partial<RazorpayPrefill>;
+  razorpayAmount: number;
+  recurring?: string;
+  redemption?: { publicId?: string } | null;
+};
+
 declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
@@ -70,6 +84,8 @@ declare global {
 }
 
 const subscriptionPlanThemes: Array<SubscriptionPlan["theme"]> = ["blue", "purple", "green", "orange", "pink", "cyan"];
+const selectedSubscriptionRedemptionKey = "scorecare_selected_subscription_redemption_public_id";
+const razorpayCheckoutTimeoutSeconds = 120;
 const subscriptionPlanThemeStyles: Record<SubscriptionPlan["theme"], { accent: string; header: string; selectedRing: string }> = {
   blue: { accent: "#2878FF", header: "bg-[#2673F1]", selectedRing: "ring-[#2878FF]" },
   purple: { accent: "#A248F5", header: "bg-[#A246F2]", selectedRing: "ring-[#A248F5]" },
@@ -132,6 +148,40 @@ function cleanRazorpayContact(value: unknown) {
   const contact = digits.length > 10 ? digits.slice(-10) : digits;
 
   return /^\d{10}$/.test(contact) ? contact : "";
+}
+
+function readSelectedSubscriptionRedemption() {
+  return localStorage.getItem(selectedSubscriptionRedemptionKey) || "";
+}
+
+function clearSelectedSubscriptionRedemption() {
+  localStorage.removeItem(selectedSubscriptionRedemptionKey);
+}
+
+function readSubscriptionCheckout(result: unknown, fallbackPlan: SubscriptionPlan): SubscriptionCheckout {
+  const data = (result as { data?: unknown })?.data ?? result;
+  const checkout = data as Partial<SubscriptionCheckout>;
+  const plan = checkout.plan ?? fallbackPlan;
+
+  return {
+    customerId: String(checkout.customerId ?? ""),
+    discountAmount: Number(checkout.discountAmount ?? 0),
+    finalAmount: Number(checkout.finalAmount ?? 0),
+    grossAmount: Number(checkout.grossAmount ?? fallbackPlan.amount),
+    keyId: String(checkout.keyId ?? ""),
+    order: { currency: checkout.order?.currency, id: String(checkout.order?.id ?? "") },
+    plan,
+    prefill: checkout.prefill,
+    razorpayAmount: Number(checkout.razorpayAmount ?? 0),
+    recurring: checkout.recurring,
+    redemption: checkout.redemption ?? null,
+  };
+}
+
+function readApiMessage(result: unknown, fallback: string) {
+  const data = result as { data?: { message?: unknown }; error?: unknown; message?: unknown };
+  const message = data.message ?? data.error ?? data.data?.message;
+  return typeof message === "string" && message.trim() ? message : fallback;
 }
 
 async function getRazorpayPrefill(token: string, apiPrefill?: Partial<RazorpayPrefill>) {
@@ -279,7 +329,7 @@ function TwelveHourTimer({ className = "" }: { className?: string }) {
   );
 }
 
-export function PremiumBenefitsIntro({ benefits = [], ctaLabel = "View subscription", loading = false, onClose, onSubscribe }: { benefits?: SubscriptionBenefit[]; ctaLabel?: string; loading?: boolean; onClose: () => void; onSubscribe: () => void }) {
+export function PremiumBenefitsIntro({ benefits = [], ctaLabel = "View subscription", loading = false, paymentMessage = "", onClose, onSubscribe }: { benefits?: SubscriptionBenefit[]; ctaLabel?: string; loading?: boolean; paymentMessage?: string; onClose: () => void; onSubscribe: () => void }) {
   return (
     <div className="flex min-h-full flex-col bg-[#0D131C]">
       <div className="flex h-14 shrink-0 items-center bg-[#0D131C] px-4">
@@ -351,6 +401,8 @@ export function PremiumBenefitsIntro({ benefits = [], ctaLabel = "View subscript
     <TwelveHourTimer className="font-bold text-[#FFD34D]" />
   </div>
 
+  {paymentMessage ? <p className="mb-3 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-center text-caption font-semibold leading-5 text-red-300">{paymentMessage}</p> : null}
+
   <button
     className="h-16 w-full rounded-[24px] bg-[#08DB69] text-[20px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
     disabled={loading}
@@ -384,6 +436,7 @@ export function SubscribePromptOverlay({
   const [plans, setPlans] = useState(subscriptionPlans);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState("");
+  const [checkoutSummary, setCheckoutSummary] = useState<Pick<SubscriptionCheckout, "discountAmount" | "finalAmount" | "grossAmount"> | null>(null);
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) ?? plans[0];
 
   async function loadSubscriptionPlans() {
@@ -411,6 +464,7 @@ export function SubscribePromptOverlay({
       setShowPlans(false);
       setShowSkipMessage(false);
       setPaymentMessage("");
+      setCheckoutSummary(null);
     }, 0);
 
     void loadSubscriptionPlans();
@@ -469,17 +523,11 @@ export function SubscribePromptOverlay({
 
     const authToken = token;
     const planPublicId = paymentPlan.publicId || paymentPlan.id;
-    const selectedPlanPayableAmount = calculatePlanPayableAmount(paymentPlan, paymentPlan);
-    const selectedPlanGstAmount = calculatePlanGstAmount(paymentPlan, paymentPlan);
-    const selectedPlanRazorpayAmount = toRazorpayAmount(selectedPlanPayableAmount);
-
-    if (!Number.isFinite(selectedPlanPayableAmount) || !Number.isFinite(selectedPlanRazorpayAmount)) {
-      setPaymentMessage("Unable to load subscription amount. Please try again.");
-      return;
-    }
+    const selectedRedemptionPublicId = readSelectedSubscriptionRedemption();
 
     setPaymentLoading(true);
     setPaymentMessage("");
+    setCheckoutSummary(null);
     void trackEvent("razorpay_payment_started", {
       page_name: "subscription",
       payment_status: "started",
@@ -497,21 +545,7 @@ export function SubscribePromptOverlay({
       const subscriptionResponse = await apiRequest(`/subscription-plans/${encodeURIComponent(planPublicId)}/razorpay-subscription`, {
         method: "POST",
         headers: { Authorization: `Bearer ${authToken}` },
-        body: {
-          amount: selectedPlanPayableAmount,
-          amountInPaise: selectedPlanRazorpayAmount,
-          baseAmount: paymentPlan.amount,
-          finalAmount: selectedPlanPayableAmount,
-          gstAmount: selectedPlanGstAmount,
-          gstPercentage: paymentPlan.gstPercentage ?? 0,
-          payableAmount: selectedPlanPayableAmount,
-          payableAmountInPaise: selectedPlanRazorpayAmount,
-          razorpayAmount: selectedPlanRazorpayAmount,
-          totalAmount: selectedPlanPayableAmount,
-          totalAmountInPaise: selectedPlanRazorpayAmount,
-          totalCount: 36,
-          customerNotify: true,
-        },
+        body: selectedRedemptionPublicId ? { redemptionPublicId: selectedRedemptionPublicId } : {},
       });
 
       if (subscriptionResponse.status === 401 || subscriptionResponse.status === 403) {
@@ -521,34 +555,51 @@ export function SubscribePromptOverlay({
       }
 
       const subscriptionResult = await subscriptionResponse.json();
-      const data = subscriptionResult?.data ?? subscriptionResult;
-      const order = data?.order;
-      const plan = data?.plan ?? paymentPlan;
-      const prefill = await getRazorpayPrefill(authToken, data?.prefill);
-      const payableAmount = calculatePlanPayableAmount(plan, paymentPlan);
-      const gstAmount = calculatePlanGstAmount(plan, paymentPlan);
 
-      if (!subscriptionResponse.ok || !data?.keyId || !order?.id || !data?.customerId || data?.recurring !== "1" || (!useNativeRazorpay && !window.Razorpay)) {
+      if (!subscriptionResponse.ok) {
+        if (subscriptionResponse.status === 400 && selectedRedemptionPublicId) {
+          clearSelectedSubscriptionRedemption();
+          setPaymentMessage(`Reward discount could not be applied: ${readApiMessage(subscriptionResult, "Unable to apply reward discount.")}. Tap Pay again to continue without the reward.`);
+          setPaymentLoading(false);
+          return;
+        }
+
+        throw new Error(readApiMessage(subscriptionResult, "Unable to create subscription."));
+      }
+
+      const checkout = readSubscriptionCheckout(subscriptionResult, paymentPlan);
+      const prefill = await getRazorpayPrefill(authToken, checkout.prefill);
+      setCheckoutSummary({
+        discountAmount: checkout.discountAmount,
+        finalAmount: checkout.finalAmount,
+        grossAmount: checkout.grossAmount,
+      });
+
+      if (!checkout.keyId || !checkout.order.id || !checkout.customerId || !Number.isFinite(checkout.razorpayAmount) || checkout.razorpayAmount <= 0 || (!useNativeRazorpay && !window.Razorpay)) {
         throw new Error("Unable to create subscription.");
       }
 
+      let razorpayTimeout: number | null = null;
+
       async function confirmSubscription(response: RazorpaySubscriptionResponse) {
         try {
+          if (razorpayTimeout) {
+            window.clearTimeout(razorpayTimeout);
+            razorpayTimeout = null;
+          }
+
           const confirmResponse = await apiRequest("/subscription-plans/razorpay/confirm", {
             method: "POST",
             headers: { Authorization: `Bearer ${authToken}` },
             body: {
               razorpayPaymentId: response.razorpay_payment_id,
-              razorpayOrderId: response.razorpay_order_id ?? order?.id,
+              razorpayOrderId: response.razorpay_order_id ?? checkout.order.id,
               razorpaySignature: response.razorpay_signature,
-              amount: payableAmount,
-              baseAmount: Number(plan.amount ?? paymentPlan.amount),
-              currency: plan.currency ?? paymentPlan.currency ?? "INR",
-              finalAmount: payableAmount,
-              gstAmount,
-              gstPercentage: Number(plan.gstPercentage ?? paymentPlan.gstPercentage ?? 0),
-              payableAmount,
-              totalAmount: payableAmount,
+              amount: checkout.finalAmount,
+              grossAmount: checkout.grossAmount,
+              discountAmount: checkout.discountAmount,
+              redemptionPublicId: checkout.redemption?.publicId,
+              currency: checkout.plan.currency || "INR",
             },
           });
 
@@ -575,6 +626,7 @@ export function SubscribePromptOverlay({
             plan_public_id: planPublicId,
           });
           void logCrashlyticsMessage("Payment confirm API success");
+          clearSelectedSubscriptionRedemption();
           clearSubscriptionPaymentCache();
           await Promise.allSettled([
             fetchSubscriptionStatus(authToken),
@@ -600,15 +652,16 @@ export function SubscribePromptOverlay({
       if (useNativeRazorpay) {
         onPaymentFlowStart?.();
         const paymentResponse = await nativeRazorpay.open({
-          amount: toRazorpayAmount(payableAmount),
-          currency: order.currency ?? plan.currency ?? paymentPlan.currency ?? "INR",
-          customerId: data.customerId,
-          description: plan.planName ?? paymentPlan.planName,
-          key: data.keyId,
+          amount: checkout.razorpayAmount,
+          config: { timeout: razorpayCheckoutTimeoutSeconds },
+          currency: checkout.order.currency ?? checkout.plan.currency ?? paymentPlan.currency ?? "INR",
+          customerId: checkout.customerId,
+          description: checkout.plan.planName ?? paymentPlan.planName,
+          key: checkout.keyId,
           name: "ScoreCare",
-          orderId: order.id,
+          orderId: checkout.order.id,
           prefill,
-          recurring: data.recurring,
+          recurring: checkout.recurring,
         });
 
         await confirmSubscription(paymentResponse);
@@ -621,29 +674,43 @@ export function SubscribePromptOverlay({
         throw new Error("Payment gateway is unavailable.");
       }
 
-      const checkout = new RazorpayCheckout({
-        key: data.keyId,
-        amount: toRazorpayAmount(payableAmount),
-        order_id: order.id,
-        customer_id: data.customerId,
-        recurring: data.recurring,
+      let razorpayTimedOut = false;
+      razorpayTimeout = window.setTimeout(() => {
+        razorpayTimedOut = true;
+        setPaymentLoading(false);
+        setPaymentMessage("Payment is taking longer than expected. If money was deducted, please wait a moment and check your subscription status before retrying.");
+      }, razorpayCheckoutTimeoutSeconds * 1000);
+
+      const razorpayCheckout = new RazorpayCheckout({
+        key: checkout.keyId,
+        amount: checkout.razorpayAmount,
+        order_id: checkout.order.id,
+        customer_id: checkout.customerId,
+        recurring: checkout.recurring,
         name: "ScoreCare",
-        description: plan.planName ?? paymentPlan.planName,
+        description: checkout.plan.planName ?? paymentPlan.planName,
         prefill,
+        timeout: razorpayCheckoutTimeoutSeconds,
         handler: confirmSubscription,
         modal: {
           ondismiss: () => {
+            if (razorpayTimeout) {
+              window.clearTimeout(razorpayTimeout);
+              razorpayTimeout = null;
+            }
+
             void trackEvent("razorpay_payment_failed", {
               page_name: "subscription",
-              payment_status: "dismissed",
+              payment_status: razorpayTimedOut ? "timeout" : "dismissed",
               plan_public_id: planPublicId,
             });
+            setPaymentMessage(razorpayTimedOut ? "Payment is taking longer than expected. If money was deducted, please wait a moment and check your subscription status before retrying." : "");
             setPaymentLoading(false);
           },
         },
       });
 
-      checkout.open();
+      razorpayCheckout.open();
       onPaymentFlowStart?.();
     } catch (error) {
       void trackEvent("razorpay_payment_failed", {
@@ -711,6 +778,7 @@ export function SubscribePromptOverlay({
 
                 <div className="relative border-t border-white/8 bg-[#0D131C] px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6">
                   {paymentMessage ? <p className="mx-auto mb-3 max-w-md text-center text-caption font-semibold text-red-400">{paymentMessage}</p> : null}
+                  {checkoutSummary ? <BillSummary summary={checkoutSummary} /> : null}
                   <button className="mx-auto block h-[3.25rem] w-full max-w-md rounded-2xl bg-[linear-gradient(135deg,#FF7A00,#FFD34D)] text-sm font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)] transition disabled:opacity-60" disabled={!selectedPlanId || paymentLoading} type="button" onClick={() => void handleSubscriptionPayment()}>
                     {paymentLoading ? "Processing..." : selectedPlan.buttonLabel ?? "Subscribe"}
                   </button>
@@ -721,7 +789,7 @@ export function SubscribePromptOverlay({
               </>
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto">
-                <PremiumBenefitsIntro benefits={selectedPlan.benefits} ctaLabel={`Pay ${formatPlanAmount(selectedPlan)} ${formatBillingCycle(selectedPlan.billingCycle)}`} loading={paymentLoading} onClose={() => setShowSkipMessage(true)} onSubscribe={() => void handleSubscriptionPayment()} />
+                <PremiumBenefitsIntro benefits={selectedPlan.benefits} ctaLabel={`Pay ${formatPlanAmount(selectedPlan)} ${formatBillingCycle(selectedPlan.billingCycle)}`} loading={paymentLoading} paymentMessage={paymentMessage} onClose={() => setShowSkipMessage(true)} onSubscribe={() => void handleSubscriptionPayment()} />
               </div>
             )}
             {showSkipMessage ? (
@@ -747,6 +815,27 @@ export function SubscribePromptOverlay({
   );
 
   return typeof document === "undefined" ? null : createPortal(sheet, document.body);
+}
+
+function BillSummary({ summary }: { summary: Pick<SubscriptionCheckout, "discountAmount" | "finalAmount" | "grossAmount"> }) {
+  return (
+    <div className="mx-auto mb-3 max-w-md rounded-2xl border border-[#5EF2C2]/16 bg-[#07111C]/90 p-3 text-sm">
+      <SummaryRow label="Original Amount" value={formatCurrency(summary.grossAmount)} />
+      <SummaryRow label="Coins Discount" value={`-${formatCurrency(summary.discountAmount)}`} tone="discount" />
+      <div className="mt-2 border-t border-white/10 pt-2">
+        <SummaryRow label="Payable Amount" value={formatCurrency(summary.finalAmount)} tone="payable" />
+      </div>
+    </div>
+  );
+}
+
+function SummaryRow({ label, tone, value }: { label: string; tone?: "discount" | "payable"; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-1">
+      <span className="text-caption font-semibold text-[#AAB6C8]">{label}</span>
+      <span className={tone === "discount" ? "text-caption font-black text-[#5EF2C2]" : tone === "payable" ? "text-base font-black text-white" : "text-caption font-bold text-white"}>{value}</span>
+    </div>
+  );
 }
 
 function SubscriptionPlanCard({ onSelect, plan, selected }: { onSelect: () => void; plan: SubscriptionPlan; selected: boolean }) {
@@ -888,6 +977,13 @@ export function formatPlanAmount(plan: SubscriptionPlan) {
   }
 
   return `${plan.currency} ${plan.amount}`;
+}
+
+function formatCurrency(amount: number) {
+  return `₹${Number(amount || 0).toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+  })}`;
 }
 
 function calculatePlanPayableAmount(plan: Partial<SubscriptionPlan>, fallback: SubscriptionPlan) {

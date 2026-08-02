@@ -7,7 +7,7 @@ const nextConfig = {
     unoptimized: true,
   },
   devIndicators: false,
-  allowedDevOrigins: ['192.168.1.7'],
+  allowedDevOrigins: ['192.168.0.5'],
   turbopack: {
     root: path.join(__dirname),
   },
