@@ -151,7 +151,7 @@ html.translated-rtl body {
 
 .native-shell .portal-theme .sticky.top-0 {
   top: 0;
-  padding-top: calc(env(safe-area-inset-top, 0) + 0.75rem);
+  padding-top: 0.75rem;
   background: var(--portal-bg);
 }
 
