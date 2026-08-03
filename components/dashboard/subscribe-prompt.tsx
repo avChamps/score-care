@@ -170,6 +170,10 @@ function saveSubscriptionRedemptionsByPlan(redemptions: Record<string, Subscript
   localStorage.setItem(selectedSubscriptionRedemptionByPlanKey, JSON.stringify(redemptions));
 }
 
+function hasConsumedAtValue(value: unknown) {
+  return value !== undefined && value !== null && String(value).trim() !== "";
+}
+
 function clearSelectedSubscriptionRedemption(planPublicId?: string) {
   localStorage.removeItem(selectedSubscriptionRedemptionKey);
 
@@ -253,7 +257,7 @@ export async function loadAppliedSubscriptionRedemptions(token: string, plans: S
     const applyTo = String(redemption.applyTo ?? reward.applyTo ?? "").trim().toLowerCase();
     const consumedAt = redemption.consumedAt ?? redemption.consumed_at;
 
-    if (!publicId || !planPublicIds.has(targetPublicId) || rewardType !== "subscription_discount" || status !== "applied" || applyTo !== "subscription_plan" || consumedAt) {
+    if (!publicId || !planPublicIds.has(targetPublicId) || rewardType !== "subscription_discount" || status !== "applied" || applyTo !== "subscription_plan" || hasConsumedAtValue(consumedAt)) {
       return;
     }
 
@@ -543,10 +547,8 @@ export function SubscribePromptOverlay({
       saveSubscriptionRedemptionsByPlan(redemptions);
       return redemptions;
     } catch {
-      const cachedRedemptions = readCachedSubscriptionRedemptionsByPlan();
-
-      setSelectedRedemptionsByPlan(cachedRedemptions);
-      return cachedRedemptions;
+      setSelectedRedemptionsByPlan({});
+      return {};
     }
   }
 
@@ -618,7 +620,15 @@ export function SubscribePromptOverlay({
 
     const authToken = token;
     const planPublicId = paymentPlan.publicId || paymentPlan.id;
-    const selectedRedemptionPublicId = (redemptionsByPlan[planPublicId] ?? readCachedSubscriptionRedemptionsByPlan()[planPublicId])?.publicId;
+    let selectedRedemptionPublicId = redemptionsByPlan[planPublicId]?.publicId;
+
+    if (!selectedRedemptionPublicId) {
+      const restoredRedemptions = await loadAppliedSubscriptionRedemptions(authToken, [paymentPlan]);
+
+      selectedRedemptionPublicId = restoredRedemptions[planPublicId]?.publicId;
+      setSelectedRedemptionsByPlan((current) => ({ ...current, ...restoredRedemptions }));
+      saveSubscriptionRedemptionsByPlan(restoredRedemptions);
+    }
 
     setPaymentLoading(true);
     setPaymentMessage("");
