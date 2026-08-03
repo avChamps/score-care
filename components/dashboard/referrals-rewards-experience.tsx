@@ -27,6 +27,7 @@ type InlineMessage = {
 
 const tabs = ["Overview", "Referrals", "Coins", "Rewards", "Redemptions"] as const;
 const selectedSubscriptionRedemptionKey = "scorecare_selected_subscription_redemption_public_id";
+const selectedSubscriptionRedemptionByPlanKey = "scorecare_selected_subscription_redemption_by_plan";
 type Tab = (typeof tabs)[number];
 
 export function ReferralsRewardsExperience() {
@@ -53,6 +54,7 @@ export function ReferralsRewardsExperience() {
   const [applyingCode, setApplyingCode] = useState(false);
   const [appliedRewardId, setAppliedRewardId] = useState("");
   const [redeemingRewardId, setRedeemingRewardId] = useState("");
+  const [appliedRedemptionsByPlan, setAppliedRedemptionsByPlan] = useState<Record<string, { publicId: string; targetPublicId: string }>>({});
   const [referralMe, setReferralMe] = useState<ReferralMe | null>(null);
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [referrals, setReferrals] = useState<ListItem[]>([]);
@@ -209,6 +211,9 @@ export function ReferralsRewardsExperience() {
 
   async function redeemReward(publicId: string) {
     const headers = authHeaders();
+    const reward = rewards.find((item) => String(item.publicId ?? item.id ?? "") === publicId);
+    const rewardType = String(reward?.rewardType ?? reward?.type ?? "").trim().toLowerCase();
+    const targetPublicId = String(reward?.targetPublicId ?? "scorecare-basic-monthly").trim();
 
     if (!headers || redeemingRewardId) return;
     if (!publicId) {
@@ -225,7 +230,7 @@ export function ReferralsRewardsExperience() {
         headers,
         body: {
           applyTo: "subscription_plan",
-          targetPublicId: "scorecare-basic-monthly",
+          targetPublicId,
           metadata: {},
         },
       });
@@ -233,9 +238,21 @@ export function ReferralsRewardsExperience() {
 
       if (response.ok) {
         const redemptionPublicId = readRedemptionPublicId(result);
+        const redemptionData = readRedemptionData(result);
+        const appliedRewardType = String(redemptionData.rewardType ?? rewardType).trim().toLowerCase();
+        const appliedTargetPublicId = String(redemptionData.targetPublicId ?? targetPublicId).trim();
 
         if (redemptionPublicId) {
           localStorage.setItem(selectedSubscriptionRedemptionKey, redemptionPublicId);
+          if (appliedRewardType === "subscription_discount" && appliedTargetPublicId) {
+            const nextRedemptions = {
+              ...appliedRedemptionsByPlan,
+              [appliedTargetPublicId]: { publicId: redemptionPublicId, targetPublicId: appliedTargetPublicId },
+            };
+
+            setAppliedRedemptionsByPlan(nextRedemptions);
+            saveSubscriptionRedemptionsByPlan(nextRedemptions);
+          }
         }
 
         setAppliedRewardId(publicId);
@@ -554,6 +571,17 @@ function readRedemptionPublicId(result: unknown) {
   const publicId = redemption.redemption?.publicId ?? redemption.publicId;
 
   return typeof publicId === "string" && publicId.trim() ? publicId : "";
+}
+
+function readRedemptionData(result: unknown) {
+  const data = (result as { data?: unknown })?.data ?? result;
+  const value = data as { redemption?: unknown };
+
+  return (value.redemption && typeof value.redemption === "object" ? value.redemption : data) as Record<string, unknown>;
+}
+
+function saveSubscriptionRedemptionsByPlan(redemptions: Record<string, { publicId: string; targetPublicId: string }>) {
+  localStorage.setItem(selectedSubscriptionRedemptionByPlanKey, JSON.stringify(redemptions));
 }
 
 function readDeviceId() {

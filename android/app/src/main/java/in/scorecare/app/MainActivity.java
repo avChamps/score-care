@@ -2,6 +2,7 @@ package in.scorecare.app;
 
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
+import com.razorpay.Checkout;
 import com.razorpay.PaymentData;
 import com.razorpay.PaymentResultWithDataListener;
 
@@ -13,6 +14,7 @@ public class MainActivity extends BridgeActivity implements PaymentResultWithDat
         registerPlugin(NativeRazorpayPlugin.class);
         registerPlugin(NativeAppLockPlugin.class);
         registerPlugin(NativeMetaEventsPlugin.class);
+        Checkout.preload(getApplicationContext());
         super.onCreate(savedInstanceState);
     }
 

@@ -59,7 +59,7 @@ import { DeleteAccountFlow } from "@/components/dashboard/delete-account-flow";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { DashboardHeaderHomeControl, PortalShell } from "@/components/dashboard/portal-ui";
 import { SupportDrawer } from "@/components/dashboard/topbar-actions";
-import { PremiumBenefitsIntro, ProBenefitsComparisonSheet, SubscribePromptOverlay, formatBillingCycle, formatPlanAmount, getSubscriptionPlans, type SubscriptionPlan } from "@/components/dashboard/subscribe-prompt";
+import { PremiumBenefitsIntro, ProBenefitsComparisonSheet, SubscribePromptOverlay, formatBillingCycle, formatPlanAmount, getSubscriptionPlans, loadAppliedSubscriptionRedemptions, type SubscriptionPlan } from "@/components/dashboard/subscribe-prompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CibilDisplayDataError, clearCachedCibilDisplayData, getCachedCibilDisplayData, getCachedCibilScoreCheckData, getStoredLatestCibilScoreCheckData } from "@/lib/cibil-display-cache";
 import { apiRequest, apiUrl } from "@/lib/api";
@@ -2101,6 +2101,7 @@ function buildActionPlanPoints(dashboard: DashboardData) {
 function BenefitsPrompt({ loading = false, onClose, onSubscribe }: { loading?: boolean; onClose: () => void; onSubscribe: () => void }) {
   const [showLeavingMessage, setShowLeavingMessage] = useState(false);
   const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan | null>(null);
+  const [discountApplied, setDiscountApplied] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -2112,10 +2113,27 @@ function BenefitsPrompt({ loading = false, onClose, onSubscribe }: { loading?: b
         if (isMounted) {
           const plan = plans[0] ?? null;
           setSubscriptionPlan(plan);
+
+          const token = localStorage.getItem("scorecare_token");
+
+          if (token && !isTokenExpired(token) && plan) {
+            try {
+              const redemptions = await loadAppliedSubscriptionRedemptions(token, plans);
+
+              if (isMounted) {
+                setDiscountApplied(Boolean(redemptions[plan.publicId || plan.id]));
+              }
+            } catch {
+              if (isMounted) {
+                setDiscountApplied(false);
+              }
+            }
+          }
         }
       } catch {
         if (isMounted) {
           setSubscriptionPlan(null);
+          setDiscountApplied(false);
         }
       }
     }
@@ -2130,10 +2148,10 @@ function BenefitsPrompt({ loading = false, onClose, onSubscribe }: { loading?: b
   return (
     <div className="fixed inset-0 z-[70] flex items-end bg-black/60 px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[calc(var(--native-status-offset,0px)+0.75rem)] backdrop-blur-sm">
       <section className="mx-auto h-[calc(100dvh-var(--native-status-offset,0px)-1.75rem-env(safe-area-inset-bottom,0px))] w-full max-w-md overflow-y-auto rounded-[30px] bg-[#0D131C] shadow-[0_24px_70px_rgba(0,0,0,0.42)]">
-        <PremiumBenefitsIntro benefits={subscriptionPlan?.benefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={() => setShowLeavingMessage(true)} onSubscribe={onSubscribe} />
+        <PremiumBenefitsIntro benefits={subscriptionPlan?.benefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} discountApplied={discountApplied} loading={loading} onClose={() => setShowLeavingMessage(true)} onSubscribe={onSubscribe} />
       </section>
       {showLeavingMessage ? (
-        <ProBenefitsComparisonSheet comparisonBenefits={subscriptionPlan?.comparisonBenefits} ctaLabel={subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={onClose} onSubscribe={onSubscribe} zIndex="z-[70]" />
+        <ProBenefitsComparisonSheet comparisonBenefits={subscriptionPlan?.comparisonBenefits} ctaLabel={discountApplied ? "Continue with discount" : subscriptionPlan ? `Pay ${formatPlanAmount(subscriptionPlan)} ${formatBillingCycle(subscriptionPlan.billingCycle)}` : "Pay now"} loading={loading} onClose={onClose} onSubscribe={onSubscribe} zIndex="z-[70]" />
       ) : null}
     </div>
   );
