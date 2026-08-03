@@ -5,10 +5,13 @@ type RouteReplacer = {
 };
 
 export function replaceAfterPaymentSuccess(path: string, router?: RouteReplacer) {
+  if (router) {
+    router.replace(path);
+    return;
+  }
+
   if (Capacitor.isNativePlatform()) {
     window.location.replace(path);
     return;
   }
-
-  router?.replace(path);
 }

@@ -12,6 +12,7 @@ import org.json.JSONObject;
 @CapacitorPlugin(name = "NativeRazorpay")
 public class NativeRazorpayPlugin extends Plugin {
     private static NativeRazorpayPlugin activePlugin;
+    private Checkout checkout;
     private PluginCall paymentCall;
 
     @PluginMethod
@@ -23,14 +24,20 @@ public class NativeRazorpayPlugin extends Plugin {
             return;
         }
 
+        if (paymentCall != null) {
+            call.reject("Another payment is already in progress.");
+            return;
+        }
+
         try {
-            Checkout checkout = new Checkout();
+            checkout = new Checkout();
             checkout.setKeyID(key);
             activePlugin = this;
             paymentCall = call;
             checkout.open(getActivity(), createOptions(call));
         } catch (Exception error) {
             activePlugin = null;
+            checkout = null;
             paymentCall = null;
             call.reject("Unable to open payment gateway.");
         }
@@ -48,6 +55,7 @@ public class NativeRazorpayPlugin extends Plugin {
 
         activePlugin.paymentCall.resolve(result);
         activePlugin.paymentCall = null;
+        activePlugin.checkout = null;
         activePlugin = null;
     }
 
@@ -58,6 +66,7 @@ public class NativeRazorpayPlugin extends Plugin {
 
         activePlugin.paymentCall.reject(description != null ? description : "Payment failed.");
         activePlugin.paymentCall = null;
+        activePlugin.checkout = null;
         activePlugin = null;
     }
 

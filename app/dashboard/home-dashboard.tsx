@@ -225,6 +225,7 @@ const FAQ_DATA: FaqCategory[] = [
 ];
 
 export function HomeDashboard() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isLanguageLoading, setIsLanguageLoading] = useState(false);
   const [name, setName] = useState("there");
@@ -360,12 +361,12 @@ export function HomeDashboard() {
       if (result?.freeTier && !subscriptionSuccessReloadedRef.current && !hasReloadedSubscriptionSuccess()) {
         subscriptionSuccessReloadedRef.current = true;
         markSubscriptionSuccessReloaded();
-        window.location.reload();
+        replaceAfterPaymentSuccess("/dashboard?subscription=success", router);
       }
     }), 700);
 
     return () => window.clearTimeout(timer);
-  }, [loadDashboard]);
+  }, [loadDashboard, router]);
 
   useEffect(() => {
     function refreshDashboard() {
@@ -384,7 +385,7 @@ export function HomeDashboard() {
         if (result?.freeTier && !subscriptionSuccessReloadedRef.current && !hasReloadedSubscriptionSuccess()) {
           subscriptionSuccessReloadedRef.current = true;
           markSubscriptionSuccessReloaded();
-          routerReplaceDashboardSuccess();
+          replaceAfterPaymentSuccess("/dashboard?subscription=success", router);
         }
       });
     }
@@ -392,7 +393,7 @@ export function HomeDashboard() {
     window.addEventListener("scorecare:subscription-activated", refreshAfterSubscriptionSuccess);
 
     return () => window.removeEventListener("scorecare:subscription-activated", refreshAfterSubscriptionSuccess);
-  }, [loadDashboard]);
+  }, [loadDashboard, router]);
 
   useEffect(() => {
     let isMounted = true;
@@ -3570,10 +3571,6 @@ function hasReloadedSubscriptionSuccess() {
 
 function markSubscriptionSuccessReloaded() {
   sessionStorage.setItem("scorecare_subscription_success_reloaded", "true");
-}
-
-function routerReplaceDashboardSuccess() {
-  replaceAfterPaymentSuccess("/dashboard?subscription=success");
 }
 
 function createEmptyDashboard(message = "Score data is unavailable right now."): DashboardData {

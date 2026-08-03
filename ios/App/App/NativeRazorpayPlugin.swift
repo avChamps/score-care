@@ -85,6 +85,17 @@ class NativeRazorpayPlugin: CAPPlugin, CAPBridgedPlugin, RazorpayPaymentCompleti
             }
         }
 
+        if let config = call.getObject("config") {
+            options["config"] = config
+        }
+
+        options["method"] = [
+            "card": true,
+            "netbanking": true,
+            "upi": true,
+            "wallet": true
+        ]
+
         return options
     }
 
