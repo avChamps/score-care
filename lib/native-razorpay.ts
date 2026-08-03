@@ -16,6 +16,11 @@ type NativeRazorpayPlugin = {
       contact: string;
     };
     recurring?: string;
+    retry?: {
+      enabled: boolean;
+      max_count?: number;
+    };
+    timeout?: number;
   }) => Promise<{
     razorpay_order_id?: string;
     razorpay_payment_id: string;

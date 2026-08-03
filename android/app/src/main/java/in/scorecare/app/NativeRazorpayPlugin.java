@@ -80,15 +80,16 @@ public class NativeRazorpayPlugin extends Plugin {
         put(options, "description", call.getString("description"));
         put(options, "currency", call.getString("currency"));
         put(options, "amount", call.getData().opt("amount"));
+        put(options, "timeout", call.getData().opt("timeout"));
 
         JSObject prefill = call.getObject("prefill");
         if (prefill != null) {
             options.put("prefill", new JSONObject(prefill.toString()));
         }
 
-        JSObject config = call.getObject("config");
-        if (config != null) {
-            options.put("config", new JSONObject(config.toString()));
+        JSObject retry = call.getObject("retry");
+        if (retry != null) {
+            options.put("retry", new JSONObject(retry.toString()));
         }
 
         JSONObject method = new JSONObject();

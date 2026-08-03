@@ -71,6 +71,10 @@ class NativeRazorpayPlugin: CAPPlugin, CAPBridgedPlugin, RazorpayPaymentCompleti
             options["amount"] = amount
         }
 
+        if let timeout = call.getInt("timeout") {
+            options["timeout"] = timeout
+        }
+
         if let prefill = call.getObject("prefill") {
             var cleanPrefill: [String: String] = [:]
 
@@ -85,8 +89,8 @@ class NativeRazorpayPlugin: CAPPlugin, CAPBridgedPlugin, RazorpayPaymentCompleti
             }
         }
 
-        if let config = call.getObject("config") {
-            options["config"] = config
+        if let retry = call.getObject("retry") {
+            options["retry"] = retry
         }
 
         options["method"] = [

@@ -658,7 +658,6 @@ export function SubscribePromptOverlay({
         onPaymentFlowStart?.();
         const paymentResponse = await nativeRazorpay.open({
           amount: checkout.razorpayAmount,
-          config: { timeout: razorpayCheckoutTimeoutSeconds },
           currency: checkout.order.currency ?? checkout.plan.currency ?? paymentPlan.currency ?? "INR",
           customerId: checkout.customerId,
           description: checkout.plan.planName ?? paymentPlan.planName,
@@ -667,6 +666,8 @@ export function SubscribePromptOverlay({
           orderId: checkout.order.id,
           prefill,
           recurring: checkout.recurring,
+          retry: { enabled: true, max_count: 3 },
+          timeout: razorpayCheckoutTimeoutSeconds,
         });
 
         await confirmSubscription(paymentResponse);
