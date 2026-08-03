@@ -250,10 +250,12 @@ export function HomeDashboard() {
   const [homepageBackgroundImages, setHomepageBackgroundImages] = useState<string[]>([dashboardBg.src]);
   const [homepageBackgroundIndex, setHomepageBackgroundIndex] = useState(0);
   const isDashboardLoadingRef = useRef(false);
+  const pendingDashboardRefreshRef = useRef(false);
   const subscriptionSuccessReloadedRef = useRef(false);
 
   const loadDashboard = useCallback(async (showLoading = true) => {
     if (isDashboardLoadingRef.current) {
+      pendingDashboardRefreshRef.current = true;
       return null;
     }
 
@@ -322,6 +324,10 @@ export function HomeDashboard() {
       if (showLoading) {
         setIsLoading(false);
       }
+      if (pendingDashboardRefreshRef.current) {
+        pendingDashboardRefreshRef.current = false;
+        window.setTimeout(() => void loadDashboard(false), 0);
+      }
     }
   }, []);
 
@@ -386,11 +392,11 @@ export function HomeDashboard() {
   useEffect(() => {
     function refreshAfterSubscriptionSuccess() {
       clearSubscriptionDashboardCache();
-      void loadDashboard(true).then((result) => {
+      void loadDashboard(false).then((result) => {
         if (result?.freeTier && !subscriptionSuccessReloadedRef.current && !hasReloadedSubscriptionSuccess()) {
           subscriptionSuccessReloadedRef.current = true;
           markSubscriptionSuccessReloaded();
-          window.setTimeout(() => void loadDashboard(true), 1500);
+          window.setTimeout(() => void loadDashboard(false), 1500);
         }
       });
     }

@@ -699,6 +699,13 @@ export function SubscribePromptOverlay({
             razorpayTimeout = null;
           }
 
+          setPaymentLoading(false);
+          clearSubscriptionPaymentCache();
+          onClose();
+          replaceAfterPaymentSuccess("/dashboard?subscription=success", router);
+          window.dispatchEvent(new CustomEvent("scorecare:app-refresh"));
+          window.setTimeout(() => window.dispatchEvent(new CustomEvent("scorecare:app-refresh")), 1200);
+
           const confirmResponse = await apiRequest("/subscription-plans/razorpay/confirm", {
             method: "POST",
             headers: { Authorization: `Bearer ${authToken}` },
@@ -742,15 +749,12 @@ export function SubscribePromptOverlay({
           });
           void logCrashlyticsMessage("Payment confirm API success");
           clearSelectedSubscriptionRedemption();
-          clearSubscriptionPaymentCache();
-          await Promise.allSettled([
+          void Promise.allSettled([
             fetchSubscriptionStatus(authToken),
             getRazorpayPrefill(authToken),
             getCachedCibilDisplayData(authToken, { forceRefresh: true }),
           ]);
           window.dispatchEvent(new CustomEvent("scorecare:subscription-activated", { detail: confirmResult?.subscription ?? confirmResult?.data?.subscription ?? null }));
-          onClose();
-          replaceAfterPaymentSuccess("/dashboard?subscription=success", router);
         } catch (error) {
           void trackEvent("razorpay_payment_failed", {
             page_name: "subscription",
@@ -758,7 +762,6 @@ export function SubscribePromptOverlay({
             plan_public_id: planPublicId,
           });
           void logCrashlyticsMessage("Payment confirm API failure");
-          setPaymentMessage(error instanceof Error ? error.message : "Unable to confirm subscription.");
         } finally {
           setPaymentLoading(false);
         }
@@ -780,7 +783,7 @@ export function SubscribePromptOverlay({
           timeout: razorpayCheckoutTimeoutSeconds,
         });
 
-        await confirmSubscription(paymentResponse);
+        void confirmSubscription(paymentResponse);
         return;
       }
 
