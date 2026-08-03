@@ -225,7 +225,6 @@ const FAQ_DATA: FaqCategory[] = [
 ];
 
 export function HomeDashboard() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isLanguageLoading, setIsLanguageLoading] = useState(false);
   const [name, setName] = useState("there");
@@ -357,16 +356,22 @@ export function HomeDashboard() {
     }
 
     clearSubscriptionDashboardCache();
+    let retryTimer: number | undefined;
     const timer = window.setTimeout(() => void loadDashboard(true).then((result) => {
       if (result?.freeTier && !subscriptionSuccessReloadedRef.current && !hasReloadedSubscriptionSuccess()) {
         subscriptionSuccessReloadedRef.current = true;
         markSubscriptionSuccessReloaded();
-        replaceAfterPaymentSuccess("/dashboard?subscription=success", router);
+        retryTimer = window.setTimeout(() => void loadDashboard(true), 1500);
       }
     }), 700);
 
-    return () => window.clearTimeout(timer);
-  }, [loadDashboard, router]);
+    return () => {
+      window.clearTimeout(timer);
+      if (retryTimer) {
+        window.clearTimeout(retryTimer);
+      }
+    };
+  }, [loadDashboard]);
 
   useEffect(() => {
     function refreshDashboard() {
@@ -385,7 +390,7 @@ export function HomeDashboard() {
         if (result?.freeTier && !subscriptionSuccessReloadedRef.current && !hasReloadedSubscriptionSuccess()) {
           subscriptionSuccessReloadedRef.current = true;
           markSubscriptionSuccessReloaded();
-          replaceAfterPaymentSuccess("/dashboard?subscription=success", router);
+          window.setTimeout(() => void loadDashboard(true), 1500);
         }
       });
     }
@@ -393,7 +398,7 @@ export function HomeDashboard() {
     window.addEventListener("scorecare:subscription-activated", refreshAfterSubscriptionSuccess);
 
     return () => window.removeEventListener("scorecare:subscription-activated", refreshAfterSubscriptionSuccess);
-  }, [loadDashboard, router]);
+  }, [loadDashboard]);
 
   useEffect(() => {
     let isMounted = true;
