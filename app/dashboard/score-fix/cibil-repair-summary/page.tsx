@@ -67,6 +67,7 @@ type RepairDocumentForm = {
 const reportCardClass =
   "border border-[#103A2B]/50 bg-[linear-gradient(135deg,#06120E_0%,#081712_50%,#091813_100%)] shadow-[0_20px_45px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.02)]";
 const reportMiniCardClass = "border border-[#0D5A3F]/55 bg-[linear-gradient(135deg,rgba(9,45,31,0.76),rgba(18,34,24,0.72))]";
+const razorpayCheckoutTimeoutSeconds = 120;
 
 function cleanRazorpayContact(value: unknown) {
   const digits = String(value || "").replace(/\D/g, "");
@@ -355,6 +356,8 @@ export default function CibilRepairSummaryPage() {
           name: "ScoreCare",
           orderId: order.id,
           prefill,
+          retry: { enabled: true, max_count: 3 },
+          timeout: razorpayCheckoutTimeoutSeconds,
         });
 
         await createRepairRequest({
@@ -383,6 +386,8 @@ export default function CibilRepairSummaryPage() {
         modal: {
           ondismiss: () => setPaymentLoading(false),
         },
+        retry: { enabled: true, max_count: 3 },
+        timeout: razorpayCheckoutTimeoutSeconds,
       });
 
       checkout.open();

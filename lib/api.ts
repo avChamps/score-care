@@ -27,6 +27,14 @@ type ApiFetchOptions = RequestInit & {
   timeoutMs?: number;
 };
 
+type NativeFormDataEntry = {
+  contentType?: string;
+  fileName?: string;
+  key: string;
+  type: "base64File" | "string";
+  value: string;
+};
+
 const DEFAULT_API_TIMEOUT_MS = 15000;
 const RETRY_DELAY_MS = 600;
 const inFlightRequests = new Map<string, Promise<ApiResponse>>();
@@ -124,6 +132,24 @@ async function sendApiRequest(path: string, options: ApiRequestOptions, method: 
     ...options.headers,
   };
 
+  if (Capacitor.isNativePlatform() && isFormData) {
+    const nativeOptions: HttpOptions = {
+      url: apiUrl(path),
+      method,
+      headers: {
+        ...headers,
+        "Content-Type": "multipart/form-data",
+      },
+      data: await createNativeFormData(options.body),
+      dataType: "formData",
+      connectTimeout: options.timeoutMs ?? DEFAULT_API_TIMEOUT_MS,
+      readTimeout: options.timeoutMs ?? DEFAULT_API_TIMEOUT_MS,
+    };
+    const response = await CapacitorHttp.request(nativeOptions);
+
+    return createApiResponse(response.status, response.data);
+  }
+
   if (Capacitor.isNativePlatform()) {
     const nativeOptions: HttpOptions = {
       url: apiUrl(path),
@@ -147,6 +173,50 @@ async function sendApiRequest(path: string, options: ApiRequestOptions, method: 
   });
 
   return createFetchApiResponse(response);
+}
+
+async function createNativeFormData(body: unknown) {
+  if (!(body instanceof FormData)) {
+    return [];
+  }
+
+  const entries: NativeFormDataEntry[] = [];
+
+  for (const [key, value] of body.entries()) {
+    if (value instanceof Blob) {
+      const file = value instanceof File ? value : null;
+
+      entries.push({
+        key,
+        value: await readBlobAsBase64(value),
+        type: "base64File",
+        contentType: value.type || "application/octet-stream",
+        fileName: file?.name || key,
+      });
+      continue;
+    }
+
+    entries.push({
+      key,
+      value: String(value),
+      type: "string",
+    });
+  }
+
+  return entries;
+}
+
+function readBlobAsBase64(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      resolve(result.includes(",") ? result.split(",")[1] : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }
 
 function createApiResponse(status: number, data: unknown): ApiResponse {
