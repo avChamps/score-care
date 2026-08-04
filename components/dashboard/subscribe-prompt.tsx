@@ -21,7 +21,13 @@ export type SubscriptionPlan = {
   publicId?: string;
   planName: string;
   amount: number;
+  couponApplied?: boolean;
+  discountAmount?: number;
+  finalAmount?: number;
+  grossAmount?: number;
   gstPercentage?: number;
+  gstAmount?: number;
+  redemptionPublicId?: string;
   billingCycle?: string;
   currency?: string;
   badge: string;
@@ -68,6 +74,7 @@ type SubscriptionCheckout = {
   discountAmount: number;
   finalAmount: number;
   grossAmount: number;
+  gstAmount: number;
   keyId: string;
   order: { currency?: string; id: string };
   plan: Partial<SubscriptionPlan>;
@@ -148,6 +155,7 @@ const subscriptionPlans: SubscriptionPlan[] = [
 ];
 
 let subscriptionPlansRequest: Promise<SubscriptionPlan[]> | null = null;
+let subscriptionPlansRequestAuthKey = "";
 
 function cleanRazorpayContact(value: unknown) {
   const digits = String(value || "").replace(/\D/g, "");
@@ -197,6 +205,7 @@ function readSubscriptionCheckout(result: unknown, fallbackPlan: SubscriptionPla
     discountAmount: Number(checkout.discountAmount ?? 0),
     finalAmount: Number(checkout.finalAmount ?? 0),
     grossAmount: Number(checkout.grossAmount ?? fallbackPlan.amount),
+    gstAmount: Number(checkout.gstAmount ?? 0),
     keyId: String(checkout.keyId ?? ""),
     order: { currency: checkout.order?.currency, id: String(checkout.order?.id ?? "") },
     plan,
@@ -276,8 +285,17 @@ export async function loadAppliedSubscriptionRedemptions(token: string, plans: S
 }
 
 export async function getSubscriptionPlans() {
+  const token = typeof window !== "undefined" ? localStorage.getItem("scorecare_token") : null;
+  const authToken = token && !isTokenExpired(token) ? token : "";
+  const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined;
+
+  if (subscriptionPlansRequestAuthKey !== authToken) {
+    subscriptionPlansRequest = null;
+    subscriptionPlansRequestAuthKey = authToken;
+  }
+
   if (!subscriptionPlansRequest) {
-    subscriptionPlansRequest = apiRequest("/subscription-plans")
+    subscriptionPlansRequest = apiRequest("/subscription-plans", { headers })
       .then(async (response) => {
         if (!response.ok) {
           return [];
@@ -400,7 +418,7 @@ function TwelveHourTimer({ className = "" }: { className?: string }) {
   );
 }
 
-export function PremiumBenefitsIntro({ benefits = [], ctaLabel = "View subscription", discountApplied = false, loading = false, paymentMessage = "", onClose, onSubscribe }: { benefits?: SubscriptionBenefit[]; ctaLabel?: string; discountApplied?: boolean; loading?: boolean; paymentMessage?: string; onClose: () => void; onSubscribe: () => void }) {
+export function PremiumBenefitsIntro({ benefits = [], ctaLabel = "View subscription", discountApplied = false, loading = false, paymentMessage = "", payableAmount, onClose, onSubscribe }: { benefits?: SubscriptionBenefit[]; ctaLabel?: string; discountApplied?: boolean; loading?: boolean; paymentMessage?: string; payableAmount?: string; onClose: () => void; onSubscribe: () => void }) {
   return (
     <div className="flex min-h-full flex-col bg-[#0D131C]">
       <div className="flex h-14 shrink-0 items-center bg-[#0D131C] px-4">
@@ -473,7 +491,7 @@ export function PremiumBenefitsIntro({ benefits = [], ctaLabel = "View subscript
   </div>
 
   {paymentMessage ? <p className="mb-3 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-center text-caption font-semibold leading-5 text-red-300">{paymentMessage}</p> : null}
-  {discountApplied ? <p className="mb-3 text-center text-caption font-black text-[#5EF2C2]">Reward discount applied. Final payable amount appears at checkout.</p> : null}
+  {discountApplied && payableAmount ? <p className="mb-3 text-center text-caption font-black text-[#5EF2C2]">Reward discount applied. Payable amount: {payableAmount}</p> : null}
 
   <button
     className="h-16 w-full rounded-[24px] bg-[#08DB69] text-[20px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
@@ -481,7 +499,7 @@ export function PremiumBenefitsIntro({ benefits = [], ctaLabel = "View subscript
     type="button"
     onClick={onSubscribe}
   >
-    {loading ? "Processing..." : discountApplied ? "Continue with discount" : ctaLabel}
+    {loading ? "Processing..." : discountApplied && payableAmount ? `Pay ${payableAmount}` : ctaLabel}
   </button>
 </div>
     </div>
@@ -508,11 +526,14 @@ export function SubscribePromptOverlay({
   const [plans, setPlans] = useState(subscriptionPlans);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState("");
-  const [checkoutSummary, setCheckoutSummary] = useState<Pick<SubscriptionCheckout, "discountAmount" | "finalAmount" | "grossAmount"> | null>(null);
-  const [selectedRedemptionsByPlan, setSelectedRedemptionsByPlan] = useState<Record<string, SubscriptionRedemption>>({});
+  const [checkoutSummary, setCheckoutSummary] = useState<Pick<SubscriptionCheckout, "discountAmount" | "finalAmount" | "grossAmount" | "gstAmount"> | null>(null);
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) ?? plans[0];
-  const selectedPlanPublicId = selectedPlan?.publicId || selectedPlan?.id || "";
-  const selectedRedemption = selectedPlanPublicId ? selectedRedemptionsByPlan[selectedPlanPublicId] : undefined;
+  const selectedPlanSummary = selectedPlan.couponApplied ? {
+    discountAmount: Number(selectedPlan.discountAmount ?? 0),
+    finalAmount: Number(selectedPlan.finalAmount ?? selectedPlan.amount),
+    grossAmount: Number(selectedPlan.grossAmount ?? selectedPlan.amount),
+    gstAmount: Number(selectedPlan.gstAmount ?? 0),
+  } : null;
 
   async function loadSubscriptionPlans() {
     try {
@@ -521,34 +542,12 @@ export function SubscribePromptOverlay({
 
       setPlans(nextPlans);
       setSelectedPlanId(nextPlans[0].id);
-      await restoreSubscriptionRedemptions(nextPlans);
 
       return nextPlans;
     } catch {
       setPlans(subscriptionPlans);
-      await restoreSubscriptionRedemptions(subscriptionPlans);
 
       return subscriptionPlans;
-    }
-  }
-
-  async function restoreSubscriptionRedemptions(nextPlans = plans) {
-    const token = localStorage.getItem("scorecare_token");
-
-    if (!token || isTokenExpired(token)) {
-      setSelectedRedemptionsByPlan({});
-      return {};
-    }
-
-    try {
-      const redemptions = await loadAppliedSubscriptionRedemptions(token, nextPlans);
-
-      setSelectedRedemptionsByPlan(redemptions);
-      saveSubscriptionRedemptionsByPlan(redemptions);
-      return redemptions;
-    } catch {
-      setSelectedRedemptionsByPlan({});
-      return {};
     }
   }
 
@@ -607,7 +606,7 @@ export function SubscribePromptOverlay({
     setShowSkipMessage(true);
   }
 
-  async function handleSubscriptionPayment(paymentPlan = selectedPlan, redemptionsByPlan = selectedRedemptionsByPlan) {
+  async function handleSubscriptionPayment(paymentPlan = selectedPlan) {
     if (!paymentPlan || paymentLoading) return;
 
     const token = localStorage.getItem("scorecare_token");
@@ -620,15 +619,7 @@ export function SubscribePromptOverlay({
 
     const authToken = token;
     const planPublicId = paymentPlan.publicId || paymentPlan.id;
-    let selectedRedemptionPublicId = redemptionsByPlan[planPublicId]?.publicId;
-
-    if (!selectedRedemptionPublicId) {
-      const restoredRedemptions = await loadAppliedSubscriptionRedemptions(authToken, [paymentPlan]);
-
-      selectedRedemptionPublicId = restoredRedemptions[planPublicId]?.publicId;
-      setSelectedRedemptionsByPlan((current) => ({ ...current, ...restoredRedemptions }));
-      saveSubscriptionRedemptionsByPlan(restoredRedemptions);
-    }
+    const paymentRedemptionPublicId = paymentPlan.couponApplied ? paymentPlan.redemptionPublicId : undefined;
 
     setPaymentLoading(true);
     setPaymentMessage("");
@@ -651,7 +642,7 @@ export function SubscribePromptOverlay({
       const subscriptionResponse = await apiRequest(`/subscription-plans/${encodeURIComponent(planPublicId)}/razorpay-subscription`, {
         method: "POST",
         headers: { Authorization: `Bearer ${authToken}` },
-        body: selectedRedemptionPublicId ? { redemptionPublicId: selectedRedemptionPublicId } : {},
+        body: paymentRedemptionPublicId ? { redemptionPublicId: paymentRedemptionPublicId } : {},
       });
 
       if (subscriptionResponse.status === 401 || subscriptionResponse.status === 403) {
@@ -663,13 +654,8 @@ export function SubscribePromptOverlay({
       const subscriptionResult = await subscriptionResponse.json();
 
       if (!subscriptionResponse.ok) {
-        if (subscriptionResponse.status === 400 && selectedRedemptionPublicId) {
+        if (subscriptionResponse.status === 400 && paymentRedemptionPublicId) {
           clearSelectedSubscriptionRedemption(planPublicId);
-          setSelectedRedemptionsByPlan((current) => {
-            const next = { ...current };
-            delete next[planPublicId];
-            return next;
-          });
           setPaymentMessage(`Reward discount could not be applied: ${readApiMessage(subscriptionResult, "Unable to apply reward discount.")}. Tap Pay again to continue without the reward.`);
           setPaymentLoading(false);
           return;
@@ -684,6 +670,7 @@ export function SubscribePromptOverlay({
         discountAmount: checkout.discountAmount,
         finalAmount: checkout.finalAmount,
         grossAmount: checkout.grossAmount,
+        gstAmount: checkout.gstAmount,
       });
 
       if (!checkout.keyId || !checkout.order.id || !checkout.customerId || !Number.isFinite(checkout.razorpayAmount) || checkout.razorpayAmount <= 0 || (!useNativeRazorpay && !window.Razorpay)) {
@@ -716,7 +703,7 @@ export function SubscribePromptOverlay({
               amount: checkout.finalAmount,
               grossAmount: checkout.grossAmount,
               discountAmount: checkout.discountAmount,
-              redemptionPublicId: checkout.redemption?.publicId ?? selectedRedemptionPublicId,
+              redemptionPublicId: checkout.redemption?.publicId ?? paymentRedemptionPublicId,
               currency: checkout.plan.currency || "INR",
             },
           });
@@ -887,10 +874,12 @@ export function SubscribePromptOverlay({
                     {plans.map((plan) => (
                       <SubscriptionPlanCard
                         key={plan.id}
-                        discountApplied={Boolean(selectedRedemptionsByPlan[plan.publicId || plan.id])}
                         plan={plan}
                         selected={selectedPlanId === plan.id}
-                        onSelect={() => setSelectedPlanId(plan.id)}
+                        onSelect={() => {
+                          setSelectedPlanId(plan.id);
+                          setCheckoutSummary(null);
+                        }}
                       />
                     ))}
                   </div>
@@ -898,10 +887,9 @@ export function SubscribePromptOverlay({
 
                 <div className="relative border-t border-white/8 bg-[#0D131C] px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6">
                   {paymentMessage ? <p className="mx-auto mb-3 max-w-md text-center text-caption font-semibold text-red-400">{paymentMessage}</p> : null}
-                  {selectedRedemption ? <p className="mx-auto mb-3 max-w-md text-center text-caption font-black text-[#5EF2C2]">Reward discount will be applied at checkout.</p> : null}
-                  {checkoutSummary ? <BillSummary summary={checkoutSummary} /> : null}
+                  {checkoutSummary || selectedPlanSummary ? <BillSummary summary={checkoutSummary ?? selectedPlanSummary!} /> : null}
                   <button className="mx-auto block h-[3.25rem] w-full max-w-md rounded-2xl bg-[linear-gradient(135deg,#FF7A00,#FFD34D)] text-sm font-semibold text-[#201300] shadow-[0_14px_28px_rgba(255,122,0,0.24)] transition disabled:opacity-60" disabled={!selectedPlanId || paymentLoading} type="button" onClick={() => void handleSubscriptionPayment()}>
-                    {paymentLoading ? "Processing..." : selectedPlan.buttonLabel ?? "Subscribe"}
+                    {paymentLoading ? "Processing..." : selectedPlan.couponApplied ? `Pay ${formatPlanPayableAmount(selectedPlan)}` : selectedPlan.buttonLabel ?? "Subscribe"}
                   </button>
                   <button className="mx-auto mt-3 block text-xs font-semibold text-[#AAB6C8] transition hover:text-white" onClick={closePrompt} type="button">
                     {selectedPlan.skipLabel}
@@ -910,13 +898,13 @@ export function SubscribePromptOverlay({
               </>
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto">
-                <PremiumBenefitsIntro benefits={selectedPlan.benefits} ctaLabel={`Pay ${formatPlanAmount(selectedPlan)} ${formatBillingCycle(selectedPlan.billingCycle)}`} discountApplied={Boolean(selectedRedemption)} loading={paymentLoading} paymentMessage={paymentMessage} onClose={() => setShowSkipMessage(true)} onSubscribe={() => void handleSubscriptionPayment()} />
+                <PremiumBenefitsIntro benefits={selectedPlan.benefits} ctaLabel={`Pay ${formatPlanAmount(selectedPlan)} ${formatBillingCycle(selectedPlan.billingCycle)}`} discountApplied={Boolean(selectedPlan.couponApplied)} loading={paymentLoading} payableAmount={formatPlanPayableAmount(selectedPlan)} paymentMessage={paymentMessage} onClose={() => setShowSkipMessage(true)} onSubscribe={() => void handleSubscriptionPayment()} />
               </div>
             )}
             {showSkipMessage ? (
               <ProBenefitsComparisonSheet
                 comparisonBenefits={selectedPlan.comparisonBenefits}
-                ctaLabel={selectedRedemption ? "Continue with discount" : `Pay ${formatPlanAmount(selectedPlan)} ${formatBillingCycle(selectedPlan.billingCycle)}`}
+                ctaLabel={selectedPlan.couponApplied ? `Pay ${formatPlanPayableAmount(selectedPlan)}` : `Pay ${formatPlanAmount(selectedPlan)} ${formatBillingCycle(selectedPlan.billingCycle)}`}
                 loading={paymentLoading}
                 zIndex="z-[10000]"
                 onClose={() => {
@@ -938,10 +926,11 @@ export function SubscribePromptOverlay({
   return typeof document === "undefined" ? null : createPortal(sheet, document.body);
 }
 
-function BillSummary({ summary }: { summary: Pick<SubscriptionCheckout, "discountAmount" | "finalAmount" | "grossAmount"> }) {
+function BillSummary({ summary }: { summary: Pick<SubscriptionCheckout, "discountAmount" | "finalAmount" | "grossAmount" | "gstAmount"> }) {
   return (
     <div className="mx-auto mb-3 max-w-md rounded-2xl border border-[#5EF2C2]/16 bg-[#07111C]/90 p-3 text-sm">
       <SummaryRow label="Original Amount" value={formatCurrency(summary.grossAmount)} />
+      {summary.gstAmount ? <SummaryRow label="GST" value={formatCurrency(summary.gstAmount)} /> : null}
       <SummaryRow label="Coins Discount" value={`-${formatCurrency(summary.discountAmount)}`} tone="discount" />
       <div className="mt-2 border-t border-white/10 pt-2">
         <SummaryRow label="Payable Amount" value={formatCurrency(summary.finalAmount)} tone="payable" />
@@ -959,8 +948,9 @@ function SummaryRow({ label, tone, value }: { label: string; tone?: "discount" |
   );
 }
 
-function SubscriptionPlanCard({ discountApplied, onSelect, plan, selected }: { discountApplied?: boolean; onSelect: () => void; plan: SubscriptionPlan; selected: boolean }) {
+function SubscriptionPlanCard({ onSelect, plan, selected }: { onSelect: () => void; plan: SubscriptionPlan; selected: boolean }) {
   const theme = subscriptionPlanThemeStyles[plan.theme];
+  const discountApplied = Boolean(plan.couponApplied);
 
   return (
     <button
@@ -985,7 +975,8 @@ function SubscriptionPlanCard({ discountApplied, onSelect, plan, selected }: { d
           <span>{plan.icon}</span>
           <span>{plan.planName}</span>
         </div>
-        <p className="mt-4 text-[34px] font-black leading-none text-white"><AnimatedNumber value={formatPlanAmount(plan)} /><span className="ml-1 text-caption font-bold text-white/76">{formatBillingCycle(plan.billingCycle)}</span></p>
+        <p className="mt-4 text-[34px] font-black leading-none text-white"><AnimatedNumber value={formatPlanPayableAmount(plan)} /><span className="ml-1 text-caption font-bold text-white/76">{formatBillingCycle(plan.billingCycle)}</span></p>
+        {discountApplied ? <p className="mt-2 text-caption font-bold text-white/80">Base plan amount: {formatPlanAmount(plan)}</p> : null}
       </div>
 
       <div className="space-y-3 px-7 py-6">
@@ -1010,11 +1001,15 @@ export function readSubscriptionPlans(result: unknown): SubscriptionPlan[] {
   const normalizedPlans: SubscriptionPlan[] = [];
 
   plans.forEach((plan, index) => {
-    const item = plan as Partial<SubscriptionPlan> & { comparisonBenefits?: unknown; gst?: number; gst_percentage?: number; name?: string; offerTag?: string; price?: number; monthlyPrice?: number };
+    const item = plan as Partial<SubscriptionPlan> & { comparisonBenefits?: unknown; gst?: number; gst_amount?: number; gst_percentage?: number; name?: string; offerTag?: string; price?: number; monthlyPrice?: number; redemption_public_id?: string };
     const id = String(item.publicId ?? item.id ?? item.planName ?? item.name ?? index);
     const planName = String(item.planName ?? item.name ?? "");
     const amount = Number(item.amount ?? item.price ?? item.monthlyPrice ?? 0);
+    const discountAmount = Number(item.discountAmount ?? 0);
+    const finalAmount = Number(item.finalAmount ?? amount);
+    const grossAmount = Number(item.grossAmount ?? amount);
     const gstPercentage = Number(item.gstPercentage ?? item.gst_percentage ?? item.gst ?? 0);
+    const gstAmount = Number(item.gstAmount ?? item.gst_amount ?? 0);
 
     if (!planName || !amount) {
       return;
@@ -1025,7 +1020,13 @@ export function readSubscriptionPlans(result: unknown): SubscriptionPlan[] {
       publicId: item.publicId,
       planName,
       amount,
+      couponApplied: Boolean(item.couponApplied),
+      discountAmount: Number.isFinite(discountAmount) ? discountAmount : 0,
+      finalAmount: Number.isFinite(finalAmount) ? finalAmount : amount,
+      grossAmount: Number.isFinite(grossAmount) ? grossAmount : amount,
       gstPercentage: Number.isFinite(gstPercentage) ? gstPercentage : 0,
+      gstAmount: Number.isFinite(gstAmount) ? gstAmount : 0,
+      redemptionPublicId: String(item.redemptionPublicId ?? item.redemption_public_id ?? "").trim() || undefined,
       billingCycle: item.billingCycle,
       currency: item.currency,
       badge: item.badge ?? item.offerTag ?? (index === 0 ? "Most Popular" : "Best Value"),
@@ -1113,30 +1114,21 @@ export function formatPlanAmount(plan: SubscriptionPlan) {
   return `${plan.currency} ${plan.amount}`;
 }
 
+export function formatPlanPayableAmount(plan: SubscriptionPlan) {
+  const amount = plan.couponApplied ? Number(plan.finalAmount ?? plan.amount) : plan.amount;
+
+  if (plan.currency === "INR" || !plan.currency) {
+    return formatCurrency(amount);
+  }
+
+  return `${plan.currency} ${amount}`;
+}
+
 function formatCurrency(amount: number) {
   return `₹${Number(amount || 0).toLocaleString("en-IN", {
     maximumFractionDigits: 2,
     minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
   })}`;
-}
-
-function calculatePlanPayableAmount(plan: Partial<SubscriptionPlan>, fallback: SubscriptionPlan) {
-  const amount = Number(plan.amount ?? fallback.amount);
-  const gstPercentage = Number(plan.gstPercentage ?? fallback.gstPercentage ?? 0);
-  const payableAmount = amount + (amount * gstPercentage) / 100;
-
-  return Math.round(payableAmount * 100) / 100;
-}
-
-function calculatePlanGstAmount(plan: Partial<SubscriptionPlan>, fallback: SubscriptionPlan) {
-  const amount = Number(plan.amount ?? fallback.amount);
-  const gstPercentage = Number(plan.gstPercentage ?? fallback.gstPercentage ?? 0);
-
-  return Math.round(((amount * gstPercentage) / 100) * 100) / 100;
-}
-
-function toRazorpayAmount(amount: number) {
-  return Math.round(amount * 100);
 }
 
 function loadRazorpayCheckout() {
